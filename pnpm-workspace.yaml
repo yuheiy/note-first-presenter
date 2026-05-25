@@ -1,23 +1,26 @@
 packages:
-  - apps/*
   - packages/*
-  - tools/*
 
 catalogMode: prefer
 
 catalog:
-  "@types/node": ^24
-  typescript: ^5
+  '@types/node': ^22
+  typescript: ^6
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
 overrides:
-  vite: "catalog:"
-  vitest: "catalog:"
+  vite: 'catalog:'
+  vitest: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite
     - vitest
   allowedVersions:
-    vite: "*"
-    vitest: "*"
+    vite: '*'
+    vitest: '*'
+
+engineStrict: true
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - tinyexec@1.2.2
