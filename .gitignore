@@ -26,3 +26,11 @@ dist-ssr
 # AI agent worktrees
 .claude/worktrees/
 .superpowers/
+
+packages/*/dist
+packages/*/.svelte-kit
+packages/client/src/lib/paraglide
+packages/client/test-results
+packages/client/playwright-report
+packages/client/tests/fixtures/*/.note-first-presenter.json
+node_modules/.note-first-presenter
