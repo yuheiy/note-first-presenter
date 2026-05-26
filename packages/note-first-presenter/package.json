@@ -21,6 +21,7 @@
     "check": "vp check"
   },
   "dependencies": {
+    "chokidar": "catalog:",
     "citty": "catalog:",
     "tinyglobby": "catalog:",
     "valibot": "catalog:",

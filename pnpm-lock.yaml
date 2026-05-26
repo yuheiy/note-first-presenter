@@ -33,6 +33,9 @@ catalogs:
     bowser:
       specifier: ^2.14.1
       version: 2.14.1
+    chokidar:
+      specifier: ^5.0.0
+      version: 5.0.0
     citty:
       specifier: ^0.2.2
       version: 0.2.2
@@ -197,6 +200,9 @@ importers:
       '@note-first-presenter/client':
         specifier: workspace:*
         version: link:../client
+      chokidar:
+        specifier: 'catalog:'
+        version: 5.0.0
       citty:
         specifier: 'catalog:'
         version: 0.2.2
