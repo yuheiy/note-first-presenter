@@ -1,4 +1,4 @@
-import { type Node, type ResolvedPos, Slice } from 'prosemirror-model';
+import { Fragment, type Node, type ResolvedPos, Slice } from 'prosemirror-model';
 import {
   type Mappable,
   Selection,
@@ -107,7 +107,9 @@ export class NodeRangeSelection extends Selection {
   }
 
   content(): Slice {
-    return this.$from.doc.slice(this.from, this.to);
+    const items: Node[] = [];
+    this.forEachItem((_pos, node) => items.push(node));
+    return new Slice(Fragment.from(items), 1, 1);
   }
 
   replace(tr: Transaction, content: Slice = Slice.empty): void {
