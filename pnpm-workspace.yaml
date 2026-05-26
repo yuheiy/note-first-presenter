@@ -38,6 +38,7 @@ catalog:
   vitefu: ^1.1.3
   prosemirror-schema-list: ^1.5.1
   pdf-lib: ^1.17.1
+  happy-dom: ^20.9.0
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'
