@@ -19,10 +19,7 @@ describe('loadNfpConfig', () => {
   it('loads .ts config', async () => {
     const dir = await makeTmp();
     const file = path.join(dir, 'note-first-presenter.config.ts');
-    await fs.writeFile(
-      file,
-      `import { defineConfig } from 'note-first-presenter';\nexport default defineConfig({ slides: './x.pdf' });`,
-    );
+    await fs.writeFile(file, `export default { slides: './x.pdf' };`);
     const result = await loadNfpConfig(dir);
     expect(result.config?.slides).toBe('./x.pdf');
     expect(result.filePath).toBe(file);

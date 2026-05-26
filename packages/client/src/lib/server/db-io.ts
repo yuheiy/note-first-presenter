@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs';
-import { type DbV1, defaultDb } from '$lib/db/schema';
+import { type DbV1, defaultDb } from '../db/schema';
 
 export async function readDb(dbPath: string): Promise<DbV1> {
   try {
