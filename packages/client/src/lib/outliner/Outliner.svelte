@@ -6,8 +6,11 @@
 	import { EditorState } from 'prosemirror-state';
 	import { EditorView } from 'prosemirror-view';
 	import { untrack } from 'svelte';
+	import Bowser from 'bowser';
 	import { computeActiveSlide } from './active-slide';
+	import { duplicateItem } from './commands/duplicate';
 	import { collapseItem, expandItem } from './commands/fold';
+	import { moveItemDown, moveItemUp } from './commands/move';
 	import { separatorDecorations } from './plugins/separator-decorations';
 	import { outlinerSchema } from './schema';
 
@@ -24,6 +27,9 @@
 
 	$effect(() => {
 		if (!mountEl) return;
+		const isMac =
+			typeof navigator !== 'undefined' &&
+			Bowser.getParser(navigator.userAgent).getOSName() === 'macOS';
 		const initialState = untrack(() =>
 			EditorState.create({
 				schema: outlinerSchema,
@@ -39,6 +45,16 @@
 						'Ctrl-y': redo,
 						'Mod-ArrowUp': collapseItem,
 						'Mod-ArrowDown': expandItem,
+						'Mod-Shift-d': duplicateItem,
+						...(isMac
+							? {
+									'Mod-Shift-ArrowUp': moveItemUp,
+									'Mod-Shift-ArrowDown': moveItemDown,
+								}
+							: {
+									'Alt-Shift-ArrowUp': moveItemUp,
+									'Alt-Shift-ArrowDown': moveItemDown,
+								}),
 					}),
 					keymap(baseKeymap),
 					separatorDecorations,
