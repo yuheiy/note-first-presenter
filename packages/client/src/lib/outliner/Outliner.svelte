@@ -8,6 +8,7 @@
 	import { untrack } from 'svelte';
 	import Bowser from 'bowser';
 	import { computeActiveSlide } from './active-slide';
+	import { smartBackspace, smartDelete } from './commands/backspace';
 	import { duplicateItem } from './commands/duplicate';
 	import { collapseItem, expandItem } from './commands/fold';
 	import { moveItemDown, moveItemUp } from './commands/move';
@@ -40,6 +41,8 @@
 						Enter: splitListItem(outlinerSchema.nodes.list_item),
 						Tab: sinkListItem(outlinerSchema.nodes.list_item),
 						'Shift-Tab': liftListItem(outlinerSchema.nodes.list_item),
+						Backspace: smartBackspace,
+						Delete: smartDelete,
 						'Mod-z': undo,
 						'Mod-Shift-z': redo,
 						'Ctrl-y': redo,
