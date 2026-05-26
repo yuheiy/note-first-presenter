@@ -28,6 +28,9 @@
     "vite": "catalog:",
     "vitefu": "catalog:"
   },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  },
   "peerDependencies": {
     "@note-first-presenter/client": "workspace:*"
   }

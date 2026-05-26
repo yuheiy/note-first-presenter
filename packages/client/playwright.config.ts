@@ -9,7 +9,7 @@ const PORT = 5174;
 
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/*.e2e.ts',
   fullyParallel: false,
   timeout: 30_000,
   forbidOnly: !!process.env.CI,
