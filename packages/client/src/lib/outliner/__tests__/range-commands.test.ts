@@ -1,5 +1,6 @@
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
+import { duplicateItem } from '../commands/duplicate';
 import { moveItemDown, moveItemUp } from '../commands/move';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
@@ -61,5 +62,16 @@ describe('moveItemDown on a NodeRangeSelection', () => {
   it('returns false at the bottom boundary', () => {
     const state = makeRangeState(['a', 'b', 'c'], 1, 2);
     expect(moveItemDown(state, () => {})).toBe(false);
+  });
+});
+
+describe('duplicateItem on a NodeRangeSelection', () => {
+  it('clones the selected range and inserts it right after the range', () => {
+    const state = makeRangeState(['a', 'b', 'c'], 0, 1);
+    let next: EditorState | null = null;
+    expect(duplicateItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    expect(topTexts(next!)).toEqual(['a', 'b', 'a', 'b', 'c']);
+    expect(next!.selection).toBeInstanceOf(NodeRangeSelection);
+    expect((next!.selection as NodeRangeSelection).itemCount).toBe(2);
   });
 });
