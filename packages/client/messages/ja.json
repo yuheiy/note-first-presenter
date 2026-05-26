@@ -1,0 +1,16 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "title_placeholder": "無題",
+  "theme_label": "テーマ",
+  "theme_system": "システム",
+  "theme_light": "ライト",
+  "theme_dark": "ダーク",
+  "save_error": "保存に失敗しました",
+  "next_slide_label": "スライド {n} →",
+  "open_slideshow": "▶ スライドショー",
+  "toggle_slide_list": "スライド一覧を開閉",
+  "error_slides_not_found": "設定された PDF が見つかりません: {path}",
+  "error_multiple_pdfs": "PDF が複数見つかりました: {files}。note-first-presenter.config.ts で 1 つに指定してください。",
+  "info_no_slides": "プロジェクト直下に PDF を追加するか、note-first-presenter.config.ts で slides を設定してください。",
+  "overflow_label": "スライド {n} (超過)"
+}
