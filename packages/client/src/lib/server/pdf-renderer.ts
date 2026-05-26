@@ -98,6 +98,7 @@ async function renderPage(pdf: PdfDocument, pageNumber: number): Promise<Buffer>
   const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
   const ctx = canvas.getContext('2d');
   await page.render({
+    canvas: canvas as unknown as HTMLCanvasElement,
     canvasContext: ctx as unknown as CanvasRenderingContext2D,
     viewport,
   }).promise;
