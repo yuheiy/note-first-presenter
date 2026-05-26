@@ -84,9 +84,15 @@ catalogs:
     valibot:
       specifier: ^1.4.1
       version: 1.4.1
+    vite:
+      specifier: npm:@voidzero-dev/vite-plus-core@^0.1.22
+      version: 0.1.22
     vite-plus:
       specifier: latest
       version: 0.1.22
+    vitefu:
+      specifier: ^1.1.3
+      version: 1.1.3
     vitest-browser-svelte:
       specifier: ^2.1.1
       version: 2.1.1
@@ -197,6 +203,12 @@ importers:
       citty:
         specifier: 'catalog:'
         version: 0.2.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.9.1)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0)'
+      vitefu:
+        specifier: 'catalog:'
+        version: 1.1.3(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.9.1)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0))
 
   packages/utils:
     devDependencies:
@@ -2903,6 +2915,10 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.7.0
       yaml: 2.9.0
+
+  vitefu@1.1.3(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.9.1)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0)):
+    optionalDependencies:
+      vite: '@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.9.1)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0)'
 
   vitefu@1.1.3(vite@8.0.14(@types/node@22.19.19)(jiti@2.7.0)(yaml@2.9.0)):
     optionalDependencies:

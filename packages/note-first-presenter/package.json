@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "bin": {
-    "note-first-presenter": "./dist/cli.mjs"
+    "note-first-presenter": "./bin/note-first-presenter.mjs"
   },
   "files": [
+    "bin",
     "dist"
   ],
   "type": "module",
@@ -20,10 +21,12 @@
     "test": "vp test",
     "check": "vp check"
   },
+  "dependencies": {
+    "citty": "catalog:",
+    "vite": "catalog:",
+    "vitefu": "catalog:"
+  },
   "peerDependencies": {
     "@note-first-presenter/client": "workspace:*"
-  },
-  "dependencies": {
-    "citty": "catalog:"
   }
 }
