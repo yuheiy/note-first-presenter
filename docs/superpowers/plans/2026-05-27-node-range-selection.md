@@ -154,6 +154,7 @@ import {
   type Mappable,
   Selection,
   type SelectionBookmark,
+  SelectionRange,
   TextSelection,
   type Transaction,
 } from 'prosemirror-state';
@@ -178,19 +179,25 @@ export class NodeRangeSelection extends Selection {
     let toPos = parentStart;
     for (let i = 0; i <= toIndex; i++) toPos += parent.child(i).nodeSize;
 
-    super($anchor.doc.resolve(fromPos), $anchor.doc.resolve(toPos));
+    // Keep original $anchor/$head (each pointing *before* an item in the parent
+    // bullet_list) so that anchorIndex/headIndex preserve direction. Override
+    // $from/$to via a custom SelectionRange spanning the whole range (before
+    // the first item to after the last item).
+    const $from = $anchor.doc.resolve(fromPos);
+    const $to = $anchor.doc.resolve(toPos);
+    super($anchor, $head, [new SelectionRange($from, $to)]);
   }
 
   get parentDepth(): number {
-    return this.$from.depth;
+    return this.$anchor.depth;
   }
 
   get parentList(): Node {
-    return this.$from.node(this.parentDepth);
+    return this.$anchor.node(this.parentDepth);
   }
 
   get parentListPos(): number {
-    return this.$from.start(this.parentDepth);
+    return this.$anchor.start(this.parentDepth);
   }
 
   get anchorIndex(): number {
