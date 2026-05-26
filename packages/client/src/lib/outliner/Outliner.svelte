@@ -20,6 +20,7 @@
 	import { bulletClickPlugin } from './plugins/bullet-click';
 	import { clipboardPlugin } from './plugins/clipboard';
 	import { pasteHandler } from './plugins/paste';
+	import { rangeSelectionDecorations } from './plugins/range-selection-decorations';
 	import { separatorDecorations } from './plugins/separator-decorations';
 	import { outlinerSchema } from './schema';
 	import './selections/node-range-selection';
@@ -76,6 +77,7 @@
 					clipboardPlugin,
 					bulletClickPlugin,
 					separatorDecorations,
+					rangeSelectionDecorations,
 				],
 			}),
 		);
@@ -116,7 +118,8 @@
 	.outliner-root :global(li::marker) {
 		color: var(--color-muted);
 	}
-	.outliner-root :global(li.ProseMirror-selectednode) {
+	.outliner-root :global(li.ProseMirror-selectednode),
+	.outliner-root :global(li[data-range-selected='true']) {
 		background: color-mix(in srgb, var(--color-accent) 15%, transparent);
 		border-radius: 4px;
 	}
