@@ -1,9 +1,6 @@
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
-import { duplicateItem } from '../commands/duplicate';
-import { collapseItem, expandItem } from '../commands/fold';
 import { moveItemDown, moveItemUp } from '../commands/move';
-import { smartBackspace } from '../commands/backspace';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
 
