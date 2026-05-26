@@ -26,3 +26,7 @@ dist-ssr
 # AI agent worktrees
 .claude/worktrees/
 .superpowers/
+
+packages/*/dist
+packages/*/.svelte-kit
+packages/client/src/lib/paraglide

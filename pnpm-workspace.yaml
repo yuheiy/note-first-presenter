@@ -4,14 +4,40 @@ packages:
 catalogMode: prefer
 
 catalog:
-  '@types/node': ^22
-  typescript: ^6
+  '@types/node': ^22.19.19
+  typescript: ^6.0.3
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
+  svelte: ^5.55.9
+  '@sveltejs/kit': ^2.61.1
+  '@sveltejs/vite-plugin-svelte': ^7.1.2
+  '@sveltejs/adapter-auto': ^7.0.1
+  prosemirror-model: ^1.25.7
+  prosemirror-state: ^1.4.4
+  prosemirror-view: ^1.41.8
+  prosemirror-transform: ^1.12.0
+  prosemirror-commands: ^1.7.1
+  prosemirror-history: ^1.5.0
+  prosemirror-keymap: ^1.2.3
+  ofetch: ^1.5.1
+  valibot: ^1.4.1
+  bowser: ^2.14.1
+  esm-env: ^1.2.2
+  '@inlang/paraglide-js': ^2.18.1
+  pdfjs-dist: ^5.7.284
+  '@napi-rs/canvas': ^1.0.0
+  chokidar: ^5.0.0
+  tinyglobby: ^0.2.16
+  svelte-check: ^4.4.8
+  '@vitest/browser-playwright': ^4.1.7
+  vitest-browser-svelte: ^2.1.1
+  playwright: ^1.60.0
+  '@playwright/test': ^1.60.0
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'
+  chokidar: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite
@@ -25,3 +51,4 @@ engineStrict: true
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - tinyexec@1.2.2
+  - undici-types@6.21.0
