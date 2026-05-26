@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { smartBackspace, smartDelete } from '../commands/backspace';
 import { duplicateItem } from '../commands/duplicate';
 import { collapseItem, expandItem } from '../commands/fold';
+import { rangeAwareLiftListItem, rangeAwareSinkListItem } from '../commands/range-indent';
 import { moveItemDown, moveItemUp } from '../commands/move';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
@@ -169,5 +170,67 @@ describe('smartDelete on a NodeRangeSelection', () => {
     let next: EditorState | null = null;
     expect(smartDelete(state, (tr) => (next = state.apply(tr)))).toBe(true);
     expect(topTexts(next!)).toEqual(['a']);
+  });
+});
+
+describe('rangeAwareSinkListItem (Tab)', () => {
+  it('indents every item in the range under the previous sibling', () => {
+    const state = makeRangeState(['a', 'b', 'c', 'd'], 1, 2);
+    let next: EditorState | null = null;
+    expect(rangeAwareSinkListItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    const list = next!.doc.firstChild!;
+    // expected: - a / - a > [b, c] / - d ... structure shape depends on schema-list
+    // Just assert top-level count reduced by 2 (b and c moved under a)
+    expect(list.childCount).toBe(2);
+    expect(list.child(0).firstChild?.textContent).toBe('a');
+    expect(list.child(1).firstChild?.textContent).toBe('d');
+    const nested = list.child(0).lastChild!;
+    expect(nested.type.name).toBe('bullet_list');
+    expect(nested.childCount).toBe(2);
+  });
+
+  it('returns false if no previous sibling exists', () => {
+    const state = makeRangeState(['a', 'b'], 0, 1);
+    expect(rangeAwareSinkListItem(state, () => {})).toBe(false);
+  });
+});
+
+describe('rangeAwareLiftListItem (Shift-Tab)', () => {
+  it('outdents nested range back to the parent list', () => {
+    // - a
+    //   - b
+    //   - c
+    // - d
+    const sub = ['b', 'c'].map((t) =>
+      outlinerSchema.node('list_item', null, [
+        outlinerSchema.node('paragraph', null, [outlinerSchema.text(t)]),
+      ]),
+    );
+    const a = outlinerSchema.node('list_item', null, [
+      outlinerSchema.node('paragraph', null, [outlinerSchema.text('a')]),
+      outlinerSchema.node('bullet_list', null, sub),
+    ]);
+    const d = outlinerSchema.node('list_item', null, [
+      outlinerSchema.node('paragraph', null, [outlinerSchema.text('d')]),
+    ]);
+    const doc = outlinerSchema.node('doc', null, [
+      outlinerSchema.node('bullet_list', null, [a, d]),
+    ]);
+    // Compute positions of b and c (inside a's nested list)
+    const aStart = 1; // before a
+    const innerListStart = aStart + 1 /* into a */ + a.firstChild!.nodeSize; // inside a > after paragraph
+    const bPos = innerListStart + 1;
+    const cPos = bPos + sub[0].nodeSize;
+    const range = createNodeRangeSelection(doc, bPos, cPos)!;
+    const state = EditorState.create({ doc, selection: range });
+    let next: EditorState | null = null;
+    expect(rangeAwareLiftListItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    const list = next!.doc.firstChild!;
+    // After lift, b and c become top-level siblings.
+    expect(list.childCount).toBe(4);
+    expect(list.child(0).firstChild?.textContent).toBe('a');
+    expect(list.child(1).firstChild?.textContent).toBe('b');
+    expect(list.child(2).firstChild?.textContent).toBe('c');
+    expect(list.child(3).firstChild?.textContent).toBe('d');
   });
 });

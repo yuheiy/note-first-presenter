@@ -2,7 +2,7 @@
 	import { baseKeymap } from 'prosemirror-commands';
 	import { history, redo, undo } from 'prosemirror-history';
 	import { keymap } from 'prosemirror-keymap';
-	import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-list';
+	import { splitListItem } from 'prosemirror-schema-list';
 	import { EditorState } from 'prosemirror-state';
 	import { EditorView } from 'prosemirror-view';
 	import { untrack } from 'svelte';
@@ -12,6 +12,7 @@
 	import { duplicateItem } from './commands/duplicate';
 	import { collapseItem, expandItem } from './commands/fold';
 	import { moveItemDown, moveItemUp } from './commands/move';
+	import { rangeAwareLiftListItem, rangeAwareSinkListItem } from './commands/range-indent';
 	import {
 		exitRangeSelection,
 		extendRangeSelectionDown,
@@ -49,8 +50,8 @@
 					history(),
 					keymap({
 						Enter: splitListItem(outlinerSchema.nodes.list_item),
-						Tab: sinkListItem(outlinerSchema.nodes.list_item),
-						'Shift-Tab': liftListItem(outlinerSchema.nodes.list_item),
+						Tab: rangeAwareSinkListItem,
+						'Shift-Tab': rangeAwareLiftListItem,
 						Backspace: smartBackspace,
 						Delete: smartDelete,
 						'Mod-z': undo,
