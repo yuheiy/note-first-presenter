@@ -1,11 +1,15 @@
 import type { Node, ResolvedPos } from 'prosemirror-model';
 import { liftListItem } from 'prosemirror-schema-list';
 import { type Command, TextSelection } from 'prosemirror-state';
+import { isNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+
+const LIST_ITEM = outlinerSchema.nodes.list_item;
+const BULLET_LIST = outlinerSchema.nodes.bullet_list;
 
 function findListItemDepth($pos: ResolvedPos): number | null {
   let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== outlinerSchema.nodes.list_item) depth--;
+  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
   return depth === 0 ? null : depth;
 }
 
@@ -17,12 +21,45 @@ function isItemEmpty(item: Node): boolean {
   );
 }
 
+function deleteRange(state: Parameters<Command>[0], dispatch: Parameters<Command>[1]): boolean {
+  const sel = state.selection;
+  if (!isNodeRangeSelection(sel)) return false;
+  const parent = sel.parentList;
+
+  let tr = state.tr;
+  let caretPos: number;
+  if (parent.childCount === sel.itemCount) {
+    // All items are selected: replace the entire range with a single empty list_item
+    // to keep the schema valid (bullet_list requires list_item+).
+    const emptyItem = outlinerSchema.node('list_item', null, [
+      outlinerSchema.node('paragraph', null, []),
+    ]);
+    tr = tr.replaceWith(sel.from, sel.to, emptyItem);
+    caretPos = sel.from + 2; // inside the new empty paragraph
+  } else {
+    tr = tr.delete(sel.from, sel.to);
+    // caret to position of next sibling's paragraph start (or previous if at end)
+    const survivingPos =
+      sel.fromIndex < parent.childCount - sel.itemCount ? sel.from : sel.from - 1;
+    caretPos = Math.max(1, survivingPos + 1);
+  }
+  try {
+    tr.setSelection(TextSelection.near(tr.doc.resolve(caretPos)));
+  } catch {
+    // best effort
+  }
+  if (dispatch) dispatch(tr.scrollIntoView());
+  return true;
+}
+
 // Backspace at the start of a list_item.
 // - empty item with no preceding sibling → fall back to default (no-op for top-level only item)
 // - empty item with a preceding sibling   → delete it, caret to end of previous paragraph
 // - non-empty item, first sibling         → liftListItem (outdent)
 // - non-empty item, has previous sibling  → merge paragraph text into the previous item
 export const smartBackspace: Command = (state, dispatch) => {
+  if (isNodeRangeSelection(state.selection)) return deleteRange(state, dispatch);
+
   const { $from, empty } = state.selection;
   if (!empty) return false;
   const itemDepth = findListItemDepth($from);
@@ -34,7 +71,7 @@ export const smartBackspace: Command = (state, dispatch) => {
   if (item.firstChild !== $from.parent) return false;
 
   const parentList = $from.node(itemDepth - 1);
-  if (parentList.type !== outlinerSchema.nodes.bullet_list) return false;
+  if (parentList.type !== BULLET_LIST) return false;
   const indexInList = $from.index(itemDepth - 1);
   const itemStart = $from.before(itemDepth);
 
@@ -55,7 +92,7 @@ export const smartBackspace: Command = (state, dispatch) => {
   }
 
   if (indexInList === 0) {
-    return liftListItem(outlinerSchema.nodes.list_item)(state, dispatch);
+    return liftListItem(LIST_ITEM)(state, dispatch);
   }
 
   // Merge current paragraph content into previous item's paragraph.
@@ -76,6 +113,8 @@ export const smartBackspace: Command = (state, dispatch) => {
 
 // Delete at the end of a paragraph: pull the next sibling's content into the current item.
 export const smartDelete: Command = (state, dispatch) => {
+  if (isNodeRangeSelection(state.selection)) return deleteRange(state, dispatch);
+
   const { $from, empty } = state.selection;
   if (!empty) return false;
   const itemDepth = findListItemDepth($from);
@@ -88,7 +127,7 @@ export const smartDelete: Command = (state, dispatch) => {
   if ($from.parentOffset !== $from.parent.content.size) return false;
 
   const parentList = $from.node(itemDepth - 1);
-  if (parentList.type !== outlinerSchema.nodes.bullet_list) return false;
+  if (parentList.type !== BULLET_LIST) return false;
   const indexInList = $from.index(itemDepth - 1);
   if (indexInList >= parentList.childCount - 1) return false;
 

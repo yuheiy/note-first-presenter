@@ -1,5 +1,6 @@
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
+import { smartBackspace, smartDelete } from '../commands/backspace';
 import { duplicateItem } from '../commands/duplicate';
 import { collapseItem, expandItem } from '../commands/fold';
 import { moveItemDown, moveItemUp } from '../commands/move';
@@ -140,5 +141,33 @@ describe('expandItem on a NodeRangeSelection', () => {
     expect(expandItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
     expect(next!.doc.firstChild!.child(0).attrs.collapsed).toBe(false);
     expect(next!.doc.firstChild!.child(1).attrs.collapsed).toBe(false);
+  });
+});
+
+describe('smartBackspace on a NodeRangeSelection', () => {
+  it('deletes the entire range and leaves caret as TextSelection', () => {
+    const state = makeRangeState(['a', 'b', 'c'], 0, 1);
+    let next: EditorState | null = null;
+    expect(smartBackspace(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    expect(topTexts(next!)).toEqual(['c']);
+  });
+
+  it('replaces the only items with an empty list_item if range covers all', () => {
+    const state = makeRangeState(['a', 'b'], 0, 1);
+    let next: EditorState | null = null;
+    expect(smartBackspace(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    const list = next!.doc.firstChild!;
+    expect(list.type.name).toBe('bullet_list');
+    expect(list.childCount).toBe(1);
+    expect(list.child(0).firstChild?.textContent).toBe('');
+  });
+});
+
+describe('smartDelete on a NodeRangeSelection', () => {
+  it('behaves identically to smartBackspace on a range', () => {
+    const state = makeRangeState(['a', 'b', 'c'], 1, 2);
+    let next: EditorState | null = null;
+    expect(smartDelete(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    expect(topTexts(next!)).toEqual(['a']);
   });
 });
