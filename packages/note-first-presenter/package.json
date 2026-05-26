@@ -22,5 +22,8 @@
   },
   "peerDependencies": {
     "@note-first-presenter/client": "workspace:*"
+  },
+  "dependencies": {
+    "citty": "catalog:"
   }
 }
