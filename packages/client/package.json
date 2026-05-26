@@ -26,6 +26,7 @@
     "prosemirror-history": "catalog:",
     "prosemirror-keymap": "catalog:",
     "prosemirror-model": "catalog:",
+    "prosemirror-schema-list": "catalog:",
     "prosemirror-state": "catalog:",
     "prosemirror-transform": "catalog:",
     "prosemirror-view": "catalog:",
