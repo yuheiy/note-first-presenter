@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run -r test && vp run -r build",
-    "dev": "vp run website#dev",
+    "ready": "vp check && vp run -r test && pnpm -F @note-first-presenter/client test:e2e",
+    "dev": "vp run @note-first-presenter/client#dev",
+    "test": "vp run -r test",
+    "test:e2e": "pnpm -F @note-first-presenter/client test:e2e",
     "prepare": "vp config"
   },
   "devDependencies": {
