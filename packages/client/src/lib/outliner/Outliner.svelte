@@ -17,6 +17,7 @@
 	import { pasteHandler } from './plugins/paste';
 	import { separatorDecorations } from './plugins/separator-decorations';
 	import { outlinerSchema } from './schema';
+	import './selections/node-range-selection';
 
 	interface Props {
 		doc: unknown;
