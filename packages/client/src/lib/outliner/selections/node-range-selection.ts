@@ -1,20 +1,18 @@
 import { Fragment, type Node, type ResolvedPos, Slice } from 'prosemirror-model';
 import {
-  type Mappable,
   Selection,
   type SelectionBookmark,
   SelectionRange,
   TextSelection,
   type Transaction,
 } from 'prosemirror-state';
+import type { Mappable } from 'prosemirror-transform';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
 
 export class NodeRangeSelection extends Selection {
-  static readonly jsonID = 'nodeRange';
-
   constructor($anchor: ResolvedPos, $head: ResolvedPos) {
     const aIndex = $anchor.index($anchor.depth);
     const hIndex = $head.index($head.depth);

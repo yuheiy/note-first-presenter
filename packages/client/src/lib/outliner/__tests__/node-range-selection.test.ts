@@ -1,4 +1,4 @@
-import { Node, Slice } from 'prosemirror-model';
+import { Node } from 'prosemirror-model';
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
