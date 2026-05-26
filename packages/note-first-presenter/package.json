@@ -1,0 +1,26 @@
+{
+  "name": "note-first-presenter",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "note-first-presenter": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check"
+  },
+  "peerDependencies": {
+    "@note-first-presenter/client": "workspace:*"
+  }
+}

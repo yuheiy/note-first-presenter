@@ -16,6 +16,7 @@ peerDependencyRules:
   allowAny:
     - vite
     - vitest
+    - '@note-first-presenter/client'
   allowedVersions:
     vite: '*'
     vitest: '*'
