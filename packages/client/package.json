@@ -38,6 +38,7 @@
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@vitest/browser-playwright": "catalog:",
+    "pdf-lib": "catalog:",
     "playwright": "catalog:",
     "svelte-check": "catalog:",
     "typescript": "catalog:",

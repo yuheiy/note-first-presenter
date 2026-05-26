@@ -5,6 +5,7 @@
 	import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-list';
 	import { EditorState } from 'prosemirror-state';
 	import { EditorView } from 'prosemirror-view';
+	import { untrack } from 'svelte';
 	import { computeActiveSlide } from './active-slide';
 	import { collapseItem, expandItem } from './commands/fold';
 	import { separatorDecorations } from './plugins/separator-decorations';
@@ -16,37 +17,34 @@
 		onActiveSlideChange: (n: number) => void;
 	}
 
-	const { doc, onChange, onActiveSlideChange }: Props = $props();
+	const props: Props = $props();
 
 	let mountEl: HTMLDivElement | undefined = $state();
 	let view: EditorView | null = null;
 
-	function buildState() {
-		const docNode = outlinerSchema.nodeFromJSON(doc);
-		return EditorState.create({
-			schema: outlinerSchema,
-			doc: docNode,
-			plugins: [
-				history(),
-				keymap({
-					Enter: splitListItem(outlinerSchema.nodes.list_item),
-					Tab: sinkListItem(outlinerSchema.nodes.list_item),
-					'Shift-Tab': liftListItem(outlinerSchema.nodes.list_item),
-					'Mod-z': undo,
-					'Mod-Shift-z': redo,
-					'Ctrl-y': redo,
-					'Mod-ArrowUp': collapseItem,
-					'Mod-ArrowDown': expandItem,
-				}),
-				keymap(baseKeymap),
-				separatorDecorations,
-			],
-		});
-	}
-
 	$effect(() => {
 		if (!mountEl) return;
-		const initialState = buildState();
+		const initialState = untrack(() =>
+			EditorState.create({
+				schema: outlinerSchema,
+				doc: outlinerSchema.nodeFromJSON(props.doc),
+				plugins: [
+					history(),
+					keymap({
+						Enter: splitListItem(outlinerSchema.nodes.list_item),
+						Tab: sinkListItem(outlinerSchema.nodes.list_item),
+						'Shift-Tab': liftListItem(outlinerSchema.nodes.list_item),
+						'Mod-z': undo,
+						'Mod-Shift-z': redo,
+						'Ctrl-y': redo,
+						'Mod-ArrowUp': collapseItem,
+						'Mod-ArrowDown': expandItem,
+					}),
+					keymap(baseKeymap),
+					separatorDecorations,
+				],
+			}),
+		);
 		const editor = new EditorView(mountEl, {
 			state: initialState,
 			attributes: {
@@ -57,9 +55,9 @@
 			dispatchTransaction(tr) {
 				const next = editor.state.apply(tr);
 				editor.updateState(next);
-				if (tr.docChanged) onChange(next.doc.toJSON());
+				if (tr.docChanged) props.onChange(next.doc.toJSON());
 				if (tr.docChanged || tr.selectionSet) {
-					onActiveSlideChange(computeActiveSlide(next.doc, next.selection));
+					props.onActiveSlideChange(computeActiveSlide(next.doc, next.selection));
 				}
 			},
 		});
@@ -84,6 +82,7 @@
 	.outliner-root :global(.ProseMirror) {
 		outline: none;
 		min-height: 100%;
+		white-space: pre-wrap;
 	}
 	.outliner-root :global(> .ProseMirror > ul > li[data-separator='true']) {
 		margin-block: 1.5em;

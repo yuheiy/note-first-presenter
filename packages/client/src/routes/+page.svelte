@@ -119,11 +119,13 @@
 
 <main class:list-open={listOpen}>
 	<section class="outliner-pane">
-		<Outliner
-			doc={db.state.outline}
-			onChange={onOutlineChange}
-			onActiveSlideChange={onActiveSlideFromEditor}
-		/>
+		{#if ready}
+			<Outliner
+				doc={db.state.outline}
+				onChange={onOutlineChange}
+				onActiveSlideChange={onActiveSlideFromEditor}
+			/>
+		{/if}
 	</section>
 	{#if listOpen}
 		<aside class="list-pane">
