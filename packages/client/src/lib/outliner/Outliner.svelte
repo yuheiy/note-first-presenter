@@ -12,6 +12,7 @@
 	import { duplicateItem } from './commands/duplicate';
 	import { collapseItem, expandItem } from './commands/fold';
 	import { moveItemDown, moveItemUp } from './commands/move';
+	import { clipboardPlugin } from './plugins/clipboard';
 	import { pasteHandler } from './plugins/paste';
 	import { separatorDecorations } from './plugins/separator-decorations';
 	import { outlinerSchema } from './schema';
@@ -62,6 +63,7 @@
 					}),
 					keymap(baseKeymap),
 					pasteHandler,
+					clipboardPlugin,
 					separatorDecorations,
 				],
 			}),
