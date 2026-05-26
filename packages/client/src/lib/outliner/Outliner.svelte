@@ -20,6 +20,7 @@
 		extendRangeSelectionUp,
 	} from './commands/range-select';
 	import { bulletClickPlugin } from './plugins/bullet-click';
+	import { bulletDragPlugin } from './plugins/bullet-drag';
 	import { clipboardPlugin } from './plugins/clipboard';
 	import { pasteHandler } from './plugins/paste';
 	import { rangeSelectionDecorations } from './plugins/range-selection-decorations';
@@ -79,6 +80,7 @@
 					keymap(baseKeymap),
 					pasteHandler,
 					clipboardPlugin,
+					bulletDragPlugin,
 					bulletClickPlugin,
 					separatorDecorations,
 					rangeSelectionDecorations,
@@ -168,5 +170,17 @@
 		.outliner-root :global(li > ul) {
 			transition: none;
 		}
+	}
+	.outliner-root :global(.nfp-drop-indicator) {
+		height: 2px;
+		background: var(--color-accent);
+		margin-block: -1px;
+		pointer-events: none;
+	}
+	.outliner-root :global(li::marker) {
+		cursor: grab;
+	}
+	:global(body.nfp-dragging) {
+		cursor: grabbing !important;
 	}
 </style>
