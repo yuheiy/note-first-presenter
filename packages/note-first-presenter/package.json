@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "citty": "catalog:",
+    "tinyglobby": "catalog:",
     "valibot": "catalog:",
     "vite": "catalog:",
     "vitefu": "catalog:"
