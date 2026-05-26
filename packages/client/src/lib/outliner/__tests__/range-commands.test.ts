@@ -1,9 +1,10 @@
-import { EditorState } from 'prosemirror-state';
+import { EditorState, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { smartBackspace, smartDelete } from '../commands/backspace';
 import { duplicateItem } from '../commands/duplicate';
 import { collapseItem, expandItem } from '../commands/fold';
 import { rangeAwareLiftListItem, rangeAwareSinkListItem } from '../commands/range-indent';
+import { rangeAwareSplitListItem } from '../commands/range-split';
 import { moveItemDown, moveItemUp } from '../commands/move';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
@@ -192,6 +193,22 @@ describe('rangeAwareSinkListItem (Tab)', () => {
   it('returns false if no previous sibling exists', () => {
     const state = makeRangeState(['a', 'b'], 0, 1);
     expect(rangeAwareSinkListItem(state, () => {})).toBe(false);
+  });
+});
+
+describe('rangeAwareSplitListItem (Enter)', () => {
+  it('deletes the range and leaves a single empty item with TextSelection at start', () => {
+    const state = makeRangeState(['a', 'b', 'c'], 0, 1);
+    let next: EditorState | null = null;
+    expect(rangeAwareSplitListItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    expect(topTexts(next!)).toEqual(['', 'c']);
+  });
+
+  it('falls through to default splitListItem when not a NodeRangeSelection', () => {
+    // ensure command returns false so default Enter handler can run
+    const doc = makeDoc(['ab']);
+    const state = EditorState.create({ doc, selection: TextSelection.create(doc, 3) });
+    expect(rangeAwareSplitListItem(state, () => {})).toBe(false);
   });
 });
 

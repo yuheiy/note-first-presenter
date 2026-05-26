@@ -13,6 +13,7 @@
 	import { collapseItem, expandItem } from './commands/fold';
 	import { moveItemDown, moveItemUp } from './commands/move';
 	import { rangeAwareLiftListItem, rangeAwareSinkListItem } from './commands/range-indent';
+	import { rangeAwareSplitListItem } from './commands/range-split';
 	import {
 		exitRangeSelection,
 		extendRangeSelectionDown,
@@ -49,7 +50,9 @@
 				plugins: [
 					history(),
 					keymap({
-						Enter: splitListItem(outlinerSchema.nodes.list_item),
+						Enter: (state, dispatch, view) =>
+							rangeAwareSplitListItem(state, dispatch, view) ||
+							splitListItem(outlinerSchema.nodes.list_item)(state, dispatch, view),
 						Tab: rangeAwareSinkListItem,
 						'Shift-Tab': rangeAwareLiftListItem,
 						Backspace: smartBackspace,
