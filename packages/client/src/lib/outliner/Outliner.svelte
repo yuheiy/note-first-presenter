@@ -12,6 +12,11 @@
 	import { duplicateItem } from './commands/duplicate';
 	import { collapseItem, expandItem } from './commands/fold';
 	import { moveItemDown, moveItemUp } from './commands/move';
+	import {
+		exitRangeSelection,
+		extendRangeSelectionDown,
+		extendRangeSelectionUp,
+	} from './commands/range-select';
 	import { bulletClickPlugin } from './plugins/bullet-click';
 	import { clipboardPlugin } from './plugins/clipboard';
 	import { pasteHandler } from './plugins/paste';
@@ -53,6 +58,9 @@
 						'Mod-ArrowUp': collapseItem,
 						'Mod-ArrowDown': expandItem,
 						'Mod-Shift-d': duplicateItem,
+						'Shift-ArrowUp': extendRangeSelectionUp,
+						'Shift-ArrowDown': extendRangeSelectionDown,
+						Escape: exitRangeSelection,
 						...(isMac
 							? {
 									'Mod-Shift-ArrowUp': moveItemUp,
