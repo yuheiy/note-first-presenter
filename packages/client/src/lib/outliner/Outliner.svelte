@@ -12,6 +12,7 @@
 	import { duplicateItem } from './commands/duplicate';
 	import { collapseItem, expandItem } from './commands/fold';
 	import { moveItemDown, moveItemUp } from './commands/move';
+	import { bulletClickPlugin } from './plugins/bullet-click';
 	import { clipboardPlugin } from './plugins/clipboard';
 	import { pasteHandler } from './plugins/paste';
 	import { separatorDecorations } from './plugins/separator-decorations';
@@ -64,6 +65,7 @@
 					keymap(baseKeymap),
 					pasteHandler,
 					clipboardPlugin,
+					bulletClickPlugin,
 					separatorDecorations,
 				],
 			}),
@@ -101,6 +103,13 @@
 	}
 	.outliner-root :global(p) {
 		margin: 0;
+	}
+	.outliner-root :global(li::marker) {
+		color: var(--color-muted);
+	}
+	.outliner-root :global(li.ProseMirror-selectednode) {
+		background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+		border-radius: 4px;
 	}
 	.outliner-root :global(.ProseMirror) {
 		outline: none;

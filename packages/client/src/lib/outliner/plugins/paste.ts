@@ -25,7 +25,7 @@ function walkHtmlList(el: Element): Node {
     const nestedEl = Array.from(li.children).find((c) => c.tagName === 'UL' || c.tagName === 'OL');
     const textParts: string[] = [];
     for (const node of li.childNodes) {
-      if (node.nodeType === Node.TEXT_NODE) {
+      if (node.nodeType === globalThis.Node.TEXT_NODE) {
         textParts.push(node.textContent ?? '');
       } else if (node instanceof Element) {
         if (node.tagName !== 'UL' && node.tagName !== 'OL') {
