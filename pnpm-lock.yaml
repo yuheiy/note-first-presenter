@@ -84,9 +84,6 @@ catalogs:
     valibot:
       specifier: ^1.4.1
       version: 1.4.1
-    vite:
-      specifier: npm:@voidzero-dev/vite-plus-core@^0.1.22
-      version: 0.1.22
     vite-plus:
       specifier: latest
       version: 0.1.22
@@ -98,7 +95,7 @@ catalogs:
       version: 2.1.1
 
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vite: npm:@voidzero-dev/vite-plus-core@^0.1.22
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   chokidar: ^5.0.0
 
@@ -203,8 +200,11 @@ importers:
       citty:
         specifier: 'catalog:'
         version: 0.2.2
-      vite:
+      valibot:
         specifier: 'catalog:'
+        version: 1.4.1(typescript@6.0.3)
+      vite:
+        specifier: npm:@voidzero-dev/vite-plus-core@^0.1.22
         version: '@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.9.1)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0)'
       vitefu:
         specifier: 'catalog:'

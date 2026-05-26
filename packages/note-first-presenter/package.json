@@ -10,7 +10,6 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
@@ -23,6 +22,7 @@
   },
   "dependencies": {
     "citty": "catalog:",
+    "valibot": "catalog:",
     "vite": "catalog:",
     "vitefu": "catalog:"
   },
