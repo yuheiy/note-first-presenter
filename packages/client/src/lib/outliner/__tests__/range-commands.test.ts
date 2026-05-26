@@ -1,6 +1,7 @@
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { duplicateItem } from '../commands/duplicate';
+import { collapseItem, expandItem } from '../commands/fold';
 import { moveItemDown, moveItemUp } from '../commands/move';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
@@ -73,5 +74,71 @@ describe('duplicateItem on a NodeRangeSelection', () => {
     expect(topTexts(next!)).toEqual(['a', 'b', 'a', 'b', 'c']);
     expect(next!.selection).toBeInstanceOf(NodeRangeSelection);
     expect((next!.selection as NodeRangeSelection).itemCount).toBe(2);
+  });
+});
+
+function makeNestedDoc() {
+  // - a
+  //   - a1
+  // - b
+  //   - b1
+  // - c (no children)
+  const make = (text: string, children?: any[]) => {
+    const kids = [outlinerSchema.node('paragraph', null, [outlinerSchema.text(text)])];
+    if (children) kids.push(outlinerSchema.node('bullet_list', null, children));
+    return outlinerSchema.node('list_item', null, kids);
+  };
+  return outlinerSchema.node('doc', null, [
+    outlinerSchema.node('bullet_list', null, [
+      make('a', [make('a1')]),
+      make('b', [make('b1')]),
+      make('c'),
+    ]),
+  ]);
+}
+
+describe('collapseItem on a NodeRangeSelection', () => {
+  it('sets collapsed=true on every item with children', () => {
+    const doc = makeNestedDoc();
+    // Range covers items 0 and 2 (skipping index 1) — adjust to cover [0,2]
+    const range = createNodeRangeSelection(
+      doc,
+      1,
+      1 + doc.firstChild!.child(0).nodeSize + doc.firstChild!.child(1).nodeSize,
+    )!;
+    const state = EditorState.create({ doc, selection: range });
+    let next: EditorState | null = null;
+    expect(collapseItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    const list = next!.doc.firstChild!;
+    expect(list.child(0).attrs.collapsed).toBe(true);
+    expect(list.child(1).attrs.collapsed).toBe(true);
+    expect(list.child(2).attrs.collapsed).toBe(false); // no children → skipped
+  });
+});
+
+describe('expandItem on a NodeRangeSelection', () => {
+  it('clears collapsed on items with children', () => {
+    // Start with both a and b collapsed
+    const make = (text: string, collapsed: boolean, children?: any[]) => {
+      const kids = [outlinerSchema.node('paragraph', null, [outlinerSchema.text(text)])];
+      if (children) kids.push(outlinerSchema.node('bullet_list', null, children));
+      return outlinerSchema.node('list_item', { collapsed }, kids);
+    };
+    const child = (t: string) =>
+      outlinerSchema.node('list_item', null, [
+        outlinerSchema.node('paragraph', null, [outlinerSchema.text(t)]),
+      ]);
+    const doc = outlinerSchema.node('doc', null, [
+      outlinerSchema.node('bullet_list', null, [
+        make('a', true, [child('a1')]),
+        make('b', true, [child('b1')]),
+      ]),
+    ]);
+    const range = createNodeRangeSelection(doc, 1, 1 + doc.firstChild!.child(0).nodeSize)!;
+    const state = EditorState.create({ doc, selection: range });
+    let next: EditorState | null = null;
+    expect(expandItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
+    expect(next!.doc.firstChild!.child(0).attrs.collapsed).toBe(false);
+    expect(next!.doc.firstChild!.child(1).attrs.collapsed).toBe(false);
   });
 });
