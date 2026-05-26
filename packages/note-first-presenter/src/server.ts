@@ -28,8 +28,11 @@ export async function startServer(opts: StartServerOptions): Promise<void> {
   if (!clientPkgJson) throw new Error('Cannot resolve @note-first-presenter/client');
   const clientRoot = path.dirname(clientPkgJson);
 
+  process.chdir(clientRoot);
+
   const server = await createServer({
     root: clientRoot,
+    configFile: path.join(clientRoot, 'vite.config.ts'),
     server: { port: opts.port, host: opts.host, open: opts.open ? '/' : false },
     plugins: [
       noteFirstPresenterPlugin({
