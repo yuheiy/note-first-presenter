@@ -9,7 +9,7 @@ export const rangeSelectionDecorations = new Plugin({
       const sel = state.selection;
       if (!isNodeRangeSelection(sel)) return DecorationSet.empty;
       const decorations: Decoration[] = [];
-      sel.forEachItem((pos, node) => {
+      sel.forEachHighlightItem((pos, node) => {
         decorations.push(
           Decoration.node(pos, pos + node.nodeSize, { 'data-range-selected': 'true' }),
         );

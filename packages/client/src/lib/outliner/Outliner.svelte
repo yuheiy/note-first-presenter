@@ -19,12 +19,12 @@
 		extendRangeSelectionDown,
 		extendRangeSelectionUp,
 	} from './commands/range-select';
-	import { bulletClickPlugin } from './plugins/bullet-click';
-	import { bulletDragPlugin } from './plugins/bullet-drag';
+	import { itemMultiSelectPlugin } from './plugins/item-multi-select';
 	import { clipboardPlugin } from './plugins/clipboard';
 	import { pasteHandler } from './plugins/paste';
 	import { rangeSelectionDecorations } from './plugins/range-selection-decorations';
 	import { separatorDecorations } from './plugins/separator-decorations';
+	import { textSelectionClamp } from './plugins/text-selection-clamp';
 	import { outlinerSchema } from './schema';
 	import './selections/node-range-selection';
 
@@ -80,8 +80,8 @@
 					keymap(baseKeymap),
 					pasteHandler,
 					clipboardPlugin,
-					bulletDragPlugin,
-					bulletClickPlugin,
+					itemMultiSelectPlugin,
+					textSelectionClamp,
 					separatorDecorations,
 					rangeSelectionDecorations,
 				],
@@ -114,73 +114,89 @@
 <div bind:this={mountEl} class="outliner-root"></div>
 
 <style>
-	.outliner-root :global(ul) {
-		padding-left: 1.5em;
-		margin: 0;
+	.outliner-root :global {
+		ul {
+			padding-left: 1.5em;
+			margin: 0;
+		}
+		p {
+			margin: 0;
+		}
+		li::marker {
+			color: var(--color-muted);
+		}
+		.ProseMirror {
+			outline: none;
+			min-height: 100%;
+			white-space: pre-wrap;
+		}
+
+		li.ProseMirror-selectednode,
+		li[data-range-selected='true'] {
+			background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+			border-radius: 4px;
+		}
+
+		/* While a NodeRangeSelection is active, suppress the native text-selection
+		   highlight and the caret so only the per-item range decoration shows. */
+		.ProseMirror:has(li[data-range-selected='true']) {
+			caret-color: transparent;
+		}
+		.ProseMirror:has(li[data-range-selected='true']) ::selection,
+		.ProseMirror:has(li[data-range-selected='true'])::selection,
+		.ProseMirror:has(li[data-range-selected='true']) *::selection {
+			background: transparent;
+			background-color: transparent;
+			color: inherit;
+		}
+		.ProseMirror:has(li[data-range-selected='true']) ::-moz-selection,
+		.ProseMirror:has(li[data-range-selected='true'])::-moz-selection,
+		.ProseMirror:has(li[data-range-selected='true']) *::-moz-selection {
+			background: transparent;
+			background-color: transparent;
+			color: inherit;
+		}
+
+		/* Top-level separator `---` styling */
+		> .ProseMirror > ul > li[data-separator='true'] {
+			margin-block: 1.5em;
+			color: var(--color-muted);
+			position: relative;
+		}
+		> .ProseMirror > ul > li[data-separator='true']::before {
+			content: '';
+			position: absolute;
+			inset: 50% 0 auto 1em;
+			border-top: 1px dashed var(--color-border);
+			z-index: -1;
+		}
+		> .ProseMirror > ul > li[data-separator='true']::after {
+			content: attr(data-next-slide-label);
+			position: absolute;
+			right: 0;
+			top: 50%;
+			transform: translateY(-50%);
+			padding-inline: 0.5em;
+			background: var(--color-bg);
+			font-size: 0.85em;
+			color: var(--color-muted);
+		}
+
+		/* Collapse animation */
+		li > ul {
+			overflow: hidden;
+			transition:
+				height 200ms ease,
+				opacity 200ms ease;
+		}
+		li[data-collapsed='true'] > ul {
+			display: none;
+		}
 	}
-	.outliner-root :global(p) {
-		margin: 0;
-	}
-	.outliner-root :global(li::marker) {
-		color: var(--color-muted);
-	}
-	.outliner-root :global(li.ProseMirror-selectednode),
-	.outliner-root :global(li[data-range-selected='true']) {
-		background: color-mix(in srgb, var(--color-accent) 15%, transparent);
-		border-radius: 4px;
-	}
-	.outliner-root :global(.ProseMirror) {
-		outline: none;
-		min-height: 100%;
-		white-space: pre-wrap;
-	}
-	.outliner-root :global(> .ProseMirror > ul > li[data-separator='true']) {
-		margin-block: 1.5em;
-		color: var(--color-muted);
-		position: relative;
-	}
-	.outliner-root :global(> .ProseMirror > ul > li[data-separator='true']::before) {
-		content: '';
-		position: absolute;
-		inset: 50% 0 auto 1em;
-		border-top: 1px dashed var(--color-border);
-		z-index: -1;
-	}
-	.outliner-root :global(> .ProseMirror > ul > li[data-separator='true']::after) {
-		content: attr(data-next-slide-label);
-		position: absolute;
-		right: 0;
-		top: 50%;
-		transform: translateY(-50%);
-		padding-inline: 0.5em;
-		background: var(--color-bg);
-		font-size: 0.85em;
-		color: var(--color-muted);
-	}
-	.outliner-root :global(li > ul) {
-		overflow: hidden;
-		transition:
-			height 200ms ease,
-			opacity 200ms ease;
-	}
-	.outliner-root :global(li[data-collapsed='true'] > ul) {
-		display: none;
-	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.outliner-root :global(li > ul) {
 			transition: none;
 		}
-	}
-	.outliner-root :global(.nfp-drop-indicator) {
-		height: 2px;
-		background: var(--color-accent);
-		margin-block: -1px;
-		pointer-events: none;
-	}
-	.outliner-root :global(li::marker) {
-		cursor: grab;
-	}
-	:global(body.nfp-dragging) {
-		cursor: grabbing !important;
 	}
 </style>
