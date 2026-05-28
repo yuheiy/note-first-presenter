@@ -5,10 +5,12 @@ import { outlinerSchema } from '../schema';
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
 
-interface ItemAncestor {
+export interface ItemAncestor {
   itemPos: number;
   parent: Node;
   parentPos: number;
+  /** Index of the list_item within its parent bullet_list. */
+  index: number;
 }
 
 export function findListItemAncestor($pos: ResolvedPos): ItemAncestor | null {
@@ -20,6 +22,7 @@ export function findListItemAncestor($pos: ResolvedPos): ItemAncestor | null {
         itemPos: $pos.before(d),
         parent,
         parentPos: $pos.before(d - 1) + 1,
+        index: $pos.index(d - 1),
       };
     }
   }
