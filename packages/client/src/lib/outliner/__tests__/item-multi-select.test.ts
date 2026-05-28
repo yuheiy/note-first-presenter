@@ -85,6 +85,7 @@ describe('resolveItemClickSelection with Cmd/Ctrl', () => {
     const initial = NodeSelection.create(doc, itemPos(doc, 0));
     const stateA = EditorState.create({ doc, selection: initial });
     const afterAdd = resolveItemClickSelection(stateA, itemPos(doc, 2), { meta: true });
+    if (!afterAdd) throw new Error('expected selection');
     const stateB = EditorState.create({ doc, selection: afterAdd });
     // Cmd+Click on item 2 again should remove it.
     const afterRemove = resolveItemClickSelection(stateB, itemPos(doc, 2), { meta: true });
@@ -108,6 +109,7 @@ describe('resolveItemClickSelection with Cmd/Ctrl', () => {
     });
     const sel = resolveItemClickSelection(state, itemPos(doc, 0), { meta: true });
     expect(sel).toBeInstanceOf(TextSelection);
+    if (!sel) throw new Error('expected selection');
     expect(sel.from).toBe(itemPos(doc, 0) + 2 + 'ab'.length);
   });
 
@@ -118,6 +120,7 @@ describe('resolveItemClickSelection with Cmd/Ctrl', () => {
       selection: NodeSelection.create(doc, itemPos(doc, 0)),
     });
     const afterFirst = resolveItemClickSelection(state, itemPos(doc, 2), { meta: true });
+    if (!afterFirst) throw new Error('expected selection');
     const second = EditorState.create({ doc, selection: afterFirst });
     const afterSecond = resolveItemClickSelection(second, itemPos(doc, 3), { meta: true });
     expect(afterSecond).toBeInstanceOf(NodeRangeSelection);

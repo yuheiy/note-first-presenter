@@ -1,7 +1,12 @@
 import { Fragment, type Node, type ResolvedPos } from 'prosemirror-model';
 import { type Command, TextSelection } from 'prosemirror-state';
-import { NodeRangeSelection, isNodeRangeSelection } from '../selections/node-range-selection';
+import {
+  collectAllSelectedItemPositions,
+  createNodeRangeSelection,
+  isNodeRangeSelection,
+} from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { cleanupEmptyBulletLists } from './_cleanup';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
@@ -12,33 +17,89 @@ function findListItemDepth($pos: ResolvedPos): number | null {
   return depth === 0 ? null : depth;
 }
 
-function moveRange(direction: -1 | 1): Command {
+// Find an adjacent sibling list_item of the given position in the doc, at the
+// same level (same parent bullet_list). Returns the absolute position of that
+// sibling, or null if no sibling exists in the asked direction.
+function adjacentSiblingPos(doc: Node, itemPos: number, direction: -1 | 1): number | null {
+  try {
+    const $pos = doc.resolve(itemPos);
+    const parent = $pos.parent;
+    if (parent.type !== BULLET_LIST) return null;
+    const index = $pos.index();
+    const target = index + direction;
+    if (target < 0 || target >= parent.childCount) return null;
+    const parentStart = $pos.start();
+    let pos = parentStart;
+    for (let i = 0; i < target; i++) pos += parent.child(i).nodeSize;
+    return pos;
+  } catch {
+    return null;
+  }
+}
+
+// Move every selected list_item (primary + additionalItems) by one slot at
+// the rearmost (direction=1) / frontmost (direction=-1) item's level. Moved
+// items become contiguous at the destination, sharing the anchor item's
+// parent bullet_list. Returns false if no movement is possible.
+function moveNodeRange(direction: -1 | 1): Command {
   return (state, dispatch) => {
     const sel = state.selection;
     if (!isNodeRangeSelection(sel)) return false;
-    if (sel.parentList.type !== BULLET_LIST) return false;
-    const targetIndex = direction === -1 ? sel.fromIndex - 1 : sel.toIndex + 1;
-    if (targetIndex < 0 || targetIndex >= sel.parentList.childCount) return false;
+    const positions = collectAllSelectedItemPositions(sel);
+    if (positions.length === 0) return false;
 
-    const sibling = sel.parentList.child(targetIndex);
+    const anchorPos = direction === 1 ? positions[positions.length - 1] : positions[0];
+    const siblingPos = adjacentSiblingPos(state.doc, anchorPos, direction);
+    if (siblingPos === null) return false;
+    const siblingNode = state.doc.nodeAt(siblingPos);
+    if (!siblingNode || siblingNode.type !== LIST_ITEM) return false;
+
+    // Insertion target in the ORIGINAL doc: just after the sibling (down) or
+    // at the sibling's position (up). We map this through the transaction's
+    // mapping after deletions / cleanup to find where it lives in the new doc.
+    const insertPosOrig = direction === 1 ? siblingPos + siblingNode.nodeSize : siblingPos;
+
     const items: Node[] = [];
-    sel.forEachItem((_p, n) => items.push(n));
+    for (const pos of positions) {
+      const node = state.doc.nodeAt(pos);
+      if (!node || node.type !== LIST_ITEM) continue;
+      items.push(node);
+    }
+    if (items.length === 0) return false;
 
-    const rangeStart = sel.from;
-    const rangeEnd = sel.to;
-    const replaceFrom = direction === -1 ? rangeStart - sibling.nodeSize : rangeStart;
-    const replaceTo = direction === -1 ? rangeEnd : rangeEnd + sibling.nodeSize;
-    const replacement = direction === -1 ? [...items, sibling] : [sibling, ...items];
+    let tr = state.tr;
+    // Delete back-to-front so each delete uses still-valid original positions.
+    const sortedDescending = positions.slice().sort((a, b) => b - a);
+    for (const pos of sortedDescending) {
+      const node = tr.doc.nodeAt(tr.mapping.map(pos, -1));
+      if (!node || node.type !== LIST_ITEM) continue;
+      const from = tr.mapping.map(pos);
+      tr = tr.delete(from, from + node.nodeSize);
+    }
 
-    const tr = state.tr.replaceWith(replaceFrom, replaceTo, Fragment.fromArray(replacement));
+    // Drop any bullet_list nodes that became empty from the deletes, then
+    // translate the original insert position through everything.
+    cleanupEmptyBulletLists(tr);
+    const insertPos = tr.mapping.map(insertPosOrig);
+
+    tr = tr.insert(insertPos, Fragment.fromArray(items));
 
     const itemsSize = items.reduce((s, n) => s + n.nodeSize, 0);
-    const newRangeStart = direction === -1 ? replaceFrom : replaceFrom + sibling.nodeSize;
     const lastSize = items[items.length - 1].nodeSize;
     const forward = sel.anchorIndex <= sel.headIndex;
-    const anchorPos = forward ? newRangeStart : newRangeStart + itemsSize - lastSize;
-    const headPos = forward ? newRangeStart + itemsSize - lastSize : newRangeStart;
-    tr.setSelection(new NodeRangeSelection(tr.doc.resolve(anchorPos), tr.doc.resolve(headPos)));
+    const newAnchor = forward ? insertPos : insertPos + itemsSize - lastSize;
+    const newHead = forward ? insertPos + itemsSize - lastSize : insertPos;
+    const newSel = createNodeRangeSelection(tr.doc, newAnchor, newHead);
+    if (newSel) {
+      tr.setSelection(newSel);
+    } else {
+      try {
+        tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos)));
+      } catch {
+        /* best effort */
+      }
+    }
+
     if (dispatch) dispatch(tr.scrollIntoView());
     return true;
   };
@@ -79,7 +140,7 @@ function moveSingle(direction: -1 | 1): Command {
 
 function move(direction: -1 | 1): Command {
   return (state, dispatch) => {
-    if (isNodeRangeSelection(state.selection)) return moveRange(direction)(state, dispatch);
+    if (isNodeRangeSelection(state.selection)) return moveNodeRange(direction)(state, dispatch);
     return moveSingle(direction)(state, dispatch);
   };
 }

@@ -1,8 +1,12 @@
 import type { Node, ResolvedPos } from 'prosemirror-model';
 import { liftListItem } from 'prosemirror-schema-list';
-import { type Command, TextSelection } from 'prosemirror-state';
-import { isNodeRangeSelection } from '../selections/node-range-selection';
+import { type Command, type EditorState, TextSelection } from 'prosemirror-state';
+import {
+  collectAllSelectedItemPositions,
+  isNodeRangeSelection,
+} from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { cleanupEmptyBulletLists } from './_cleanup';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
@@ -21,30 +25,28 @@ function isItemEmpty(item: Node): boolean {
   );
 }
 
-function deleteRange(state: Parameters<Command>[0], dispatch: Parameters<Command>[1]): boolean {
+function deleteRange(state: EditorState, dispatch: Parameters<Command>[1]): boolean {
   const sel = state.selection;
   if (!isNodeRangeSelection(sel)) return false;
-  const parent = sel.parentList;
+  const positions = collectAllSelectedItemPositions(sel);
+  if (positions.length === 0) return false;
 
+  // Delete back-to-front so earlier positions stay valid.
+  const sorted = positions.slice().sort((a, b) => b - a);
   let tr = state.tr;
-  let caretPos: number;
-  if (parent.childCount === sel.itemCount) {
-    // All items are selected: replace the entire range with a single empty list_item
-    // to keep the schema valid (bullet_list requires list_item+).
-    const emptyItem = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, []),
-    ]);
-    tr = tr.replaceWith(sel.from, sel.to, emptyItem);
-    caretPos = sel.from + 2; // inside the new empty paragraph
-  } else {
-    tr = tr.delete(sel.from, sel.to);
-    // caret to position of next sibling's paragraph start (or previous if at end)
-    const survivingPos =
-      sel.fromIndex < parent.childCount - sel.itemCount ? sel.from : sel.from - 1;
-    caretPos = Math.max(1, survivingPos + 1);
+  for (const pos of sorted) {
+    const node = tr.doc.nodeAt(pos);
+    if (!node || node.type !== LIST_ITEM) continue;
+    tr = tr.delete(pos, pos + node.nodeSize);
   }
+
+  cleanupEmptyBulletLists(tr);
+
+  // Place caret near the front-most originally selected position. After the
+  // dust settles a paragraph should be nearby.
+  const caretPos = Math.min(...positions);
   try {
-    tr.setSelection(TextSelection.near(tr.doc.resolve(caretPos)));
+    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(tr.doc.content.size, caretPos))));
   } catch {
     // best effort
   }

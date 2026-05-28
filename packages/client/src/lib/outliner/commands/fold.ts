@@ -1,5 +1,8 @@
 import { type Command, type Transaction } from 'prosemirror-state';
-import { isNodeRangeSelection } from '../selections/node-range-selection';
+import {
+  collectAllSelectedItemPositions,
+  isNodeRangeSelection,
+} from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
@@ -10,12 +13,15 @@ function setCollapsed(value: boolean): Command {
     const sel = state.selection;
     if (isNodeRangeSelection(sel)) {
       let tr: Transaction | null = null;
-      sel.forEachItem((pos, node) => {
+      const positions = collectAllSelectedItemPositions(sel);
+      for (const pos of positions) {
+        const node = state.doc.nodeAt(pos);
+        if (!node || node.type !== LIST_ITEM) continue;
         const hasChildList = node.lastChild?.type === BULLET_LIST;
-        if (!hasChildList) return;
+        if (!hasChildList) continue;
         if (!tr) tr = state.tr;
         tr.setNodeMarkup(pos, undefined, { ...node.attrs, collapsed: value });
-      });
+      }
       if (!tr) return false;
       if (dispatch) dispatch(tr);
       return true;

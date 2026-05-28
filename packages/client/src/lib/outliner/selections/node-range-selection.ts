@@ -68,9 +68,7 @@ export class NodeRangeSelection extends Selection {
     this.additionalItems = additionalItems;
   }
 
-  override get visible(): boolean {
-    return false;
-  }
+  override visible = false;
 
   get parentDepth(): number {
     return this.$anchor.depth;
@@ -258,36 +256,45 @@ export class NodeRangeSelection extends Selection {
   }
 
   getBookmark(): SelectionBookmark {
-    const a = this.$anchor.pos;
-    const h = this.$head.pos;
-    const lifted = this.liftedFrom ? { ...this.liftedFrom } : null;
-    const additional = Array.from(this.additionalItems);
-    return {
-      map(mapping: Mappable) {
-        return {
-          map: this.map,
-          resolve(doc: Node) {
-            try {
-              return new NodeRangeSelection(
-                doc.resolve(mapping.map(a)),
-                doc.resolve(mapping.map(h)),
-                mapLiftedFrom(lifted, mapping),
-                mapAdditionalItems(additional, mapping, doc),
-              );
-            } catch {
-              return TextSelection.near(doc.resolve(mapping.map(a)));
-            }
-          },
-        } as SelectionBookmark;
-      },
-      resolve(doc: Node) {
-        try {
-          return new NodeRangeSelection(doc.resolve(a), doc.resolve(h), lifted, additional);
-        } catch {
-          return TextSelection.near(doc.resolve(a));
-        }
-      },
-    };
+    return new NodeRangeBookmark(
+      this.$anchor.pos,
+      this.$head.pos,
+      this.liftedFrom ? { ...this.liftedFrom } : null,
+      Array.from(this.additionalItems),
+    );
+  }
+}
+
+class NodeRangeBookmark implements SelectionBookmark {
+  constructor(
+    private readonly anchor: number,
+    private readonly head: number,
+    private readonly lifted: LiftedFrom | null,
+    private readonly additional: readonly number[],
+  ) {}
+
+  map(mapping: Mappable): NodeRangeBookmark {
+    return new NodeRangeBookmark(
+      mapping.map(this.anchor),
+      mapping.map(this.head),
+      mapLiftedFrom(this.lifted, mapping),
+      // additionalItems get mapped lazily in resolve() because we need a doc
+      // to validate the result's list_item-ness; here we just translate.
+      this.additional
+        .map((p) => mapping.mapResult(p))
+        .filter((r) => !r.deleted)
+        .map((r) => r.pos),
+    );
+  }
+
+  resolve(doc: Node): Selection {
+    try {
+      const $a = doc.resolve(this.anchor);
+      const $h = doc.resolve(this.head);
+      return new NodeRangeSelection($a, $h, this.lifted, this.additional);
+    } catch {
+      return TextSelection.near(doc.resolve(this.anchor));
+    }
   }
 }
 
@@ -353,6 +360,29 @@ if (!globalRef[NFP_NODE_RANGE_JSON_ID]) {
 
 export function isNodeRangeSelection(sel: Selection): sel is NodeRangeSelection {
   return sel instanceof NodeRangeSelection;
+}
+
+/**
+ * Return every list_item position selected by the selection (primary range +
+ * additionalItems) in document order. Duplicate positions are removed.
+ */
+export function collectAllSelectedItemPositions(sel: NodeRangeSelection): number[] {
+  const seen = new Set<number>();
+  const out: number[] = [];
+  sel.forEachItem((pos) => {
+    if (!seen.has(pos)) {
+      seen.add(pos);
+      out.push(pos);
+    }
+  });
+  for (const pos of sel.additionalItems) {
+    if (!seen.has(pos)) {
+      seen.add(pos);
+      out.push(pos);
+    }
+  }
+  out.sort((a, b) => a - b);
+  return out;
 }
 
 export function createNodeRangeSelection(

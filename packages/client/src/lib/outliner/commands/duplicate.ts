@@ -1,6 +1,10 @@
 import { Fragment, type Node, type ResolvedPos } from 'prosemirror-model';
-import { type Command } from 'prosemirror-state';
-import { NodeRangeSelection, isNodeRangeSelection } from '../selections/node-range-selection';
+import { type Command, type EditorState } from 'prosemirror-state';
+import {
+  collectAllSelectedItemPositions,
+  createNodeRangeSelection,
+  isNodeRangeSelection,
+} from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
@@ -11,25 +15,44 @@ function findListItemDepth($pos: ResolvedPos): number | null {
   return depth === 0 ? null : depth;
 }
 
-export const duplicateItem: Command = (state, dispatch) => {
+// Duplicate every selected list_item (primary range + additionalItems) and
+// insert the copies right after the rearmost selected item, all sharing the
+// rearmost's parent bullet_list. Selection is updated to cover the new copies.
+function duplicateNodeRange(state: EditorState, dispatch: Parameters<Command>[1]): boolean {
   const sel = state.selection;
-  if (isNodeRangeSelection(sel)) {
-    const items: Node[] = [];
-    sel.forEachItem((_p, n) => items.push(n.copy(n.content)));
-    const insertPos = sel.to;
-    const tr = state.tr.insert(insertPos, Fragment.fromArray(items));
-    const newStart = insertPos;
-    const itemsSize = items.reduce((s, n) => s + n.nodeSize, 0);
-    const lastSize = items[items.length - 1].nodeSize;
-    const forward = sel.anchorIndex <= sel.headIndex;
-    const anchorPos = forward ? newStart : newStart + itemsSize - lastSize;
-    const headPos = forward ? newStart + itemsSize - lastSize : newStart;
-    tr.setSelection(new NodeRangeSelection(tr.doc.resolve(anchorPos), tr.doc.resolve(headPos)));
-    if (dispatch) dispatch(tr.scrollIntoView());
-    return true;
-  }
+  if (!isNodeRangeSelection(sel)) return false;
+  const positions = collectAllSelectedItemPositions(sel);
+  if (positions.length === 0) return false;
 
-  const { $from } = sel;
+  const nodes: Node[] = [];
+  for (const pos of positions) {
+    const node = state.doc.nodeAt(pos);
+    if (!node || node.type !== LIST_ITEM) continue;
+    nodes.push(node.copy(node.content));
+  }
+  if (nodes.length === 0) return false;
+
+  const rearmostPos = positions[positions.length - 1];
+  const rearmostNode = state.doc.nodeAt(rearmostPos)!;
+  const insertPos = rearmostPos + rearmostNode.nodeSize;
+
+  const tr = state.tr.insert(insertPos, Fragment.fromArray(nodes));
+
+  const itemsSize = nodes.reduce((s, n) => s + n.nodeSize, 0);
+  const lastSize = nodes[nodes.length - 1].nodeSize;
+  const anchorPos = insertPos;
+  const headPos = insertPos + itemsSize - lastSize;
+  const newSel = createNodeRangeSelection(tr.doc, anchorPos, headPos);
+  if (newSel) tr.setSelection(newSel);
+
+  if (dispatch) dispatch(tr.scrollIntoView());
+  return true;
+}
+
+export const duplicateItem: Command = (state, dispatch) => {
+  if (isNodeRangeSelection(state.selection)) return duplicateNodeRange(state, dispatch);
+
+  const { $from } = state.selection;
   const depth = findListItemDepth($from);
   if (depth === null) return false;
   const item = $from.node(depth);
