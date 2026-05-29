@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { resetDb } from './_helpers';
+import { resetDb } from './_helpers.ts';
 
 test('slideshow image src follows presenter active slide via BroadcastChannel', async ({
   browser,

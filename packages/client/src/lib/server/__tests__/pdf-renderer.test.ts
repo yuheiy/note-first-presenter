@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { getSlideImage, getSlidesMeta, resetPdfState } from '../pdf-renderer';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const fixture = path.resolve(__dirname, '../../../../tests/fixtures/sample.pdf');
+const fixture = path.resolve(__dirname, 'fixtures/sample.pdf');
 
 describe('pdf-renderer', () => {
   it('renders the first page to webp and caches subsequent calls', async () => {

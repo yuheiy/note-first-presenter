@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { focusEditor, resetDb } from './_helpers';
+import { focusEditor, resetDb } from './_helpers.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');

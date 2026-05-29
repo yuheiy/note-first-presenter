@@ -14,6 +14,7 @@ dist-ssr
 
 # Editor directories and files
 .vscode/*
+!.vscode/settings.json
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -25,12 +26,7 @@ dist-ssr
 
 # AI agent worktrees
 .claude/worktrees/
-.superpowers/
 
-packages/*/dist
-packages/*/.svelte-kit
-packages/client/src/lib/paraglide
-packages/client/test-results
-packages/client/playwright-report
-.note-first-presenter.json
-node_modules/.note-first-presenter
+.superpowers/
+test-results/
+playwright-report/

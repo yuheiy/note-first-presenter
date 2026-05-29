@@ -55,7 +55,7 @@ mkdir -p packages/note-first-presenter/src
     "check": "vp check"
   },
   "peerDependencies": {
-    "@note-first-presenter/client": "workspace:*"
+    "@note-first-presenter/client": "workspace:"
   }
 }
 ```

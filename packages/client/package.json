@@ -1,7 +1,17 @@
 {
   "name": "@note-first-presenter/client",
   "version": "0.0.0",
-  "private": true,
+  "description": "A starter for creating a TypeScript package.",
+  "homepage": "https://github.com/author/library#readme",
+  "bugs": {
+    "url": "https://github.com/author/library/issues"
+  },
+  "license": "MIT",
+  "author": "Author Name <author.name@mail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/author/library.git"
+  },
   "files": [
     "src",
     "!src/**/__tests__",
@@ -13,11 +23,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
     "test": "vp test",
-    "test:e2e": "playwright test",
     "check": "vp check"
   },
   "dependencies": {
@@ -44,7 +50,6 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "happy-dom": "catalog:",

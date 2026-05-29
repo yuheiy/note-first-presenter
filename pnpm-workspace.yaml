@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - demo
+  - e2e/fixtures/*
 
 catalogMode: prefer
 
@@ -40,6 +41,7 @@ catalog:
   prosemirror-schema-list: ^1.5.1
   pdf-lib: ^1.17.1
   happy-dom: ^20.9.0
+  '@typescript/native-preview': 7.0.0-dev.20260509.2
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'

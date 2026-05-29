@@ -4,14 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run -r test && pnpm -F @note-first-presenter/client test:e2e",
-    "dev": "vp run @note-first-presenter/client#dev",
-    "test": "vp run -r test",
-    "test:e2e": "pnpm -F @note-first-presenter/client test:e2e",
+    "ready": "vp check && vp run -r test && vp run test:e2e && vp run -r build",
+    "test:e2e": "playwright test",
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript/native-preview": "catalog:",
     "happy-dom": "catalog:",
+    "playwright": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {
