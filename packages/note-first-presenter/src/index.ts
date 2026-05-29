@@ -1,6 +1,5 @@
 export type { NoteFirstPresenterConfig } from './config/schema';
-export { mainCommand, parseCliArgs } from './cli';
-export type { CliArgs } from './cli';
+export { mainCommand } from './cli';
 export { startServer } from './server';
 export type { StartServerOptions } from './server';
 export { noteFirstPresenterPlugin } from './plugin';

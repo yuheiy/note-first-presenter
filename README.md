@@ -102,6 +102,8 @@ note-first-presenter export --out-dir out --image-dir imgs --template custom.eta
 <% }) %>
 ```
 
+> **Eta のエスケープ動作について**: テンプレートエンジン Eta は `autoEscape: false` で設定されているため、`<%= it.title %>` などの補間は**そのまま出力**されます（Markdown やプレーンテキスト出力では正しい挙動です）。HTML を出力する場合は、スカラー値を自分でエスケープしてください。なお、`it.toHtml(notes)` ヘルパーはノートテキストを HTML エスケープ済みで返します。
+
 ## アーキテクチャ
 
 ```

@@ -53,4 +53,14 @@ describe('resolveExportOptions', () => {
   it('throws when config is null', () => {
     expect(() => resolveExportOptions({ cwd, config: null, flags: {} })).toThrow(/format/i);
   });
+  it('keeps imageRelDir relative even for an absolute --image-dir', () => {
+    const out = resolveExportOptions({
+      cwd,
+      config: { export: { format: { template: 'tpl.eta', extension: 'md' } } },
+      flags: { imageDir: '/proj/assets/imgs' },
+    });
+    expect(out.imageDir).toBe('/proj/assets/imgs');
+    expect(out.imageRelDir).toBe('../assets/imgs');
+    expect(path.posix.isAbsolute(out.imageRelDir)).toBe(false);
+  });
 });

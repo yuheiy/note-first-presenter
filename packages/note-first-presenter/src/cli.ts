@@ -1,26 +1,5 @@
 import { defineCommand } from 'citty';
 
-export interface CliArgs {
-  port: number;
-  host: string;
-  open: boolean;
-}
-
-export function parseCliArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { port: 5173, host: 'localhost', open: false };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === '--port' || a === '-p') {
-      args.port = Number(argv[++i]);
-    } else if (a === '--host') {
-      args.host = argv[++i] ?? 'localhost';
-    } else if (a === '--open' || a === '-o') {
-      args.open = true;
-    }
-  }
-  return args;
-}
-
 const sharedServerArgs = {
   port: { type: 'string', default: '5173', alias: 'p' },
   host: { type: 'string', default: 'localhost' },

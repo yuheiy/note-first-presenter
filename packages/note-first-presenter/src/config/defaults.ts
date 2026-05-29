@@ -39,10 +39,11 @@ export function resolveExportOptions(args: ResolveExportArgs): ExportOptions {
     throw new Error('export requires "format.template" and "format.extension" in config');
   }
   const outDir = path.resolve(args.cwd, args.flags.outDir ?? exportCfg?.outDir ?? 'export');
-  const imageRelDir = args.flags.imageDir ?? exportCfg?.imageDir ?? 'images';
+  const imageDir = path.resolve(outDir, args.flags.imageDir ?? exportCfg?.imageDir ?? 'images');
+  const imageRelDir = path.relative(outDir, imageDir).split(path.sep).join('/');
   return {
     outDir,
-    imageDir: path.resolve(outDir, imageRelDir),
+    imageDir,
     imageRelDir,
     templatePath: path.resolve(args.cwd, template),
     extension,
