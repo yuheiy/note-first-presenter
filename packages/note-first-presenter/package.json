@@ -32,11 +32,11 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "chokidar": "catalog:",
+    "chokidar": "^5.0.0",
     "citty": "catalog:",
     "tinyglobby": "catalog:",
     "valibot": "catalog:",
-    "vite": "catalog:",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.22",
     "vitefu": "catalog:"
   },
   "devDependencies": {

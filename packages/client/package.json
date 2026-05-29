@@ -33,7 +33,7 @@
     "@sveltejs/kit": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "bowser": "catalog:",
-    "chokidar": "catalog:",
+    "chokidar": "^5.0.0",
     "esm-env": "catalog:",
     "ofetch": "catalog:",
     "pdfjs-dist": "catalog:",

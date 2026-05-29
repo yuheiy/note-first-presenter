@@ -11,7 +11,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@^0.1.22
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
-  svelte: ^5.55.9
+  svelte: ^5.55.10
   '@sveltejs/kit': ^2.61.1
   '@sveltejs/vite-plugin-svelte': ^7.1.2
   '@sveltejs/adapter-auto': ^7.0.1
@@ -41,7 +41,7 @@ catalog:
   prosemirror-schema-list: ^1.5.1
   pdf-lib: ^1.17.1
   happy-dom: ^20.9.0
-  '@typescript/native-preview': 7.0.0-dev.20260509.2
+  '@typescript/native-preview': 7.0.0-dev.20260527.2
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'
