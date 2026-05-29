@@ -40,4 +40,30 @@ export const mainCommand = defineCommand({
       open: args.open,
     });
   },
+  subCommands: {
+    build: defineCommand({
+      meta: { name: 'build', description: 'Generate a static read-only site' },
+      args: { 'out-dir': { type: 'string' } },
+      async run({ args }) {
+        const { runBuild } = await import('./build');
+        await runBuild({ outDir: args['out-dir'] });
+      },
+    }),
+    export: defineCommand({
+      meta: { name: 'export', description: 'Export the deck via an eta template' },
+      args: {
+        'out-dir': { type: 'string' },
+        'image-dir': { type: 'string' },
+        template: { type: 'string' },
+      },
+      async run({ args }) {
+        const { runExport } = await import('./export');
+        await runExport({
+          outDir: args['out-dir'],
+          imageDir: args['image-dir'],
+          template: args.template,
+        });
+      },
+    }),
+  },
 });
