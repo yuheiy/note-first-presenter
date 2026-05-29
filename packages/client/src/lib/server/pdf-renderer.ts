@@ -73,27 +73,37 @@ export async function getSlidesMeta(): Promise<{ hash: string; pageCount: number
 
 export async function getSlideImage(
   pageNumber: number,
-): Promise<{ data: Buffer; hash: string; pageCount: number; width: number; height: number }> {
+): Promise<{ data: Buffer; hash: string; pageCount: number }> {
   const s = ensureState();
   const { hash, pdf, pageCount } = await getPdf();
   if (pageNumber < 1 || pageNumber > pageCount) {
     throw new PageOutOfRangeError(pageNumber, pageCount);
   }
+  const cachePath = slideCachePath(s.cacheRoot, hash, pageNumber);
+  try {
+    const data = await fs.readFile(cachePath);
+    return { data, hash, pageCount };
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+  }
   const page = await pdf.getPage(pageNumber);
   const viewport = page.getViewport({ scale: TARGET_SCALE });
   const width = Math.ceil(viewport.width);
   const height = Math.ceil(viewport.height);
-  const cachePath = slideCachePath(s.cacheRoot, hash, pageNumber);
-  try {
-    const data = await fs.readFile(cachePath);
-    return { data, hash, pageCount, width, height };
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
-  }
   const data = await encodePage(page, viewport, width, height);
   await fs.mkdir(path.dirname(cachePath), { recursive: true });
   await fs.writeFile(cachePath, data);
-  return { data, hash, pageCount, width, height };
+  return { data, hash, pageCount };
+}
+
+export async function getSlideSize(pageNumber: number): Promise<{ width: number; height: number }> {
+  const { pdf, pageCount } = await getPdf();
+  if (pageNumber < 1 || pageNumber > pageCount) {
+    throw new PageOutOfRangeError(pageNumber, pageCount);
+  }
+  const page = await pdf.getPage(pageNumber);
+  const vp = page.getViewport({ scale: TARGET_SCALE });
+  return { width: Math.ceil(vp.width), height: Math.ceil(vp.height) };
 }
 
 async function encodePage(

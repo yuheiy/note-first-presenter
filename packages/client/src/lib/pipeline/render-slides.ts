@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { ensurePdfState, getSlideImage, getSlidesMeta } from '../server/pdf-renderer';
+import { ensurePdfState, getSlideImage, getSlideSize, getSlidesMeta } from '../server/pdf-renderer';
+import { slideFilename } from '../slide-filename';
 
 export interface RenderedSlide {
   number: number;
@@ -27,8 +28,9 @@ export async function renderAllSlides(opts: RenderAllOptions): Promise<RenderAll
   await fs.mkdir(opts.outDir, { recursive: true });
   const slides: RenderedSlide[] = [];
   for (let n = 1; n <= pageCount; n++) {
-    const { data, width, height } = await getSlideImage(n);
-    const name = `${String(n).padStart(4, '0')}.webp`;
+    const { data } = await getSlideImage(n);
+    const { width, height } = await getSlideSize(n);
+    const name = slideFilename(n);
     await fs.writeFile(path.join(opts.outDir, name), data);
     slides.push({ number: n, width, height, file: name });
   }

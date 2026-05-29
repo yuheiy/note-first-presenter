@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { ensurePdfState, getSlidesMeta } from '../server/pdf-renderer';
 import { readDb } from '../server/db-io';
 import { renderAllSlides } from './render-slides';
 
@@ -28,15 +29,17 @@ export async function writeBuildData(opts: WriteBuildDataOptions): Promise<void>
     return;
   }
 
-  const pendingDir = path.join(dataDir, 'slides', '__pending__');
+  // The content hash names the slides dir, so resolve it first and render
+  // straight into the final location (no temp-dir rename dance needed).
+  ensurePdfState({ slidesPath: opts.slidesStatus.path, cacheRoot: opts.cacheRoot });
+  const { hash } = await getSlidesMeta();
+  const slidesDir = path.join(dataDir, 'slides', hash);
+  await fs.rm(slidesDir, { recursive: true, force: true });
   const rendered = await renderAllSlides({
     slidesPath: opts.slidesStatus.path,
     cacheRoot: opts.cacheRoot,
-    outDir: pendingDir,
+    outDir: slidesDir,
   });
-  const hashDir = path.join(dataDir, 'slides', rendered.hash);
-  await fs.rm(hashDir, { recursive: true, force: true });
-  await fs.rename(pendingDir, hashDir);
   await fs.writeFile(
     path.join(dataDir, 'meta.json'),
     JSON.stringify({ status: 'resolved', hash: rendered.hash, pageCount: rendered.pageCount }),

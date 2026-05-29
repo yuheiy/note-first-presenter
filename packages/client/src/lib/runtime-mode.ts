@@ -1,4 +1,5 @@
 import { isStatic } from 'virtual:nfp/mode';
+import { slideFilename } from './slide-filename';
 
 export { isStatic };
 
@@ -11,7 +12,5 @@ export function dbUrl(): string {
 }
 
 export function slideUrl(hash: string, n: number): string {
-  return isStatic
-    ? `/nfp-data/slides/${hash}/${String(n).padStart(4, '0')}.webp`
-    : `/api/slide/${hash}/${n}`;
+  return isStatic ? `/nfp-data/slides/${hash}/${slideFilename(n)}` : `/api/slide/${hash}/${n}`;
 }
