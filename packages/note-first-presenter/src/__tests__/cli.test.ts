@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { parseCliArgs } from '../cli';
+import { mainCommand, parseCliArgs } from '../cli';
 
 describe('parseCliArgs', () => {
   it('parses --port', () => {
@@ -25,5 +25,17 @@ describe('parseCliArgs', () => {
   it('open defaults to false', () => {
     const args = parseCliArgs([]);
     expect(args.open).toBe(false);
+  });
+});
+
+describe('mainCommand structure', () => {
+  it('has no top-level run (so subcommands do not also start the dev server)', () => {
+    expect(mainCommand.run).toBeUndefined();
+  });
+  it('defaults to the dev subcommand', () => {
+    expect(mainCommand.default).toBe('dev');
+  });
+  it('registers dev, build, and export subcommands', () => {
+    expect(Object.keys(mainCommand.subCommands ?? {}).sort()).toEqual(['build', 'dev', 'export']);
   });
 });
