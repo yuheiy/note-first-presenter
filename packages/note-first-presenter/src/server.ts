@@ -39,6 +39,7 @@ export async function startServer(opts: StartServerOptions): Promise<void> {
         cwd,
         slidesStatus,
         fullConfig: config,
+        mode: 'dev',
       }),
     ],
   });
