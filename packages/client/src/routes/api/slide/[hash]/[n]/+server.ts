@@ -1,3 +1,5 @@
+export const prerender = false;
+
 import { error } from '@sveltejs/kit';
 import runtimeConfig from 'virtual:nfp/runtime-config';
 import { ensurePdfState, getSlideImage, PageOutOfRangeError } from '$lib/server/pdf-renderer';

@@ -1,3 +1,5 @@
+export const prerender = false;
+
 import { json } from '@sveltejs/kit';
 import runtimeConfig from 'virtual:nfp/runtime-config';
 import { ensurePdfState, getSlidesMeta } from '$lib/server/pdf-renderer';
