@@ -37,13 +37,13 @@ note-first-presenter export     # eta テンプレートでエクスポート
 
 サブコマンドの `run` は、共通の前処理（config 解決・PDF パス解決）を CLI 側で行ってから、それぞれの実装関数（`runBuild` / `runExport`）へ委譲する。
 
-## 3. 共通ヘッドレス・パイプライン
+## 3. 共通パイプライン
 
 `build` / `export` のどちらも「config を解決し、PDF を全ページ描画し、DB を読み、outline をスライド単位のノートグループに割る」処理を要する。これらの素材ロジックは prosemirror schema・区切り判定・PDF レンダラを既に持つ **`@note-first-presenter/client` パッケージ内**に置き、CLI（`note-first-presenter` パッケージ）から import する。
 
 ### 3.1 処理ステップ
 
-1. **config / PDF パス解決** — CLI 側で既存の `loadNfpConfig(cwd)` / `resolveSlidesPath(...)` を実行し、結果をヘッドレス関数に渡す。
+1. **config / PDF パス解決** — CLI 側で既存の `loadNfpConfig(cwd)` / `resolveSlidesPath(...)` を実行し、結果をパイプライン関数に渡す。
 2. **PDF 全ページ描画** — 既存 `packages/client/src/lib/server/pdf-renderer.ts` を流用し、全ページを webp としてレンダリングする。キャッシュ機構（`slide-cache.ts`）はそのまま利用してよい。
 3. **DB 読込** — 既存 `packages/client/src/lib/server/db-io.ts` の `readDb` を流用。DB 不在時は空アウトライン（`defaultDb()`）。
 4. **ノートグループ分割** — outline（ProseMirror doc JSON）のトップレベル `list_item` を、単独 `---` paragraph（`count-groups.ts` の `isSeparatorItem` と同じ判定）を境界としてスライド単位のグループに割る。区切り項目自体はグループ境界として消費し、ノードには含めない。
@@ -121,20 +121,27 @@ interface ExportContext {
 
 ### 5.1 build モードのフラグ伝播
 
-`packages/note-first-presenter/src/plugin/virtual-modules.ts` の runtime-config に `mode: 'dev' | 'build'` を追加する。クライアントは `virtual:nfp/runtime-config` 経由でモードを読む。
+nfp plugin に**クライアント安全な** virtual モジュール `virtual:nfp/mode`（`export const isStatic: boolean`）を追加する。既存の `virtual:nfp/runtime-config` はサーバー専用パス（`cwd` / `dbPath` / `cacheRoot`）を含むためクライアントには import せず、build モード判定だけを `virtual:nfp/mode` 経由でクライアントに渡す。`runtime-config` には引き続き `mode: 'dev' | 'build'` を持たせ、サーバー側（vite build の entries 算出など）で参照する。
 
 ### 5.2 build モードのクライアント挙動
 
-- outliner は `editable=false`（編集不可）。
-- タイトル編集不可。
-- DB の PUT を一切呼ばない（保存系コードを build モードで無効化）。
-- `api/db` / `api/slides/meta` / `api/slide/[hash]/[n]` の **GET を prerender** し静的ファイル化する。slide エンドポイントは `entries()` を「active hash × ページ数」で列挙する。URL は dev と同一のため、クライアントの fetch コードは無改修。
-- `api/db` の PUT は build モードでは prerender を阻害しないようガード/除外する。
+prerender でサーバーエンドポイントを静的化する代わりに、**ビルド後に CLI が静的データファイルを書き出し、クライアントは build モードで取得 URL を切り替える**。PUT ハンドラ共存時の prerender 破綻を避けられ、データ生成が純 Node で完結するためテストも容易になる。
 
-### 5.3 ビルド起動
+- データ取得 URL を一箇所に集約する `src/lib/runtime-mode.ts`（`isStatic` と `metaUrl()` / `dbUrl()` / `slideUrl(hash, n)`）を新設する。
+  - dev: `/api/slides/meta` / `/api/db` / `/api/slide/{hash}/{n}`
+  - build: `/nfp-data/meta.json` / `/nfp-data/db.json` / `/nfp-data/slides/{hash}/{NNNN}.webp`（4 桁ゼロ詰め）
+- `SlidesMetaStore` / `+page.svelte` の DB 取得 / `SlideImage` はこのヘルパー経由で URL を解決する。
+- build モードでは outliner `editable=false`、タイトル入力 readonly、DB の保存（PUT / debounce）を一切行わない。
+- `/` と `/slideshow` は `+layout.ts` の `export const prerender = true` で静的 HTML シェルとして prerender し、データは実行時にブラウザが `/nfp-data/*`（静的ファイル）から取得する。`api/*` エンドポイントは build 出力には含めない（adapter-static の対象外）。
 
-- `svelte.config.js` は環境フラグ（例: `NFP_BUILD`）で `@sveltejs/adapter-auto`（dev/通常）と `@sveltejs/adapter-static`（build: prerender 有効・fallback 無効）を切り替える。adapter-static の出力先を `build.outDir`（default `dist`）に向ける。
-- CLI `build` コマンドは `startServer` と同様に clientRoot へ `process.chdir` し、vite-plus の `build()` を nfp plugin（build モード）付きで起動する。出力先 `build.outDir` は cwd 基準で解決する。
+### 5.3 ビルド起動と静的データ生成
+
+- `svelte.config.js` は環境フラグ `NFP_STATIC` で `@sveltejs/adapter-auto`（dev/通常）と `@sveltejs/adapter-static`（build: prerender 既定 ON）を切り替える。adapter-static の出力先を `build.outDir`（default `dist`）に向ける。
+- CLI `build` コマンドは `startServer` と同様に clientRoot へ `process.chdir` し、`NFP_STATIC=1` で vite-plus の `build()` を nfp plugin（build モード）付きで起動する。
+- vite build 完了後、CLI は共通パイプラインを使って `build.outDir/nfp-data/` に静的データを書き出す:
+  - `nfp-data/db.json` ← `readDb`
+  - `nfp-data/meta.json` ← `{ status, hash, pageCount }`（解決できない場合はその status JSON）
+  - `nfp-data/slides/{hash}/{NNNN}.webp` ← 全ページの描画結果
 
 ### 5.4 依存追加
 
@@ -162,7 +169,8 @@ interface ExportContext {
   - config デフォルト解決（CLI フラグ上書きを含む）
 - **integration**:
   - fixture（`sample.pdf` + DB）で `export` が本体 1 ファイル + 画像群を生成し、内容が期待どおり
-  - `build` が静的 dir に prerender 済みスライド画像・読み取り専用ページ・静的 `api/db` を生成
+  - build の静的データ生成（`nfp-data/db.json` / `meta.json` / 全ページ webp）が fixture から期待どおり出力される
+  - `runtime-mode` ヘルパーの URL 切替（dev / build）
 - **e2e（最小）**:
   - 生成した build 成果物を静的配信し、slideshow が矢印キーでナビゲートできる
 
@@ -172,9 +180,12 @@ interface ExportContext {
 - `packages/note-first-presenter/src/build.ts`（新規） — `runBuild`
 - `packages/note-first-presenter/src/export.ts`（新規） — `runExport`
 - `packages/note-first-presenter/src/config/*` — デフォルト解決ヘルパー追加
-- `packages/note-first-presenter/src/plugin/virtual-modules.ts` — `mode` 追加
+- `packages/note-first-presenter/src/plugin/virtual-modules.ts` / `plugin/index.ts` — `mode` 追加・`virtual:nfp/mode` 提供
 - `packages/note-first-presenter/src/index.ts` — 公開 API 追加
-- `packages/client/src/lib/export/*`（新規） — ヘッドレス・パイプライン（ノートツリー化・ヘルパー・context・eta 実行）
-- `packages/client/src/routes/**` — build モードの読み取り専用化・prerender 設定
+- `packages/client/src/lib/pipeline/*`（新規） — パイプライン（ノートツリー化・ヘルパー・context・eta 実行・スライド描画・build データ生成）
+- `packages/client/src/lib/runtime-mode.ts`（新規） — build/dev のデータ URL 切替
+- `packages/client/src/app.d.ts` — `virtual:nfp/mode` の型・runtime-config の `mode`
+- `packages/client/src/routes/+layout.ts`（新規） — build モードの `prerender`
+- `packages/client/src/routes/+page.svelte` / `slideshow/+page.svelte` / `lib/slide-image/SlideImage.svelte` / `lib/slides-meta/slides-meta-store.svelte.ts` / `lib/outliner/Outliner.svelte` — 読み取り専用化・URL 切替
 - `packages/client/svelte.config.js` — adapter 切替
 - `packages/client/package.json` — `eta` / `@sveltejs/adapter-static` 追加（cli 経由）
