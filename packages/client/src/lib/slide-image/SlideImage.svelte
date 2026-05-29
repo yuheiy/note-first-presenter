@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { slideUrl } from '$lib/runtime-mode';
+
 	interface Props {
 		hash: string;
 		slide: number;
@@ -6,9 +8,10 @@
 	}
 
 	const { hash, slide, alt = '' }: Props = $props();
+	const src = $derived(slideUrl(hash, slide));
 </script>
 
-<img src={`/api/slide/${hash}/${slide}`} {alt} loading="lazy" />
+<img {src} {alt} loading="lazy" />
 
 <style>
 	img {

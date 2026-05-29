@@ -1,4 +1,5 @@
 import { api } from '$lib/server-client';
+import { metaUrl } from '$lib/runtime-mode';
 
 export type SlidesMeta =
   | { status: 'resolved'; hash: string; pageCount: number }
@@ -12,7 +13,7 @@ export class SlidesMetaStore {
 
   async load() {
     try {
-      this.data = await api<SlidesMeta>('/api/slides/meta');
+      this.data = await api<SlidesMeta>(metaUrl());
       this.error = null;
     } catch (err) {
       const cause = err as { data?: SlidesMeta; message?: string };
