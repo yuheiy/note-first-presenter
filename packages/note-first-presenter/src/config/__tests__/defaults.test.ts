@@ -1,0 +1,56 @@
+import path from 'node:path';
+import { describe, expect, it } from 'vite-plus/test';
+import { resolveBuildOptions, resolveExportOptions } from '../defaults';
+
+const cwd = '/proj';
+
+describe('resolveBuildOptions', () => {
+  it('defaults outDir to dist', () => {
+    expect(resolveBuildOptions({ cwd, config: null, flags: {} }).outDir).toBe(
+      path.join(cwd, 'dist'),
+    );
+  });
+  it('lets a CLI flag override config and default', () => {
+    const out = resolveBuildOptions({
+      cwd,
+      config: { build: { outDir: 'site' } },
+      flags: { outDir: 'public' },
+    });
+    expect(out.outDir).toBe(path.join(cwd, 'public'));
+  });
+  it('uses config outDir when no flag', () => {
+    const out = resolveBuildOptions({ cwd, config: { build: { outDir: 'site' } }, flags: {} });
+    expect(out.outDir).toBe(path.join(cwd, 'site'));
+  });
+});
+
+describe('resolveExportOptions', () => {
+  it('applies defaults and resolves imageDir under outDir', () => {
+    const out = resolveExportOptions({
+      cwd,
+      config: { export: { format: { template: 'tpl.eta', extension: 'md' } } },
+      flags: {},
+    });
+    expect(out.outDir).toBe(path.join(cwd, 'export'));
+    expect(out.imageDir).toBe(path.join(cwd, 'export', 'images'));
+    expect(out.imageRelDir).toBe('images');
+    expect(out.templatePath).toBe(path.join(cwd, 'tpl.eta'));
+    expect(out.extension).toBe('md');
+  });
+  it('lets --template flag override config template', () => {
+    const out = resolveExportOptions({
+      cwd,
+      config: { export: { format: { template: 'tpl.eta', extension: 'md' } } },
+      flags: { template: 'other.eta' },
+    });
+    expect(out.templatePath).toBe(path.join(cwd, 'other.eta'));
+  });
+  it('throws when export.format is missing', () => {
+    expect(() => resolveExportOptions({ cwd, config: { export: {} }, flags: {} })).toThrow(
+      /format/i,
+    );
+  });
+  it('throws when config is null', () => {
+    expect(() => resolveExportOptions({ cwd, config: null, flags: {} })).toThrow(/format/i);
+  });
+});
