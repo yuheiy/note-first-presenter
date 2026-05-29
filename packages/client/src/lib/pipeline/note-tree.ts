@@ -1,22 +1,6 @@
+import { docToItems, isSeparatorItem, paragraphText } from '../outliner/json-doc';
+import type { JsonNode } from '../outliner/json-doc';
 import type { NoteNode } from './types';
-
-interface JsonNode {
-  type: string;
-  content?: JsonNode[];
-  text?: string;
-}
-
-function paragraphText(item: JsonNode): string {
-  const para = (item.content ?? []).find((c) => c.type === 'paragraph');
-  if (!para) return '';
-  return (para.content ?? []).map((n) => n.text ?? '').join('');
-}
-
-function isSeparator(item: JsonNode): boolean {
-  if (item.type !== 'list_item') return false;
-  if ((item.content ?? []).length !== 1) return false;
-  return paragraphText(item) === '---';
-}
 
 function toNode(item: JsonNode): NoteNode {
   const nestedList = (item.content ?? []).find((c) => c.type === 'bullet_list');
@@ -25,12 +9,10 @@ function toNode(item: JsonNode): NoteNode {
 }
 
 export function splitNoteGroups(outline: unknown): NoteNode[][] {
-  const docNode = outline as JsonNode | undefined;
-  const list = docNode?.type === 'doc' ? docNode.content?.[0] : undefined;
-  const items = list?.type === 'bullet_list' ? (list.content ?? []) : [];
+  const items = docToItems(outline);
   const groups: NoteNode[][] = [[]];
   for (const item of items) {
-    if (isSeparator(item)) {
+    if (isSeparatorItem(item)) {
       groups.push([]);
       continue;
     }
