@@ -73,29 +73,36 @@ export async function getSlidesMeta(): Promise<{ hash: string; pageCount: number
 
 export async function getSlideImage(
   pageNumber: number,
-): Promise<{ data: Buffer; hash: string; pageCount: number }> {
+): Promise<{ data: Buffer; hash: string; pageCount: number; width: number; height: number }> {
   const s = ensureState();
   const { hash, pdf, pageCount } = await getPdf();
   if (pageNumber < 1 || pageNumber > pageCount) {
     throw new PageOutOfRangeError(pageNumber, pageCount);
   }
+  const page = await pdf.getPage(pageNumber);
+  const viewport = page.getViewport({ scale: TARGET_SCALE });
+  const width = Math.ceil(viewport.width);
+  const height = Math.ceil(viewport.height);
   const cachePath = slideCachePath(s.cacheRoot, hash, pageNumber);
   try {
     const data = await fs.readFile(cachePath);
-    return { data, hash, pageCount };
+    return { data, hash, pageCount, width, height };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
-  const data = await renderPage(pdf, pageNumber);
+  const data = await encodePage(page, viewport, width, height);
   await fs.mkdir(path.dirname(cachePath), { recursive: true });
   await fs.writeFile(cachePath, data);
-  return { data, hash, pageCount };
+  return { data, hash, pageCount, width, height };
 }
 
-async function renderPage(pdf: PdfDocument, pageNumber: number): Promise<Buffer> {
-  const page = await pdf.getPage(pageNumber);
-  const viewport = page.getViewport({ scale: TARGET_SCALE });
-  const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+async function encodePage(
+  page: Awaited<ReturnType<PdfDocument['getPage']>>,
+  viewport: ReturnType<Awaited<ReturnType<PdfDocument['getPage']>>['getViewport']>,
+  width: number,
+  height: number,
+): Promise<Buffer> {
+  const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   await page.render({
     canvas: canvas as unknown as HTMLCanvasElement,
