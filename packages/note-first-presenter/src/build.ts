@@ -6,7 +6,7 @@ import { writeBuildData } from '@note-first-presenter/client/pipeline/build-data
 import { resolveBuildOptions } from './config/defaults';
 import { loadNfpConfig } from './config/load-config';
 import { resolveSlidesPath } from './config/resolve-slides-path';
-import { noteFirstPresenterPlugin } from './plugin';
+import { buildRuntimeConfigObject } from './plugin/virtual-modules';
 
 export interface RunBuildArgs {
   outDir?: string;
@@ -32,11 +32,13 @@ export async function runBuild(flags: RunBuildArgs): Promise<void> {
   process.chdir(clientRoot);
   process.env.NFP_STATIC = '1';
   process.env.NFP_OUT_DIR = outDir;
+  process.env.NFP_RUNTIME_CONFIG = JSON.stringify(
+    buildRuntimeConfigObject({ cwd, slidesStatus, fullConfig: config, mode: 'build' }),
+  );
 
   await build({
     root: clientRoot,
     configFile: path.join(clientRoot, 'vite.config.ts'),
-    plugins: [noteFirstPresenterPlugin({ cwd, slidesStatus, fullConfig: config, mode: 'build' })],
   });
 
   await writeBuildData({
