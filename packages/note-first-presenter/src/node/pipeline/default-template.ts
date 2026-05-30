@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+// The built-in export template, inlined as a module string so it is bundled
+// into the packed CLI. A standalone .eta asset would not be tracked by the
+// bundler and would be missing from dist/ at runtime.
+export const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html lang="en-US">
 <head>
 <meta charset="UTF-8" />
@@ -13,3 +16,4 @@
 <% }) %>
 </body>
 </html>
+`;
