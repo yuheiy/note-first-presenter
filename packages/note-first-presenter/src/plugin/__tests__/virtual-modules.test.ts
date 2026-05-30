@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { buildModeModuleSource, buildVirtualConfigModuleSource } from '../virtual-modules';
+import { buildModeModuleSource, buildRuntimeConfigObject } from '../virtual-modules';
 
-describe('buildVirtualConfigModuleSource', () => {
+describe('buildRuntimeConfigObject', () => {
   it('emits cwd, slidesStatus, dbPath, cacheRoot', () => {
-    const src = buildVirtualConfigModuleSource({
+    const rc = buildRuntimeConfigObject({
       cwd: '/proj',
       slidesStatus: { kind: 'resolved', path: '/proj/a.pdf' },
       fullConfig: null,
       mode: 'dev',
     });
-    expect(src).toContain(`"cwd":"/proj"`);
-    expect(src).toContain(`"slidesStatus"`);
-    expect(src).toContain(`"dbPath":"/proj/.note-first-presenter.json"`);
-    expect(src).toContain(`"cacheRoot":"/proj/node_modules/.note-first-presenter"`);
+    expect(rc.cwd).toBe('/proj');
+    expect(rc.slidesStatus).toEqual({ kind: 'resolved', path: '/proj/a.pdf' });
+    expect(rc.dbPath).toBe('/proj/.note-first-presenter.json');
+    expect(rc.cacheRoot).toBe('/proj/node_modules/.note-first-presenter');
   });
 });
 
