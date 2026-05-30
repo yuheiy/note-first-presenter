@@ -2,6 +2,7 @@ import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Eta } from 'eta';
 import { readDb } from '../server/db-io';
+import { DEFAULT_HTML_TEMPLATE } from './default-template';
 import { buildExportContext } from './context';
 import { splitNoteGroups } from './note-tree';
 import { renderAllSlides } from './render-slides';
@@ -13,13 +14,13 @@ export interface PipelineExportOptions {
   outDir: string;
   imageDir: string;
   imageRelDir: string;
-  templatePath: string;
+  templatePath: string | null;
   extension: string;
   name: string;
 }
 
 export async function runPipelineExport(opts: PipelineExportOptions): Promise<string> {
-  if (!existsSync(opts.templatePath)) {
+  if (opts.templatePath !== null && !existsSync(opts.templatePath)) {
     throw new Error(`export template not found: ${opts.templatePath}`);
   }
   const rendered = await renderAllSlides({
@@ -36,10 +37,13 @@ export async function runPipelineExport(opts: PipelineExportOptions): Promise<st
     imageRelDir: opts.imageRelDir,
   });
 
-  const templateDir = path.dirname(opts.templatePath);
-  const templateName = path.basename(opts.templatePath);
-  const eta = new Eta({ views: templateDir, autoEscape: false });
-  const output = eta.render(templateName, context);
+  let output: string;
+  if (opts.templatePath === null) {
+    output = new Eta().renderString(DEFAULT_HTML_TEMPLATE, context);
+  } else {
+    const eta = new Eta({ views: path.dirname(opts.templatePath) });
+    output = eta.render(path.basename(opts.templatePath), context);
+  }
 
   await fs.mkdir(opts.outDir, { recursive: true });
   const outFile = path.join(opts.outDir, `${opts.name}.${opts.extension}`);

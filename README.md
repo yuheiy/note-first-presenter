@@ -51,7 +51,9 @@ note-first-presenter build --out-dir public
 
 Eta テンプレートを使ってデッキ全体を単一ファイルにレンダリングします。スライド画像は画像ディレクトリに書き出され、テンプレート出力から相対パスで参照されます。
 
-出力先: `<export.outDir>/<PDF ファイル名>.<extension>`（例: `export/slides.md`）。デフォルト値は `export.outDir = export`、`export.imageDir = images`（outDir からの相対）。`export.format.template` と `export.format.extension` は必須です。
+出力先: `<export.outDir>/<PDF ファイル名>.<extension>`（例: `export/slides.html`）。デフォルト値は `export.outDir = export`、`export.imageDir = images`（outDir からの相対）。
+
+`export.format` は省略可能です。省略した場合は組み込みの HTML テンプレートが使われ、拡張子は `html` になります（設定なしでも `note-first-presenter export` が動作します）。独自フォーマットを出力する場合は `export.format.template` と `export.format.extension` を指定します。
 
 ```ts
 // note-first-presenter.config.ts
@@ -98,11 +100,11 @@ note-first-presenter export --out-dir out --image-dir imgs --template custom.eta
 ## Slide <%= slide.number %>
 <% if (slide.image) { %>![](<%= slide.image %>)<% } %>
 
-<%= it.toMarkdown(slide.notes) %>
+<%~ it.toMarkdown(slide.notes) %>
 <% }) %>
 ```
 
-> **Eta のエスケープ動作について**: テンプレートエンジン Eta は `autoEscape: false` で設定されているため、`<%= it.title %>` などの補間は**そのまま出力**されます（Markdown やプレーンテキスト出力では正しい挙動です）。HTML を出力する場合は、スカラー値を自分でエスケープしてください。なお、`it.toHtml(notes)` ヘルパーはノートテキストを HTML エスケープ済みで返します。
+> **Eta のエスケープ動作について**: Eta は既定の `autoEscape`（有効）で動作します。`<%= ... %>` は HTML エスケープされ（HTML 出力で安全）、`<%~ ... %>` はエスケープせずそのまま出力します。ノートツリーは `<%~ it.toHtml(slide.notes) %>` で出力してください（`toHtml` はテキストを既にエスケープ済みです）。Markdown 出力では `<%~ it.toMarkdown(slide.notes) %>` のように `<%~` を使い、箇条書きが HTML エスケープされないようにします。
 
 ## アーキテクチャ
 

@@ -12,6 +12,8 @@ export const mainCommand = defineCommand({
     version: '0.0.0',
     description: 'Start the presenter dev server',
   },
+  // Lets citty route the bare invocation's value flags (e.g. `--port 4000`)
+  // to the default `dev` subcommand. build/export ignore these.
   args: sharedServerArgs,
   subCommands: {
     dev: defineCommand({

@@ -21,7 +21,7 @@ export interface ExportOptions {
   outDir: string;
   imageDir: string;
   imageRelDir: string;
-  templatePath: string;
+  templatePath: string | null;
   extension: string;
 }
 
@@ -34,10 +34,7 @@ export interface ResolveExportArgs {
 export function resolveExportOptions(args: ResolveExportArgs): ExportOptions {
   const exportCfg = args.config?.export;
   const template = args.flags.template ?? exportCfg?.format?.template;
-  const extension = exportCfg?.format?.extension;
-  if (!template || !extension) {
-    throw new Error('export requires "format.template" and "format.extension" in config');
-  }
+  const extension = exportCfg?.format?.extension ?? 'html';
   const outDir = path.resolve(args.cwd, args.flags.outDir ?? exportCfg?.outDir ?? 'export');
   const imageDir = path.resolve(outDir, args.flags.imageDir ?? exportCfg?.imageDir ?? 'images');
   const imageRelDir = path.relative(outDir, imageDir).split(path.sep).join('/');
@@ -45,7 +42,7 @@ export function resolveExportOptions(args: ResolveExportArgs): ExportOptions {
     outDir,
     imageDir,
     imageRelDir,
-    templatePath: path.resolve(args.cwd, template),
+    templatePath: template ? path.resolve(args.cwd, template) : null,
     extension,
   };
 }

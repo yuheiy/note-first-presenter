@@ -45,13 +45,15 @@ describe('resolveExportOptions', () => {
     });
     expect(out.templatePath).toBe(path.join(cwd, 'other.eta'));
   });
-  it('throws when export.format is missing', () => {
-    expect(() => resolveExportOptions({ cwd, config: { export: {} }, flags: {} })).toThrow(
-      /format/i,
-    );
+  it('defaults to the built-in HTML template (null templatePath) when format is unset', () => {
+    const out = resolveExportOptions({ cwd: '/proj', config: { export: {} }, flags: {} });
+    expect(out.templatePath).toBeNull();
+    expect(out.extension).toBe('html');
   });
-  it('throws when config is null', () => {
-    expect(() => resolveExportOptions({ cwd, config: null, flags: {} })).toThrow(/format/i);
+  it('defaults to HTML when config is null', () => {
+    const out = resolveExportOptions({ cwd: '/proj', config: null, flags: {} });
+    expect(out.templatePath).toBeNull();
+    expect(out.extension).toBe('html');
   });
   it('keeps imageRelDir relative even for an absolute --image-dir', () => {
     const out = resolveExportOptions({

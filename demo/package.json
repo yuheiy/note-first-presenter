@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "note-first-presenter"
+    "dev": "note-first-presenter",
+    "build": "note-first-presenter build",
+    "export": "note-first-presenter export"
   },
   "dependencies": {
     "note-first-presenter": "workspace:"

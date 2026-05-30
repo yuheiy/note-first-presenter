@@ -60,4 +60,28 @@ describe('runPipelineExport', () => {
       }),
     ).rejects.toThrow(/template/i);
   });
+
+  it('renders the built-in HTML template when templatePath is null', async () => {
+    const db = { version: 1, title: 'My Deck', outline: { type: 'doc', content: [] } };
+    const dbPath = path.join(tmp, '.note-first-presenter.json');
+    await fs.writeFile(dbPath, JSON.stringify(db));
+
+    const outFile = await runPipelineExport({
+      slidesPath: SAMPLE,
+      dbPath,
+      cacheRoot: path.join(tmp, 'cache'),
+      outDir: path.join(tmp, 'out'),
+      imageDir: path.join(tmp, 'out', 'images'),
+      imageRelDir: 'images',
+      templatePath: null,
+      extension: 'html',
+      name: 'sample',
+    });
+
+    expect(outFile).toBe(path.join(tmp, 'out', 'sample.html'));
+    const body = await fs.readFile(outFile, 'utf8');
+    expect(body).toContain('<!doctype html>');
+    expect(body).toContain('<h1>My Deck</h1>');
+    expect(body).toContain('<img src="images/0001.webp"');
+  });
 });
