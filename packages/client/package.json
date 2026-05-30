@@ -18,7 +18,6 @@
     "messages",
     "project.inlang",
     "svelte.config.js",
-    "vite.config.ts",
     "tsconfig.json"
   ],
   "type": "module",
@@ -32,9 +31,6 @@
   "dependencies": {
     "@inlang/paraglide-js": "catalog:",
     "@napi-rs/canvas": "catalog:",
-    "@sveltejs/adapter-auto": "catalog:",
-    "@sveltejs/adapter-static": "catalog:",
-    "@sveltejs/kit": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "bowser": "catalog:",
     "chokidar": "^5.0.0",

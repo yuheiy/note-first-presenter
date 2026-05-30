@@ -1,3 +1,4 @@
+import { copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
@@ -42,6 +43,8 @@ export async function runBuild(flags: RunBuildArgs): Promise<void> {
       outDir,
     }),
   );
+
+  await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '200.html'));
 
   await writeBuildData({
     outDir,
