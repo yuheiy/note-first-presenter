@@ -37,13 +37,11 @@ export async function runPipelineExport(opts: PipelineExportOptions): Promise<st
     imageRelDir: opts.imageRelDir,
   });
 
-  let output: string;
-  if (opts.templatePath === null) {
-    output = new Eta().renderString(DEFAULT_HTML_TEMPLATE, context);
-  } else {
-    const eta = new Eta({ views: path.dirname(opts.templatePath) });
-    output = eta.render(path.basename(opts.templatePath), context);
-  }
+  const template =
+    opts.templatePath === null
+      ? DEFAULT_HTML_TEMPLATE
+      : await fs.readFile(opts.templatePath, 'utf8');
+  const output = new Eta().renderString(template, context);
 
   await fs.mkdir(opts.outDir, { recursive: true });
   const outFile = path.join(opts.outDir, `${opts.name}.${opts.extension}`);
