@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build } from 'vite-plus';
+import { build } from 'vite';
 import { findClosestPkgJsonPath } from 'vitefu';
 import { writeBuildData } from '@note-first-presenter/client/pipeline/build-data';
 import { resolveBuildOptions } from './config/defaults';

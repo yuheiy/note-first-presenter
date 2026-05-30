@@ -1,4 +1,4 @@
-import type { Plugin } from 'vite-plus';
+import type { Plugin } from 'vite';
 import { loadNfpConfig } from '../config/load-config';
 import { resolveSlidesPath } from '../config/resolve-slides-path';
 import { initFileWatchers } from './file-watchers';

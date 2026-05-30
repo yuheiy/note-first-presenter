@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite-plus';
+import { createServer } from 'vite';
 import { findClosestPkgJsonPath } from 'vitefu';
 import { loadNfpConfig } from './config/load-config';
 import { resolveSlidesPath } from './config/resolve-slides-path';

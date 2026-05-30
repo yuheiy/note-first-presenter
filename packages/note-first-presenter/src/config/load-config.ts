@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { loadConfigFromFile } from 'vite-plus';
+import { loadConfigFromFile } from 'vite';
 import * as v from 'valibot';
 import { configSchema, type NoteFirstPresenterConfig } from './schema';
 

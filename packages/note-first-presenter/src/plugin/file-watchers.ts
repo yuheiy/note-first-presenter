@@ -1,6 +1,6 @@
 import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
-import type { ViteDevServer } from 'vite-plus';
+import type { ViteDevServer } from 'vite';
 import type { SlidesStatus } from '../config/resolve-slides-path';
 
 export interface WatcherInput {

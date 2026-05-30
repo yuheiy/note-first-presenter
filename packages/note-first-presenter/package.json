@@ -32,8 +32,11 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@napi-rs/canvas": "catalog:",
     "chokidar": "^5.0.0",
     "citty": "catalog:",
+    "eta": "catalog:",
+    "pdfjs-dist": "catalog:",
     "tinyglobby": "catalog:",
     "valibot": "catalog:",
     "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.22",

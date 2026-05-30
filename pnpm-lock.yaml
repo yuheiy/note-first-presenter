@@ -251,6 +251,9 @@ importers:
 
   packages/note-first-presenter:
     dependencies:
+      '@napi-rs/canvas':
+        specifier: 'catalog:'
+        version: 1.0.0
       '@note-first-presenter/client':
         specifier: 'workspace:'
         version: link:../client
@@ -260,6 +263,12 @@ importers:
       citty:
         specifier: 'catalog:'
         version: 0.2.2
+      eta:
+        specifier: 'catalog:'
+        version: 4.6.0
+      pdfjs-dist:
+        specifier: 'catalog:'
+        version: 5.7.284
       tinyglobby:
         specifier: 'catalog:'
         version: 0.2.16
