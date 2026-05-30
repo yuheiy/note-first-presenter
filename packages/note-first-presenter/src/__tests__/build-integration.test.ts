@@ -31,9 +31,9 @@ afterAll(async () => {
 });
 
 describe('note-first-presenter build (bin integration)', () => {
-  it('prerenders page shells', async () => {
+  it('emits spa shell with 200.html fallback', async () => {
     await fs.access(path.join(tmp, 'dist', 'index.html'));
-    await fs.access(path.join(tmp, 'dist', 'slideshow.html'));
+    await fs.access(path.join(tmp, 'dist', '200.html'));
   });
 
   it('writes static nfp-data with resolved meta and slide images', async () => {
