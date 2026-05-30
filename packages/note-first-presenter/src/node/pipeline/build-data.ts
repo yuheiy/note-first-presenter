@@ -1,0 +1,43 @@
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { ensurePdfState, getSlidesMeta } from '../pdf-renderer';
+import { readDb } from '../db-io';
+import { renderAllSlides } from './render-slides';
+import type { SlidesStatus } from '../../config/resolve-slides-path';
+
+export interface WriteBuildDataOptions {
+  outDir: string;
+  dbPath: string;
+  cacheRoot: string;
+  slidesStatus: SlidesStatus;
+}
+
+export async function writeBuildData(opts: WriteBuildDataOptions): Promise<void> {
+  const dataDir = path.join(opts.outDir, 'nfp-data');
+  await fs.mkdir(dataDir, { recursive: true });
+
+  const db = await readDb(opts.dbPath);
+  await fs.writeFile(path.join(dataDir, 'db.json'), JSON.stringify(db), 'utf8');
+
+  if (opts.slidesStatus.kind !== 'resolved') {
+    await fs.writeFile(path.join(dataDir, 'meta.json'), JSON.stringify(opts.slidesStatus), 'utf8');
+    return;
+  }
+
+  // The content hash names the slides dir, so resolve it first and render
+  // straight into the final location (no temp-dir rename dance needed).
+  ensurePdfState({ slidesPath: opts.slidesStatus.path, cacheRoot: opts.cacheRoot });
+  const { hash } = await getSlidesMeta();
+  const slidesDir = path.join(dataDir, 'slides', hash);
+  await fs.rm(slidesDir, { recursive: true, force: true });
+  const rendered = await renderAllSlides({
+    slidesPath: opts.slidesStatus.path,
+    cacheRoot: opts.cacheRoot,
+    outDir: slidesDir,
+  });
+  await fs.writeFile(
+    path.join(dataDir, 'meta.json'),
+    JSON.stringify({ status: 'resolved', hash: rendered.hash, pageCount: rendered.pageCount }),
+    'utf8',
+  );
+}
