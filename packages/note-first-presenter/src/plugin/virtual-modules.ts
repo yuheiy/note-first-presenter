@@ -19,7 +19,3 @@ export function buildRuntimeConfigObject(input: RuntimeConfigInput) {
     mode: input.mode,
   };
 }
-
-export function buildModeModuleSource(mode: 'dev' | 'build'): string {
-  return `export const isStatic = ${mode === 'build'};\n`;
-}

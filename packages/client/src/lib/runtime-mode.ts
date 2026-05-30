@@ -1,7 +1,7 @@
-import { isStatic } from 'virtual:nfp/mode';
 import { slideFilename } from './slide-filename';
 
-export { isStatic };
+declare const __NFP_STATIC__: boolean;
+export const isStatic = __NFP_STATIC__;
 
 export function metaUrl(): string {
   return isStatic ? '/nfp-data/meta.json' : '/api/slides/meta';

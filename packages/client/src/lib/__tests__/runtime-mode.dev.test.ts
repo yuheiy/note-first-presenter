@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vite-plus/test';
+import { beforeAll, describe, expect, it, vi } from 'vite-plus/test';
 
-vi.mock('virtual:nfp/mode', () => ({ isStatic: false }));
+beforeAll(() => {
+  vi.stubGlobal('__NFP_STATIC__', false);
+});
 
 describe('runtime-mode (dev)', () => {
   it('returns api URLs in dev mode', async () => {
