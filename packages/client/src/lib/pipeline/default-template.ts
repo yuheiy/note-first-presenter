@@ -8,7 +8,7 @@ export const DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
 <body>
 <h1><%= it.title %></h1>
 <% it.slides.forEach(function (slide) { %>
-<% if (slide.image) { %><figure><img src="<%= slide.image %>" width="<%= slide.width %>" height="<%= slide.height %>" loading="lazy" alt="" /></figure><% } %>
+<% if (slide.image) { %><figure><img src="<%= slide.image %>" width="<%= slide.width %>" height="<%= slide.height %>"<% if (slide.number > 1) { %> loading="lazy"<% } %> alt="" /></figure><% } %>
 <%~ it.toHtml(slide.notes) %>
 <% }) %>
 </body>
