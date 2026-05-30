@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { slideFilename } from '../slide-filename';
+import { slideFilename } from './slide-filename';
 
 export function slideCachePath(cacheRoot: string, hash: string, pageNumber: number): string {
   return path.join(cacheRoot, 'slides', hash, slideFilename(pageNumber));

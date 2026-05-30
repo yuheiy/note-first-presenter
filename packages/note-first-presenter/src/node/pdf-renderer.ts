@@ -106,17 +106,20 @@ export async function getSlideSize(pageNumber: number): Promise<{ width: number;
   return { width: Math.ceil(vp.width), height: Math.ceil(vp.height) };
 }
 
+type PdfPage = Awaited<ReturnType<PdfDocument['getPage']>>;
+type RenderParameters = Parameters<PdfPage['render']>[0];
+
 async function encodePage(
-  page: Awaited<ReturnType<PdfDocument['getPage']>>,
-  viewport: ReturnType<Awaited<ReturnType<PdfDocument['getPage']>>['getViewport']>,
+  page: PdfPage,
+  viewport: ReturnType<PdfPage['getViewport']>,
   width: number,
   height: number,
 ): Promise<Buffer> {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   await page.render({
-    canvas: canvas as unknown as HTMLCanvasElement,
-    canvasContext: ctx as unknown as CanvasRenderingContext2D,
+    canvas: canvas as unknown as RenderParameters['canvas'],
+    canvasContext: ctx as unknown as RenderParameters['canvasContext'],
     viewport,
   }).promise;
   return canvas.encode('webp', WEBP_QUALITY);

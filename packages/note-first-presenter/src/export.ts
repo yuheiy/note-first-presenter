@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { runPipelineExport } from '@note-first-presenter/client/pipeline/export';
+import { runPipelineExport } from './node/pipeline/export';
 import { resolveExportOptions } from './config/defaults';
 import { loadNfpConfig } from './config/load-config';
 import { resolveSlidesPath } from './config/resolve-slides-path';

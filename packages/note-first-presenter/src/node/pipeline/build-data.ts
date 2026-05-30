@@ -1,14 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { ensurePdfState, getSlidesMeta } from '../server/pdf-renderer';
-import { readDb } from '../server/db-io';
+import { ensurePdfState, getSlidesMeta } from '../pdf-renderer';
+import { readDb } from '../db-io';
 import { renderAllSlides } from './render-slides';
-
-type SlidesStatus =
-  | { kind: 'resolved'; path: string }
-  | { kind: 'configured-but-missing'; configuredPath: string }
-  | { kind: 'no-config-no-file' }
-  | { kind: 'no-config-multiple-files'; candidates: string[] };
+import type { SlidesStatus } from '../../config/resolve-slides-path';
 
 export interface WriteBuildDataOptions {
   outDir: string;

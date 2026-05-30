@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 import { renderAllSlides } from '../render-slides';
 
-const SAMPLE = path.resolve(import.meta.dirname, '../../server/__tests__/fixtures/sample.pdf');
+const SAMPLE = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
 let tmp: string;
 
 beforeEach(async () => {

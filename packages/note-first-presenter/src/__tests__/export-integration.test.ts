@@ -4,10 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 import { runExport } from '../export';
 
-const SAMPLE = path.resolve(
-  import.meta.dirname,
-  '../../../client/src/lib/server/__tests__/fixtures/sample.pdf',
-);
+const SAMPLE = path.resolve(import.meta.dirname, '../node/__tests__/fixtures/sample.pdf');
 let tmp: string;
 let origCwd: string;
 

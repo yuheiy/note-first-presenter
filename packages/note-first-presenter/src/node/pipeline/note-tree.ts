@@ -1,5 +1,5 @@
-import { docToItems, isSeparatorItem, paragraphText } from '../outliner/json-doc';
-import type { JsonNode } from '../outliner/json-doc';
+import { docToItems, isSeparatorItem, paragraphText } from './json-doc';
+import type { JsonNode } from './json-doc';
 import type { NoteNode } from './types';
 
 function toNode(item: JsonNode): NoteNode {

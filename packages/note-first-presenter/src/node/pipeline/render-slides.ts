@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { ensurePdfState, getSlideImage, getSlideSize, getSlidesMeta } from '../server/pdf-renderer';
+import { ensurePdfState, getSlideImage, getSlideSize, getSlidesMeta } from '../pdf-renderer';
 import { slideFilename } from '../slide-filename';
 
 export interface RenderedSlide {

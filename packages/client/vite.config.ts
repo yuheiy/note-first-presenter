@@ -6,17 +6,14 @@ function nfpBuildVirtualModules() {
   const raw = process.env.NFP_RUNTIME_CONFIG;
   if (!raw) return null;
   const cfg = JSON.parse(raw) as { mode?: string };
-  const RC = 'virtual:nfp/runtime-config';
   const MODE = 'virtual:nfp/mode';
   return {
     name: 'nfp-build-virtual-modules',
     resolveId(id: string) {
-      if (id === RC) return '\0' + RC;
       if (id === MODE) return '\0' + MODE;
       return null;
     },
     load(id: string) {
-      if (id === '\0' + RC) return `export default ${raw};\n`;
       if (id === '\0' + MODE) return `export const isStatic = ${cfg.mode === 'build'};\n`;
       return null;
     },

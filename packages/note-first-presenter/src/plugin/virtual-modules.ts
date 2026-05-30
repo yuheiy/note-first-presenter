@@ -20,10 +20,6 @@ export function buildRuntimeConfigObject(input: RuntimeConfigInput) {
   };
 }
 
-export function buildVirtualConfigModuleSource(input: RuntimeConfigInput): string {
-  return `export default ${JSON.stringify(buildRuntimeConfigObject(input))};\n`;
-}
-
 export function buildModeModuleSource(mode: 'dev' | 'build'): string {
   return `export const isStatic = ${mode === 'build'};\n`;
 }
