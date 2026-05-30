@@ -65,4 +65,9 @@ describe('resolveExportOptions', () => {
     expect(out.imageRelDir).toBe('../assets/imgs');
     expect(path.posix.isAbsolute(out.imageRelDir)).toBe(false);
   });
+  it('uses "." for imageRelDir when imageDir equals outDir', () => {
+    const out = resolveExportOptions({ cwd, config: null, flags: { imageDir: '.' } });
+    expect(out.imageDir).toBe(out.outDir);
+    expect(out.imageRelDir).toBe('.');
+  });
 });

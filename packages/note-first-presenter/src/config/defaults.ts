@@ -37,7 +37,7 @@ export function resolveExportOptions(args: ResolveExportArgs): ExportOptions {
   const extension = exportCfg?.format?.extension ?? 'html';
   const outDir = path.resolve(args.cwd, args.flags.outDir ?? exportCfg?.outDir ?? 'export');
   const imageDir = path.resolve(outDir, args.flags.imageDir ?? exportCfg?.imageDir ?? 'images');
-  const imageRelDir = path.relative(outDir, imageDir).split(path.sep).join('/');
+  const imageRelDir = path.relative(outDir, imageDir).split(path.sep).join('/') || '.';
   return {
     outDir,
     imageDir,
