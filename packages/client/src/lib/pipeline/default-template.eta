@@ -1,4 +1,4 @@
-export const DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US">
 <head>
 <meta charset="UTF-8" />
@@ -13,4 +13,3 @@ export const DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
 <% }) %>
 </body>
 </html>
-`;
