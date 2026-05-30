@@ -19,6 +19,11 @@ declare module 'virtual:nfp/runtime-config' {
     dbPath: string;
     cacheRoot: string;
     fullConfig: NoteFirstPresenterConfig | null;
+    mode: 'dev' | 'build';
   };
   export default config;
+}
+
+declare module 'virtual:nfp/mode' {
+  export const isStatic: boolean;
 }

@@ -7,6 +7,7 @@
 	import { countNoteGroups } from '$lib/outliner/count-groups';
 	import Outliner from '$lib/outliner/Outliner.svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { dbUrl, isStatic } from '$lib/runtime-mode';
 	import { api } from '$lib/server-client';
 	import SlideList from '$lib/slide-list/SlideList.svelte';
 	import SlideListErrorOverlay from '$lib/slide-status/SlideListErrorOverlay.svelte';
@@ -20,7 +21,7 @@
 
 	const db = new DbStore({
 		initial: { version: 1, title: '', outline: EMPTY_DOC },
-		save: (state) => api('/api/db', { method: 'PUT', body: state }),
+		save: (state) => (isStatic ? Promise.resolve() : api('/api/db', { method: 'PUT', body: state })),
 	});
 	const meta = new SlidesMetaStore();
 	const active = new ActiveSlideStore();
@@ -40,7 +41,7 @@
 		active.hydrate();
 		listOpen = (localStorage.getItem(LIST_OPEN_KEY) ?? 'true') === 'true';
 		void (async () => {
-			const initial = (await api('/api/db')) as DbV1;
+			const initial = (await api(dbUrl())) as DbV1;
 			db.replace(initial);
 			await meta.load();
 			ready = true;
@@ -95,6 +96,7 @@
 		value={db.state.title}
 		oninput={onTitleInput}
 		aria-label={m.title_placeholder()}
+		readonly={isStatic}
 	/>
 	{#if db.saveStatus === 'error'}
 		<span role="alert" aria-live="polite" class="error">{m.save_error()}</span>
@@ -124,6 +126,7 @@
 				doc={db.state.outline}
 				onChange={onOutlineChange}
 				onActiveSlideChange={onActiveSlideFromEditor}
+				editable={!isStatic}
 			/>
 		{/if}
 	</section>

@@ -1,8 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { slideFilename } from '../slide-filename';
 
 export function slideCachePath(cacheRoot: string, hash: string, pageNumber: number): string {
-  return path.join(cacheRoot, 'slides', hash, `${String(pageNumber).padStart(4, '0')}.webp`);
+  return path.join(cacheRoot, 'slides', hash, slideFilename(pageNumber));
 }
 
 export async function pruneOtherHashes(cacheRoot: string, currentHash: string): Promise<void> {

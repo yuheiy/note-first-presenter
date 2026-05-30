@@ -22,6 +22,11 @@
     "tsconfig.json"
   ],
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./pipeline/export": "./src/lib/pipeline/export.ts",
+    "./pipeline/build-data": "./src/lib/pipeline/build-data.ts"
+  },
   "scripts": {
     "test": "vp test",
     "check": "vp check"
@@ -30,11 +35,13 @@
     "@inlang/paraglide-js": "catalog:",
     "@napi-rs/canvas": "catalog:",
     "@sveltejs/adapter-auto": "catalog:",
+    "@sveltejs/adapter-static": "catalog:",
     "@sveltejs/kit": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "bowser": "catalog:",
     "chokidar": "^5.0.0",
     "esm-env": "catalog:",
+    "eta": "catalog:",
     "ofetch": "catalog:",
     "pdfjs-dist": "catalog:",
     "prosemirror-commands": "catalog:",

@@ -1,3 +1,5 @@
+export const prerender = false;
+
 import { error, json } from '@sveltejs/kit';
 import * as v from 'valibot';
 import runtimeConfig from 'virtual:nfp/runtime-config';

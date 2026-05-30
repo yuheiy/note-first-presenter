@@ -42,6 +42,8 @@ catalog:
   pdf-lib: ^1.17.1
   happy-dom: ^20.9.0
   '@typescript/native-preview': 7.0.0-dev.20260527.2
+  eta: ^4.6.0
+  '@sveltejs/adapter-static': ^3.0.10
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'

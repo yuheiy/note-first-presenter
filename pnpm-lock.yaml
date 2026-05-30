@@ -18,6 +18,9 @@ catalogs:
     '@sveltejs/adapter-auto':
       specifier: ^7.0.1
       version: 7.0.1
+    '@sveltejs/adapter-static':
+      specifier: ^3.0.10
+      version: 3.0.10
     '@sveltejs/kit':
       specifier: ^2.61.1
       version: 2.61.1
@@ -42,6 +45,9 @@ catalogs:
     esm-env:
       specifier: ^1.2.2
       version: 1.2.2
+    eta:
+      specifier: ^4.6.0
+      version: 4.6.0
     happy-dom:
       specifier: ^20.9.0
       version: 20.9.0
@@ -157,6 +163,9 @@ importers:
       '@sveltejs/adapter-auto':
         specifier: 'catalog:'
         version: 7.0.1(@sveltejs/kit@2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19)))
+      '@sveltejs/adapter-static':
+        specifier: 'catalog:'
+        version: 3.0.10(@sveltejs/kit@2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19)))
       '@sveltejs/kit':
         specifier: 'catalog:'
         version: 2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19))
@@ -172,6 +181,9 @@ importers:
       esm-env:
         specifier: 'catalog:'
         version: 1.2.2
+      eta:
+        specifier: 'catalog:'
+        version: 4.6.0
       ofetch:
         specifier: 'catalog:'
         version: 1.5.1
@@ -239,6 +251,9 @@ importers:
 
   packages/note-first-presenter:
     dependencies:
+      '@napi-rs/canvas':
+        specifier: 'catalog:'
+        version: 1.0.0
       '@note-first-presenter/client':
         specifier: 'workspace:'
         version: link:../client
@@ -248,6 +263,12 @@ importers:
       citty:
         specifier: 'catalog:'
         version: 0.2.2
+      eta:
+        specifier: 'catalog:'
+        version: 4.6.0
+      pdfjs-dist:
+        specifier: 'catalog:'
+        version: 5.7.284
       tinyglobby:
         specifier: 'catalog:'
         version: 0.2.16
@@ -894,6 +915,11 @@ packages:
     peerDependencies:
       '@sveltejs/kit': ^2.0.0
 
+  '@sveltejs/adapter-static@3.0.10':
+    resolution: {integrity: sha512-7D9lYFWJmB7zxZyTE/qxjksvMqzMuYrrsyh1f4AlZqeZeACPRySjbC3aFiY55wb1tWUaKOQG9PVbm74JcN2Iew==}
+    peerDependencies:
+      '@sveltejs/kit': ^2.0.0
+
   '@sveltejs/kit@2.61.1':
     resolution: {integrity: sha512-Ny8s1SR1TyQS2hD2Rvw0XKzU2Nw1eUF52dTb6T2bdcgz7wSC+Nyb5IwjWYlR4b2dvbbR5NJDiQwHg3rnNseghg==}
     engines: {node: '>=18.13'}
@@ -1293,6 +1319,10 @@ packages:
 
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
+
+  eta@4.6.0:
+    resolution: {integrity: sha512-lW6is4T1NFOYnmqGZIfvixqj7A7sSvScF+DN8EK6K58xI5MZ5UvYe0GjopxOXQtZvUn4eDdVuZ8XSoYWTMEKwA==}
+    engines: {node: '>=20'}
 
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
@@ -2184,6 +2214,10 @@ snapshots:
     dependencies:
       '@sveltejs/kit': 2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19))
 
+  '@sveltejs/adapter-static@3.0.10(@sveltejs/kit@2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19)))':
+    dependencies:
+      '@sveltejs/kit': 2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19))
+
   '@sveltejs/kit@2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.55.10)(vite@8.0.14(@types/node@22.19.19)))(svelte@5.55.10)(typescript@6.0.3)(vite@8.0.14(@types/node@22.19.19))':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -2489,6 +2523,8 @@ snapshots:
   estree-walker@3.0.3:
     dependencies:
       '@types/estree': 1.0.9
+
+  eta@4.6.0: {}
 
   expect-type@1.3.0: {}
 

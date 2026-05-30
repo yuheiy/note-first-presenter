@@ -6,15 +6,24 @@ export interface RuntimeConfigInput {
   cwd: string;
   slidesStatus: SlidesStatus;
   fullConfig: NoteFirstPresenterConfig | null;
+  mode: 'dev' | 'build';
 }
 
-export function buildVirtualConfigModuleSource(input: RuntimeConfigInput): string {
-  const cfg = {
+export function buildRuntimeConfigObject(input: RuntimeConfigInput) {
+  return {
     cwd: input.cwd,
     slidesStatus: input.slidesStatus,
     dbPath: path.join(input.cwd, '.note-first-presenter.json'),
     cacheRoot: path.join(input.cwd, 'node_modules', '.note-first-presenter'),
     fullConfig: input.fullConfig,
+    mode: input.mode,
   };
-  return `export default ${JSON.stringify(cfg)};\n`;
+}
+
+export function buildVirtualConfigModuleSource(input: RuntimeConfigInput): string {
+  return `export default ${JSON.stringify(buildRuntimeConfigObject(input))};\n`;
+}
+
+export function buildModeModuleSource(mode: 'dev' | 'build'): string {
+  return `export const isStatic = ${mode === 'build'};\n`;
 }

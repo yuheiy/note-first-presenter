@@ -32,6 +32,7 @@
 		doc: unknown;
 		onChange: (doc: unknown) => void;
 		onActiveSlideChange: (n: number) => void;
+		editable?: boolean;
 	}
 
 	const props: Props = $props();
@@ -89,6 +90,7 @@
 		);
 		const editor = new EditorView(mountEl, {
 			state: initialState,
+			editable: () => props.editable ?? true,
 			attributes: {
 				role: 'textbox',
 				'aria-multiline': 'true',

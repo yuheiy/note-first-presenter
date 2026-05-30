@@ -1,18 +1,18 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import { build } from 'vite';
 import { findClosestPkgJsonPath } from 'vitefu';
+import { writeBuildData } from '@note-first-presenter/client/pipeline/build-data';
+import { resolveBuildOptions } from './config/defaults';
 import { loadNfpConfig } from './config/load-config';
 import { resolveSlidesPath } from './config/resolve-slides-path';
-import { noteFirstPresenterPlugin } from './plugin';
+import { buildRuntimeConfigObject } from './plugin/virtual-modules';
 
-export interface StartServerOptions {
-  port: number;
-  host: string;
-  open: boolean;
+export interface RunBuildArgs {
+  outDir?: string;
 }
 
-export async function startServer(opts: StartServerOptions): Promise<void> {
+export async function runBuild(flags: RunBuildArgs): Promise<void> {
   const cwd = process.cwd();
   const { config, filePath } = await loadNfpConfig(cwd);
   const slidesStatus = await resolveSlidesPath({
@@ -20,6 +20,7 @@ export async function startServer(opts: StartServerOptions): Promise<void> {
     configuredSlides: config?.slides,
     configFile: filePath,
   });
+  const { outDir } = resolveBuildOptions({ cwd, config, flags });
 
   const clientPkgJsonStart = path.dirname(
     fileURLToPath(import.meta.resolve('@note-first-presenter/client/package.json')),
@@ -29,28 +30,23 @@ export async function startServer(opts: StartServerOptions): Promise<void> {
   const clientRoot = path.dirname(clientPkgJson);
 
   process.chdir(clientRoot);
+  process.env.NFP_STATIC = '1';
+  process.env.NFP_OUT_DIR = outDir;
+  process.env.NFP_RUNTIME_CONFIG = JSON.stringify(
+    buildRuntimeConfigObject({ cwd, slidesStatus, fullConfig: config, mode: 'build' }),
+  );
 
-  const server = await createServer({
+  await build({
     root: clientRoot,
     configFile: path.join(clientRoot, 'vite.config.ts'),
-    server: { port: opts.port, host: opts.host, open: opts.open ? '/' : false },
-    plugins: [
-      noteFirstPresenterPlugin({
-        cwd,
-        slidesStatus,
-        fullConfig: config,
-        mode: 'dev',
-      }),
-    ],
   });
 
-  await server.listen();
-  server.printUrls();
+  await writeBuildData({
+    outDir,
+    dbPath: path.join(cwd, '.note-first-presenter.json'),
+    cacheRoot: path.join(cwd, 'node_modules', '.note-first-presenter'),
+    slidesStatus,
+  });
 
-  const shutdown = async () => {
-    await server.close();
-    process.exit(0);
-  };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  console.log(`Built static site to ${outDir}`);
 }
