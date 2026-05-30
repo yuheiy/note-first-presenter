@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 import { findClosestPkgJsonPath } from 'vitefu';
 import { loadNfpConfig } from './config/load-config';
 import { resolveSlidesPath } from './config/resolve-slides-path';
-import { noteFirstPresenterPlugin } from './plugin';
+import { createViteConfig } from './vite/config';
 
 export interface StartServerOptions {
   port: number;
@@ -31,17 +31,15 @@ export async function startServer(opts: StartServerOptions): Promise<void> {
   process.chdir(clientRoot);
 
   const server = await createServer({
-    root: clientRoot,
-    configFile: path.join(clientRoot, 'vite.config.ts'),
+    ...createViteConfig({
+      cwd,
+      slidesStatus,
+      fullConfig: config,
+      mode: 'dev',
+      clientRoot,
+      isStatic: false,
+    }),
     server: { port: opts.port, host: opts.host, open: opts.open ? '/' : false },
-    plugins: [
-      noteFirstPresenterPlugin({
-        cwd,
-        slidesStatus,
-        fullConfig: config,
-        mode: 'dev',
-      }),
-    ],
   });
 
   await server.listen();
