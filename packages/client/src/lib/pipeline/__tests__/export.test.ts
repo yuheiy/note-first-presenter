@@ -80,7 +80,7 @@ describe('runPipelineExport', () => {
 
     expect(outFile).toBe(path.join(tmp, 'out', 'sample.html'));
     const body = await fs.readFile(outFile, 'utf8');
-    expect(body).toContain('<!doctype html>');
+    expect(body).toContain('<!DOCTYPE html>');
     expect(body).toContain('<h1>My Deck</h1>');
     expect(body).toContain('<img src="images/0001.webp"');
   });
