@@ -1,23 +1,30 @@
 import type { Plugin } from 'vite';
+import type { NoteFirstPresenterConfig } from '../config';
 import { loadNfpConfig } from '../config';
-import { resolveSlidesPath } from '../slides';
-import { createApiMiddleware } from '../vite/api';
-import { initFileWatchers } from '../vite/watchers';
-import { buildRuntimeConfigObject, type RuntimeConfigInput } from './virtual-modules';
+import { cacheRootFor, resolveSlidesPath, type SlidesStatus } from '../slides';
+import { dbPathFor } from '../notes';
+import { createApiMiddleware } from './api';
+import { initFileWatchers } from './watchers';
 
-export type NfpPluginOptions = RuntimeConfigInput;
+export interface NfpPluginOptions {
+  cwd: string;
+  slidesStatus: SlidesStatus;
+  fullConfig: NoteFirstPresenterConfig | null;
+  mode: 'dev' | 'build';
+}
 
-export function noteFirstPresenterPlugin(opts: NfpPluginOptions): Plugin {
+export function ViteNfpPlugin(opts: NfpPluginOptions): Plugin {
   let current = opts;
   let closeWatchers: (() => Promise<void>) | null = null;
   return {
     name: 'note-first-presenter',
     configureServer(server) {
       server.middlewares.use(
-        createApiMiddleware(() => {
-          const rc = buildRuntimeConfigObject(current);
-          return { dbPath: rc.dbPath, cacheRoot: rc.cacheRoot, slidesStatus: rc.slidesStatus };
-        }),
+        createApiMiddleware(() => ({
+          dbPath: dbPathFor(current.cwd),
+          cacheRoot: cacheRootFor(current.cwd),
+          slidesStatus: current.slidesStatus,
+        })),
       );
       closeWatchers = initFileWatchers({
         cwd: current.cwd,

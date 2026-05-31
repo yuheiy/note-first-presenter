@@ -1,12 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
 import type { InlineConfig } from 'vite';
 import { findClosestPkgJsonPath } from 'vitefu';
 import type { NoteFirstPresenterConfig } from '../config';
 import type { SlidesStatus } from '../slides';
-import { noteFirstPresenterPlugin } from '../plugin';
+import { createNfpVitePlugins } from '../vite';
 
 export async function resolveClientRoot(): Promise<string> {
   const clientPkgJsonStart = path.dirname(
@@ -41,15 +39,7 @@ export function createViteConfig(input: CreateViteConfigInput): InlineConfig {
     define: {
       __NFP_STATIC__: JSON.stringify(isStatic),
     },
-    plugins: [
-      svelte(),
-      paraglideVitePlugin({
-        project: path.join(clientRoot, 'project.inlang'),
-        outdir: path.join(clientRoot, 'src/lib/paraglide'),
-        strategy: ['preferredLanguage', 'baseLocale'],
-      }),
-      noteFirstPresenterPlugin({ cwd, slidesStatus, fullConfig, mode }),
-    ],
+    plugins: createNfpVitePlugins({ clientRoot, cwd, slidesStatus, fullConfig, mode }),
     build: outDir ? { outDir, emptyOutDir: true } : undefined,
   };
 }
