@@ -1,10 +1,9 @@
 import { copyFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defineCommand, runMain } from 'citty';
 import { build as viteBuild, createServer } from 'vite';
-import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../package.json' with { type: 'json' };
+import { resolveClientRoot } from './commands/shared';
 import { loadNfpConfig, resolveBuildOptions, resolveExportOptions } from './config';
 import { cacheRootFor, resolveSlidesPath } from './slides';
 import { writeBuildData } from './node/pipeline/build-data';
@@ -16,15 +15,6 @@ const sharedServerArgs = {
   host: { type: 'string', default: 'localhost' },
   open: { type: 'boolean', default: false, alias: 'o' },
 } as const;
-
-async function resolveClientRoot(): Promise<string> {
-  const clientPkgJsonStart = path.dirname(
-    fileURLToPath(import.meta.resolve('@note-first-presenter/client/package.json')),
-  );
-  const clientPkgJson = await findClosestPkgJsonPath(clientPkgJsonStart);
-  if (!clientPkgJson) throw new Error('Cannot resolve @note-first-presenter/client');
-  return path.dirname(clientPkgJson);
-}
 
 const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
