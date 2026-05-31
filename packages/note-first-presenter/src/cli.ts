@@ -1,14 +1,10 @@
-import { copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { defineCommand, runMain } from 'citty';
-import { build as viteBuild } from 'vite';
 import pkg from '../package.json' with { type: 'json' };
 import { resolveClientRoot } from './commands/shared';
 import { loadNfpConfig, resolveBuildOptions, resolveExportOptions } from './config';
 import { cacheRootFor, resolveSlidesPath } from './slides';
-import { writeBuildData } from './node/pipeline/build-data';
 import { runPipelineExport } from './node/pipeline/export';
-import { createViteConfig } from './vite/config';
 
 const sharedServerArgs = {
   port: { type: 'string', default: '5173', alias: 'p' },
@@ -74,26 +70,8 @@ const build = defineCommand({
     const clientRoot = await resolveClientRoot();
     process.chdir(clientRoot);
 
-    await viteBuild(
-      createViteConfig({
-        cwd,
-        slidesStatus,
-        fullConfig: config,
-        mode: 'build',
-        clientRoot,
-        isStatic: true,
-        outDir,
-      }),
-    );
-
-    await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '200.html'));
-
-    await writeBuildData({
-      outDir,
-      dbPath: path.join(cwd, '.note-first-presenter.json'),
-      cacheRoot: cacheRootFor(cwd),
-      slidesStatus,
-    });
+    const { build } = await import('./commands/build');
+    await build({ cwd, slidesStatus, fullConfig: config, clientRoot, outDir });
 
     console.log(`Built static site to ${outDir}`);
   },
