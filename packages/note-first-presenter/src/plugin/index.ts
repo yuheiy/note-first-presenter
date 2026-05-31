@@ -1,8 +1,8 @@
 import type { Plugin } from 'vite';
 import { loadNfpConfig } from '../config';
 import { resolveSlidesPath } from '../slides';
-import { createApiMiddleware } from '../middleware/api';
-import { initFileWatchers } from './file-watchers';
+import { createApiMiddleware } from '../vite/api';
+import { initFileWatchers } from '../vite/watchers';
 import { buildRuntimeConfigObject, type RuntimeConfigInput } from './virtual-modules';
 
 export type NfpPluginOptions = RuntimeConfigInput;
