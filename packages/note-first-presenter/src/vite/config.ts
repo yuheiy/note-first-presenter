@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import type { InlineConfig } from 'vite';
 import { noteFirstPresenterPlugin, type NfpPluginOptions } from '../plugin';
 
@@ -25,7 +25,7 @@ export function createViteConfig(input: NfpViteConfigInput): InlineConfig {
       __NFP_STATIC__: JSON.stringify(isStatic),
     },
     plugins: [
-      svelte({ preprocess: vitePreprocess() }),
+      svelte(),
       paraglideVitePlugin({
         project: path.join(clientRoot, 'project.inlang'),
         outdir: path.join(clientRoot, 'src/lib/paraglide'),
