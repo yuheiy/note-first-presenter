@@ -30,6 +30,13 @@ export function findListItemAncestor($pos: ResolvedPos): ItemAncestor | null {
 }
 
 /**
+ * Transaction meta flag that callers (e.g. `rangeAwareSinkListItem`) use to
+ * tell `textSelectionClamp` that the multi-item TextSelection they just set
+ * is intentional and should be left alone.
+ */
+export const SKIP_TEXT_SELECTION_CLAMP_META = 'nfp-skip-text-selection-clamp';
+
+/**
  * Clamp a TextSelection whose head has crossed the boundary of the anchor's
  * list_item back to the edge of that item's paragraph. The keymap promotes
  * Shift+ArrowUp at line start and Shift+ArrowDown at line end to a
@@ -38,7 +45,8 @@ export function findListItemAncestor($pos: ResolvedPos): ItemAncestor | null {
  */
 export const textSelectionClamp = new Plugin({
   key: new PluginKey('nfp-text-selection-clamp'),
-  appendTransaction(_transactions, oldState, newState) {
+  appendTransaction(transactions, oldState, newState) {
+    if (transactions.some((tr) => tr.getMeta(SKIP_TEXT_SELECTION_CLAMP_META))) return null;
     const oldSel = oldState.selection;
     const newSel = newState.selection;
     if (!(newSel instanceof TextSelection)) return null;

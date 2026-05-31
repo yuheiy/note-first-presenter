@@ -1,6 +1,7 @@
 import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { type Command, TextSelection } from 'prosemirror-state';
 import { isNodeRangeSelection } from '../selections/node-range-selection';
+import { SKIP_TEXT_SELECTION_CLAMP_META } from '../plugins/text-selection-clamp';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
@@ -21,7 +22,12 @@ function withTextSelectionOverRange(state: Parameters<Command>[0]): Parameters<C
   const lastParaEnd = lastPos - lastItem.nodeSize + 2 + lastPara.content.size;
   const $from = state.doc.resolve(fromTextPos);
   const $to = state.doc.resolve(lastParaEnd);
-  return state.apply(state.tr.setSelection(TextSelection.between($from, $to)));
+  // Tag the synthetic TextSelection so textSelectionClamp doesn't snap it
+  // back to the anchor item — the cross-item span is intentional here.
+  const tr = state.tr
+    .setSelection(TextSelection.between($from, $to))
+    .setMeta(SKIP_TEXT_SELECTION_CLAMP_META, true);
+  return state.apply(tr);
 }
 
 export const rangeAwareSinkListItem: Command = (state, dispatch) => {
