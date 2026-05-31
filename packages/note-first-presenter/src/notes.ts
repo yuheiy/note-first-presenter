@@ -1,45 +1,3 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
-import * as v from 'valibot';
-
-export const dbInputSchema = v.object({
-  version: v.literal(1),
-  title: v.string(),
-  outline: v.unknown(),
-});
-
-export type DbInput = v.InferOutput<typeof dbInputSchema>;
-
-export function emptyDb(): DbInput {
-  return {
-    version: 1,
-    title: '',
-    outline: {
-      type: 'doc',
-      content: [
-        {
-          type: 'bullet_list',
-          content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
-        },
-      ],
-    },
-  };
-}
-
-export async function readDb(dbPath: string): Promise<DbInput> {
-  try {
-    const text = await fs.readFile(dbPath, 'utf8');
-    return JSON.parse(text) as DbInput;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyDb();
-    throw err;
-  }
-}
-
-export async function writeDb(dbPath: string, db: DbInput): Promise<void> {
-  await fs.writeFile(dbPath, `${JSON.stringify(db, null, 2)}\n`, 'utf8');
-}
-
 export interface JsonNode {
   type: string;
   content?: JsonNode[];
@@ -91,8 +49,4 @@ export function splitNoteGroups(outline: unknown): NoteNode[][] {
     groups[groups.length - 1].push(toNode(item));
   }
   return groups;
-}
-
-export function dbPathFor(cwd: string): string {
-  return path.join(cwd, '.note-first-presenter.json');
 }

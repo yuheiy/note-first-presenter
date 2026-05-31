@@ -1,8 +1,9 @@
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Eta } from 'eta';
-import { dbPathFor, readDb, splitNoteGroups, type NoteNode } from '../notes';
-import { cacheRootFor, renderAllSlides, type RenderAllResult, type SlidesStatus } from '../slides';
+import { readDb } from '../db';
+import { splitNoteGroups, type NoteNode } from '../notes';
+import { renderAllSlides, type RenderAllResult, type SlidesStatus } from '../slides';
 
 export interface ExportSlide {
   number: number;
@@ -94,8 +95,7 @@ export const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 
 interface PipelineExportOptions {
   slidesPath: string;
-  dbPath: string;
-  cacheRoot: string;
+  cwd?: string;
   outDir: string;
   imageDir: string;
   imageRelDir: string;
@@ -104,41 +104,43 @@ interface PipelineExportOptions {
   name: string;
 }
 
-async function runPipelineExport(opts: PipelineExportOptions): Promise<string> {
-  if (opts.templatePath !== null && !existsSync(opts.templatePath)) {
-    throw new Error(`export template not found: ${opts.templatePath}`);
+async function runPipelineExport({
+  slidesPath,
+  cwd = process.cwd(),
+  outDir,
+  imageDir,
+  imageRelDir,
+  templatePath,
+  extension,
+  name,
+}: PipelineExportOptions): Promise<string> {
+  if (templatePath !== null && !existsSync(templatePath)) {
+    throw new Error(`export template not found: ${templatePath}`);
   }
-  const rendered = await renderAllSlides({
-    slidesPath: opts.slidesPath,
-    cacheRoot: opts.cacheRoot,
-    outDir: opts.imageDir,
-  });
-  const db = await readDb(opts.dbPath);
+  const rendered = await renderAllSlides({ slidesPath, cwd, outDir: imageDir });
+  const db = await readDb({ cwd });
   const groups = splitNoteGroups(db.outline);
   const context = buildExportContext({
     title: db.title,
     rendered,
     groups,
-    imageRelDir: opts.imageRelDir,
+    imageRelDir,
   });
 
   const output =
-    opts.templatePath === null
+    templatePath === null
       ? new Eta().renderString(DEFAULT_TEMPLATE, context)
-      : new Eta({ views: path.dirname(opts.templatePath) }).render(
-          path.basename(opts.templatePath),
-          context,
-        );
+      : new Eta({ views: path.dirname(templatePath) }).render(path.basename(templatePath), context);
 
-  await fs.mkdir(opts.outDir, { recursive: true });
-  const outFile = path.join(opts.outDir, `${opts.name}.${opts.extension}`);
+  await fs.mkdir(outDir, { recursive: true });
+  const outFile = path.join(outDir, `${name}.${extension}`);
   await fs.writeFile(outFile, output, 'utf8');
   return outFile;
 }
 
 export interface ExportPageInput {
   slidesStatus: SlidesStatus;
-  cwd: string;
+  cwd?: string;
   outDir: string;
   imageDir: string;
   imageRelDir: string;
@@ -147,19 +149,13 @@ export interface ExportPageInput {
   name: string;
 }
 
-export async function exportPage(input: ExportPageInput): Promise<string> {
-  if (input.slidesStatus.kind !== 'resolved') {
-    throw new Error(`slides not available: ${input.slidesStatus.kind}`);
+export async function exportPage({ slidesStatus, cwd, ...rest }: ExportPageInput): Promise<string> {
+  if (slidesStatus.kind !== 'resolved') {
+    throw new Error(`slides not available: ${slidesStatus.kind}`);
   }
   return runPipelineExport({
-    slidesPath: input.slidesStatus.path,
-    dbPath: dbPathFor(input.cwd),
-    cacheRoot: cacheRootFor(input.cwd),
-    outDir: input.outDir,
-    imageDir: input.imageDir,
-    imageRelDir: input.imageRelDir,
-    templatePath: input.templatePath,
-    extension: input.extension,
-    name: input.name,
+    slidesPath: slidesStatus.path,
+    cwd,
+    ...rest,
   });
 }

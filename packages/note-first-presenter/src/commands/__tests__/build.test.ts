@@ -23,8 +23,7 @@ describe('writeBuildData', () => {
 
     await writeBuildData({
       outDir,
-      dbPath,
-      cacheRoot: path.join(tmp, 'cache'),
+      cwd: tmp,
       slidesStatus: { kind: 'resolved', path: SAMPLE },
     });
 
@@ -47,8 +46,7 @@ describe('writeBuildData', () => {
 
     await writeBuildData({
       outDir,
-      dbPath,
-      cacheRoot: path.join(tmp, 'cache'),
+      cwd: tmp,
       slidesStatus: { kind: 'no-config-no-file' },
     });
 

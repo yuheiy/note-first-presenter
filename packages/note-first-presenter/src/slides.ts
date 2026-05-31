@@ -12,21 +12,25 @@ export type SlidesStatus =
   | { kind: 'no-config-multiple-files'; candidates: string[] };
 
 export interface ResolveSlidesArgs {
-  cwd: string;
+  cwd?: string;
   configuredSlides: string | undefined;
   configFile: string | null;
 }
 
-export async function resolveSlidesPath(args: ResolveSlidesArgs): Promise<SlidesStatus> {
-  if (args.configuredSlides) {
-    const base = args.configFile ? path.dirname(args.configFile) : args.cwd;
-    const abs = path.resolve(base, args.configuredSlides);
+export async function resolveSlidesPath({
+  cwd = process.cwd(),
+  configuredSlides,
+  configFile,
+}: ResolveSlidesArgs): Promise<SlidesStatus> {
+  if (configuredSlides) {
+    const base = configFile ? path.dirname(configFile) : cwd;
+    const abs = path.resolve(base, configuredSlides);
     return existsSync(abs)
       ? { kind: 'resolved', path: abs }
       : { kind: 'configured-but-missing', configuredPath: abs };
   }
 
-  const pdfs = await glob('*.pdf', { cwd: args.cwd, absolute: true });
+  const pdfs = await glob('*.pdf', { cwd, absolute: true });
   if (pdfs.length === 0) return { kind: 'no-config-no-file' };
   if (pdfs.length === 1) return { kind: 'resolved', path: pdfs[0] };
   return { kind: 'no-config-multiple-files', candidates: pdfs };
@@ -84,13 +88,19 @@ interface PdfState {
 
 let state: PdfState | null = null;
 
-export function resetPdfState(input: { slidesPath: string; cacheRoot: string }) {
-  state = { slidesPath: input.slidesPath, cacheRoot: input.cacheRoot, pdfP: null };
+export interface PdfStateInput {
+  slidesPath: string;
+  cwd?: string;
 }
 
-export function ensurePdfState(input: { slidesPath: string; cacheRoot: string }) {
-  if (!state || state.slidesPath !== input.slidesPath || state.cacheRoot !== input.cacheRoot) {
-    resetPdfState(input);
+export function resetPdfState({ slidesPath, cwd = process.cwd() }: PdfStateInput) {
+  state = { slidesPath, cacheRoot: getCacheRoot(cwd), pdfP: null };
+}
+
+export function ensurePdfState({ slidesPath, cwd = process.cwd() }: PdfStateInput) {
+  const cacheRoot = getCacheRoot(cwd);
+  if (!state || state.slidesPath !== slidesPath || state.cacheRoot !== cacheRoot) {
+    state = { slidesPath, cacheRoot, pdfP: null };
   }
 }
 
@@ -191,25 +201,29 @@ export interface RenderAllResult {
 
 export interface RenderAllOptions {
   slidesPath: string;
-  cacheRoot: string;
+  cwd?: string;
   outDir: string;
 }
 
-export async function renderAllSlides(opts: RenderAllOptions): Promise<RenderAllResult> {
-  ensurePdfState({ slidesPath: opts.slidesPath, cacheRoot: opts.cacheRoot });
+export async function renderAllSlides({
+  slidesPath,
+  cwd = process.cwd(),
+  outDir,
+}: RenderAllOptions): Promise<RenderAllResult> {
+  ensurePdfState({ slidesPath, cwd });
   const { hash, pageCount } = await getSlidesMeta();
-  await fs.mkdir(opts.outDir, { recursive: true });
+  await fs.mkdir(outDir, { recursive: true });
   const slides: RenderedSlide[] = [];
   for (let n = 1; n <= pageCount; n++) {
     const { data } = await getSlideImage(n);
     const { width, height } = await getSlideSize(n);
     const name = slideFilename(n);
-    await fs.writeFile(path.join(opts.outDir, name), data);
+    await fs.writeFile(path.join(outDir, name), data);
     slides.push({ number: n, width, height, file: name });
   }
   return { hash, pageCount, slides };
 }
 
-export function cacheRootFor(cwd: string): string {
+function getCacheRoot(cwd: string): string {
   return path.join(cwd, 'node_modules', '.note-first-presenter');
 }

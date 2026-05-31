@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vite-plus/test';
+import { emptyDb } from '../../db';
 import type { SlidesStatus } from '../../slides';
-import { type ApiContext, createApiMiddleware } from '../api';
+import { handleApiRequest, type RequestContext } from '../plugin';
 
 interface MockResponse {
   statusCode: number;
@@ -18,11 +19,10 @@ interface MockResponse {
 function createMockReq(method: string, url: string, body?: string) {
   const req = body == null ? new Readable({ read() {} }) : Readable.from([Buffer.from(body)]);
   if (body == null) {
-    // No body: end the stream immediately for 'end' listeners.
     process.nextTick(() => req.push(null));
   }
   return Object.assign(req, { method, url }) as unknown as Parameters<
-    ReturnType<typeof createApiMiddleware>
+    ReturnType<typeof handleApiRequest>
   >[0];
 }
 
@@ -52,23 +52,22 @@ function createMockRes(): MockResponse {
 }
 
 function asRes(res: MockResponse) {
-  return res as unknown as Parameters<ReturnType<typeof createApiMiddleware>>[1];
+  return res as unknown as Parameters<ReturnType<typeof handleApiRequest>>[1];
 }
 
-async function mkCtx(overrides?: Partial<ApiContext>): Promise<ApiContext> {
+async function mkCtx(overrides?: Partial<RequestContext>): Promise<RequestContext> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-api-'));
   return {
-    dbPath: path.join(dir, '.note-first-presenter.json'),
-    cacheRoot: path.join(dir, 'cache'),
+    cwd: dir,
     slidesStatus: { kind: 'no-config-no-file' },
     ...overrides,
   };
 }
 
-describe('createApiMiddleware', () => {
-  it('GET /api/db on a missing dbPath returns 200 with empty db', async () => {
+describe('handleApiRequest', () => {
+  it('GET /api/db on a missing db file returns 200 with empty db', async () => {
     const ctx = await mkCtx();
-    const mw = createApiMiddleware(() => ctx);
+    const mw = handleApiRequest(() => ctx);
     const res = createMockRes();
     mw(createMockReq('GET', '/api/db'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -76,24 +75,12 @@ describe('createApiMiddleware', () => {
     await res.done;
     expect(res.statusCode).toBe(200);
     const parsed = JSON.parse(res.body!.toString());
-    expect(parsed).toEqual({
-      version: 1,
-      title: '',
-      outline: {
-        type: 'doc',
-        content: [
-          {
-            type: 'bullet_list',
-            content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
-          },
-        ],
-      },
-    });
+    expect(parsed).toEqual(emptyDb());
   });
 
   it('PUT /api/db with a valid body returns 204 and writes the file', async () => {
     const ctx = await mkCtx();
-    const mw = createApiMiddleware(() => ctx);
+    const mw = handleApiRequest(() => ctx);
     const res = createMockRes();
     const db = { version: 1, title: 'x', outline: { type: 'doc', content: [] } };
     mw(createMockReq('PUT', '/api/db', JSON.stringify(db)), asRes(res), () => {
@@ -102,13 +89,15 @@ describe('createApiMiddleware', () => {
     await res.done;
     expect(res.statusCode).toBe(204);
     expect(res.body!.length).toBe(0);
-    const written = JSON.parse(await fs.readFile(ctx.dbPath, 'utf8'));
+    const written = JSON.parse(
+      await fs.readFile(path.join(ctx.cwd, '.note-first-presenter.json'), 'utf8'),
+    );
     expect(written).toEqual(db);
   });
 
   it('PUT /api/db with an invalid body returns 400', async () => {
     const ctx = await mkCtx();
-    const mw = createApiMiddleware(() => ctx);
+    const mw = handleApiRequest(() => ctx);
     const res = createMockRes();
     mw(createMockReq('PUT', '/api/db', JSON.stringify({ version: 2 })), asRes(res), () => {
       throw new Error('next should not be called');
@@ -119,7 +108,7 @@ describe('createApiMiddleware', () => {
 
   it('PUT /api/db with malformed JSON returns 400', async () => {
     const ctx = await mkCtx();
-    const mw = createApiMiddleware(() => ctx);
+    const mw = handleApiRequest(() => ctx);
     const res = createMockRes();
     mw(createMockReq('PUT', '/api/db', '{not json'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -131,7 +120,7 @@ describe('createApiMiddleware', () => {
   it('GET /api/slides/meta with unresolved slides returns 422 with the status body', async () => {
     const slidesStatus: SlidesStatus = { kind: 'no-config-no-file' };
     const ctx = await mkCtx({ slidesStatus });
-    const mw = createApiMiddleware(() => ctx);
+    const mw = handleApiRequest(() => ctx);
     const res = createMockRes();
     mw(createMockReq('GET', '/api/slides/meta'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -143,13 +132,12 @@ describe('createApiMiddleware', () => {
 
   it('calls next for a non-API path', async () => {
     const ctx = await mkCtx();
-    const mw = createApiMiddleware(() => ctx);
+    const mw = handleApiRequest(() => ctx);
     const res = createMockRes();
     let nextCalled = false;
     mw(createMockReq('GET', '/whatever'), asRes(res), () => {
       nextCalled = true;
     });
-    // Give any async path a tick to settle.
     await new Promise((r) => setTimeout(r, 10));
     expect(nextCalled).toBe(true);
     expect(res.body).toBeUndefined();

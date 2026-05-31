@@ -5,7 +5,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 import {
-  cacheRootFor,
   getSlideImage,
   getSlidesMeta,
   pruneOtherHashes,
@@ -72,8 +71,8 @@ const fixture = path.resolve(__dirname, 'fixtures/sample.pdf');
 
 describe('pdf-renderer', () => {
   it('renders the first page to webp and caches subsequent calls', async () => {
-    const cacheRoot = await fs.mkdtemp(path.join(tmpdir(), 'nfp-cache-'));
-    resetPdfState({ slidesPath: fixture, cacheRoot });
+    const cwd = await makeTmp();
+    resetPdfState({ slidesPath: fixture, cwd });
 
     const meta = await getSlidesMeta();
     expect(meta.pageCount).toBeGreaterThan(0);
@@ -88,8 +87,8 @@ describe('pdf-renderer', () => {
   });
 
   it('throws PageOutOfRangeError when the page number is out of range', async () => {
-    const cacheRoot = await fs.mkdtemp(path.join(tmpdir(), 'nfp-cache-'));
-    resetPdfState({ slidesPath: fixture, cacheRoot });
+    const cwd = await makeTmp();
+    resetPdfState({ slidesPath: fixture, cwd });
     const meta = await getSlidesMeta();
     await expect(getSlideImage(meta.pageCount + 1)).rejects.toThrow(/out of range/);
   });
@@ -141,8 +140,7 @@ afterEach(async () => {
 describe('renderAllSlides', () => {
   it('writes one webp per page and reports meta', async () => {
     const outDir = path.join(tmp, 'images');
-    const cacheRoot = path.join(tmp, 'cache');
-    const result = await renderAllSlides({ slidesPath: SAMPLE, cacheRoot, outDir });
+    const result = await renderAllSlides({ slidesPath: SAMPLE, cwd: tmp, outDir });
     expect(result.pageCount).toBeGreaterThanOrEqual(1);
     expect(result.hash).toMatch(/^[0-9a-f]{64}$/);
     expect(result.slides).toHaveLength(result.pageCount);
@@ -151,11 +149,5 @@ describe('renderAllSlides', () => {
     expect(result.slides[0].width).toBeGreaterThan(0);
     expect(result.slides[0].height).toBeGreaterThan(0);
     expect(result.slides[0].file).toBe('0001.webp');
-  });
-});
-
-describe('cacheRootFor', () => {
-  it('returns <cwd>/node_modules/.note-first-presenter', () => {
-    expect(cacheRootFor('/proj')).toBe('/proj/node_modules/.note-first-presenter');
   });
 });

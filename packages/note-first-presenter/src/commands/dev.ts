@@ -7,20 +7,27 @@ export interface CreateServerInput extends CommandContext {
   open: boolean;
 }
 
-export async function createServer(input: CreateServerInput): Promise<ViteDevServer> {
+export async function createServer({
+  cwd,
+  slidesStatus,
+  fullConfig,
+  clientRoot,
+  port,
+  host,
+  open,
+}: CreateServerInput): Promise<ViteDevServer> {
   return await createViteServer({
     ...createViteConfig({
-      cwd: input.cwd,
-      slidesStatus: input.slidesStatus,
-      fullConfig: input.fullConfig,
-      mode: 'dev',
-      clientRoot: input.clientRoot,
+      cwd,
+      slidesStatus,
+      fullConfig,
+      clientRoot,
       isStatic: false,
     }),
     server: {
-      port: input.port,
-      host: input.host,
-      open: input.open ? '/' : false,
+      port,
+      host,
+      open: open ? '/' : false,
     },
   });
 }

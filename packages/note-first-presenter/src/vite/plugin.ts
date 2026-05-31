@@ -1,46 +1,188 @@
-import type { Plugin } from 'vite';
+import path from 'node:path';
+import chokidar, { type FSWatcher } from 'chokidar';
+import type { Connect, Plugin, ViteDevServer } from 'vite';
+import * as v from 'valibot';
 import type { NoteFirstPresenterConfig } from '../config';
-import { loadNfpConfig } from '../config';
-import { cacheRootFor, resolveSlidesPath, type SlidesStatus } from '../slides';
-import { dbPathFor } from '../notes';
-import { createApiMiddleware } from './api';
-import { initFileWatchers } from './watchers';
+import { loadConfigAndSlides } from '../config';
+import { dbInputSchema, readDb, writeDb } from '../db';
+import {
+  ensurePdfState,
+  getSlideImage,
+  getSlidesMeta,
+  PageOutOfRangeError,
+  type SlidesStatus,
+} from '../slides';
 
 export interface NfpPluginOptions {
   cwd: string;
   slidesStatus: SlidesStatus;
   fullConfig: NoteFirstPresenterConfig | null;
-  mode: 'dev' | 'build';
+}
+
+export interface RequestContext {
+  cwd: string;
+  slidesStatus: SlidesStatus;
+}
+
+const SLIDE_RE = /^\/api\/slide\/([^/]+)\/(.+)$/;
+
+function readBody(req: Connect.IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+export const handleApiRequest =
+  (getCtx: () => RequestContext): Connect.NextHandleFunction =>
+  (req, res, next) => {
+    const url = (req.url ?? '').split('?')[0];
+    const method = req.method ?? 'GET';
+
+    const json = (status: number, body: unknown): void => {
+      res.statusCode = status;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify(body));
+    };
+
+    const handle = async (): Promise<void> => {
+      const { cwd, slidesStatus } = getCtx();
+
+      if (url === '/api/db' && method === 'GET') {
+        const db = await readDb({ cwd });
+        json(200, db);
+        return;
+      }
+
+      if (url === '/api/db' && method === 'PUT') {
+        const raw = await readBody(req);
+        let body: unknown;
+        try {
+          body = JSON.parse(raw.toString('utf8'));
+        } catch {
+          json(400, { error: 'invalid JSON' });
+          return;
+        }
+        const result = v.safeParse(dbInputSchema, body);
+        if (!result.success) {
+          json(400, { error: 'invalid body' });
+          return;
+        }
+        await writeDb(result.output, { cwd });
+        res.statusCode = 204;
+        res.end();
+        return;
+      }
+
+      if (url === '/api/slides/meta' && method === 'GET') {
+        if (slidesStatus.kind !== 'resolved') {
+          json(422, slidesStatus);
+          return;
+        }
+        ensurePdfState({ slidesPath: slidesStatus.path, cwd });
+        const meta = await getSlidesMeta();
+        json(200, { status: 'resolved', ...meta });
+        return;
+      }
+
+      const slideMatch = method === 'GET' ? SLIDE_RE.exec(url) : null;
+      if (slideMatch) {
+        if (slidesStatus.kind !== 'resolved') {
+          json(404, { error: 'slides not available' });
+          return;
+        }
+
+        const requestedHash = slideMatch[1];
+        const n = Number(slideMatch[2]);
+        if (!Number.isInteger(n) || n < 1) {
+          json(400, { error: 'invalid page' });
+          return;
+        }
+
+        ensurePdfState({ slidesPath: slidesStatus.path, cwd });
+
+        try {
+          const { data, hash } = await getSlideImage(n);
+          if (requestedHash !== hash) {
+            json(404, { error: 'hash mismatch' });
+            return;
+          }
+          res.statusCode = 200;
+          res.setHeader('content-type', 'image/webp');
+          res.setHeader('cache-control', 'public, max-age=31536000, immutable');
+          res.setHeader('etag', `"${hash}-${n}"`);
+          res.end(data);
+        } catch (err) {
+          if (err instanceof PageOutOfRangeError) {
+            json(404, { error: 'out of range' });
+            return;
+          }
+          throw err;
+        }
+        return;
+      }
+
+      next();
+    };
+
+    handle().catch(next);
+  };
+
+function startFileWatchers(
+  cwd: string,
+  slidesStatus: SlidesStatus,
+  onChange: () => void,
+): () => Promise<void> {
+  const watchers: FSWatcher[] = [];
+
+  const rootWatcher = chokidar.watch('*.pdf', { cwd, depth: 0, ignoreInitial: true });
+  rootWatcher.on('add', onChange);
+  rootWatcher.on('unlink', onChange);
+  watchers.push(rootWatcher);
+
+  const configWatcher = chokidar.watch(
+    [
+      path.join(cwd, 'note-first-presenter.config.ts'),
+      path.join(cwd, 'note-first-presenter.config.js'),
+    ],
+    { ignoreInitial: true },
+  );
+  configWatcher.on('add', onChange);
+  configWatcher.on('change', onChange);
+  configWatcher.on('unlink', onChange);
+  watchers.push(configWatcher);
+
+  if (slidesStatus.kind === 'resolved') {
+    const pdfWatcher = chokidar.watch(slidesStatus.path, {
+      awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
+    });
+    pdfWatcher.on('change', onChange);
+    watchers.push(pdfWatcher);
+  }
+
+  return async () => {
+    await Promise.all(watchers.map((w) => w.close()));
+  };
 }
 
 export function ViteNfpPlugin(opts: NfpPluginOptions): Plugin {
-  let current = opts;
+  let context = opts;
   let closeWatchers: (() => Promise<void>) | null = null;
   return {
     name: 'note-first-presenter',
-    configureServer(server) {
-      server.middlewares.use(
-        createApiMiddleware(() => ({
-          dbPath: dbPathFor(current.cwd),
-          cacheRoot: cacheRootFor(current.cwd),
-          slidesStatus: current.slidesStatus,
-        })),
-      );
-      closeWatchers = initFileWatchers({
-        cwd: current.cwd,
-        slidesStatus: current.slidesStatus,
-        vite: server,
-        onChange: async () => {
-          const { config, filePath } = await loadNfpConfig(current.cwd);
-          const slidesStatus = await resolveSlidesPath({
-            cwd: current.cwd,
-            configuredSlides: config?.slides,
-            configFile: filePath,
-          });
-          current = { ...current, fullConfig: config, slidesStatus };
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use(handleApiRequest(() => context));
+
+      const onChange = () => {
+        void (async () => {
+          const { config, slidesStatus } = await loadConfigAndSlides(context.cwd);
+          context = { ...context, fullConfig: config, slidesStatus };
           server.ws.send({ type: 'full-reload' });
-        },
-      });
+        })();
+      };
+      closeWatchers = startFileWatchers(context.cwd, context.slidesStatus, onChange);
     },
     async closeBundle() {
       await closeWatchers?.();

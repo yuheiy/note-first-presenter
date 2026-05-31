@@ -1,8 +1,18 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineCommand, runMain } from 'citty';
+import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../package.json' with { type: 'json' };
-import { loadCliContext, resolveClientRoot } from './commands/shared';
-import { resolveBuildOptions, resolveExportOptions } from './config';
+import { loadConfigAndSlides, resolveBuildOptions, resolveExportOptions } from './config';
+
+async function resolveClientRoot(): Promise<string> {
+  const clientPkgJsonStart = path.dirname(
+    fileURLToPath(import.meta.resolve('@note-first-presenter/client/package.json')),
+  );
+  const clientPkgJson = await findClosestPkgJsonPath(clientPkgJsonStart);
+  if (!clientPkgJson) throw new Error('Cannot resolve @note-first-presenter/client');
+  return path.dirname(clientPkgJson);
+}
 
 const sharedServerArgs = {
   port: { type: 'string', default: '5173', alias: 'p' },
@@ -14,14 +24,12 @@ const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
   args: sharedServerArgs,
   async run({ args }) {
-    const { cwd, config, slidesStatus } = await loadCliContext(process.cwd());
+    const { config, slidesStatus } = await loadConfigAndSlides();
 
     const clientRoot = await resolveClientRoot();
-    process.chdir(clientRoot);
 
     const { createServer } = await import('./commands/dev');
     const server = await createServer({
-      cwd,
       slidesStatus,
       fullConfig: config,
       clientRoot,
@@ -46,18 +54,16 @@ const build = defineCommand({
   meta: { name: 'build', description: 'Generate a static read-only site' },
   args: { 'out-dir': { type: 'string' } },
   async run({ args }) {
-    const { cwd, config, slidesStatus } = await loadCliContext(process.cwd());
+    const { config, slidesStatus } = await loadConfigAndSlides();
     const { outDir } = resolveBuildOptions({
-      cwd,
       config,
       flags: { outDir: args['out-dir'] },
     });
 
     const clientRoot = await resolveClientRoot();
-    process.chdir(clientRoot);
 
     const { build } = await import('./commands/build');
-    await build({ cwd, slidesStatus, fullConfig: config, clientRoot, outDir });
+    await build({ slidesStatus, fullConfig: config, clientRoot, outDir });
 
     console.log(`Built static site to ${outDir}`);
   },
@@ -71,12 +77,11 @@ const export_ = defineCommand({
     template: { type: 'string' },
   },
   async run({ args }) {
-    const { cwd, config, slidesStatus } = await loadCliContext(process.cwd());
+    const { config, slidesStatus } = await loadConfigAndSlides();
     if (slidesStatus.kind !== 'resolved') {
       throw new Error(`slides not available: ${slidesStatus.kind}`);
     }
     const opts = resolveExportOptions({
-      cwd,
       config,
       flags: {
         outDir: args['out-dir'],
@@ -89,7 +94,6 @@ const export_ = defineCommand({
     const { exportPage } = await import('./commands/export');
     const outFile = await exportPage({
       slidesStatus,
-      cwd,
       outDir: opts.outDir,
       imageDir: opts.imageDir,
       imageRelDir: opts.imageRelDir,
