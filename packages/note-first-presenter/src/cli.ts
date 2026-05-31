@@ -24,14 +24,12 @@ const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
   args: sharedServerArgs,
   async run({ args }) {
-    const { config, slidesStatus } = await loadConfigAndSlides();
-
+    const { slidesStatus } = await loadConfigAndSlides();
     const clientRoot = await resolveClientRoot();
 
     const { createServer } = await import('./commands/dev');
     const server = await createServer({
       slidesStatus,
-      fullConfig: config,
       clientRoot,
       port: Number(args.port),
       host: args.host,
@@ -59,11 +57,10 @@ const build = defineCommand({
       config,
       flags: { outDir: args['out-dir'] },
     });
-
     const clientRoot = await resolveClientRoot();
 
     const { build } = await import('./commands/build');
-    await build({ slidesStatus, fullConfig: config, clientRoot, outDir });
+    await build({ slidesStatus, clientRoot, outDir });
 
     console.log(`Built static site to ${outDir}`);
   },

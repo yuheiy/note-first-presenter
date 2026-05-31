@@ -2,7 +2,6 @@ import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import * as v from 'valibot';
-import type { NoteFirstPresenterConfig } from '../config';
 import { loadConfigAndSlides } from '../config';
 import { dbInputSchema, readDb, writeDb } from '../db';
 import {
@@ -16,7 +15,6 @@ import {
 export interface NfpPluginOptions {
   cwd: string;
   slidesStatus: SlidesStatus;
-  fullConfig: NoteFirstPresenterConfig | null;
 }
 
 export interface RequestContext {
@@ -177,8 +175,8 @@ export function ViteNfpPlugin(opts: NfpPluginOptions): Plugin {
 
       const onChange = () => {
         void (async () => {
-          const { config, slidesStatus } = await loadConfigAndSlides(context.cwd);
-          context = { ...context, fullConfig: config, slidesStatus };
+          const { slidesStatus } = await loadConfigAndSlides(context.cwd);
+          context = { ...context, slidesStatus };
           server.ws.send({ type: 'full-reload' });
         })();
       };

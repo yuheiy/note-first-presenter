@@ -3,16 +3,18 @@ import path from 'node:path';
 import { build as viteBuild } from 'vite';
 import { readDb } from '../db';
 import { ensurePdfState, getSlidesMeta, renderAllSlides, type SlidesStatus } from '../slides';
-import { createViteConfig, type CommandContext } from './shared';
+import { createViteConfig } from '../vite';
 
-export interface BuildInput extends CommandContext {
+export interface BuildInput {
+  cwd?: string;
+  slidesStatus: SlidesStatus;
+  clientRoot: string;
   outDir: string;
 }
 
 export async function build({
   cwd = process.cwd(),
   slidesStatus,
-  fullConfig,
   clientRoot,
   outDir,
 }: BuildInput): Promise<void> {
@@ -20,7 +22,6 @@ export async function build({
     createViteConfig({
       cwd,
       slidesStatus,
-      fullConfig,
       clientRoot,
       isStatic: true,
       outDir,

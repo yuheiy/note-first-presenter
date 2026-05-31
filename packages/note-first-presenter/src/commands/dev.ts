@@ -1,7 +1,11 @@
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
-import { createViteConfig, type CommandContext } from './shared';
+import type { SlidesStatus } from '../slides';
+import { createViteConfig } from '../vite';
 
-export interface CreateServerInput extends CommandContext {
+export interface CreateServerInput {
+  cwd?: string;
+  slidesStatus: SlidesStatus;
+  clientRoot: string;
   port: number;
   host: string;
   open: boolean;
@@ -10,7 +14,6 @@ export interface CreateServerInput extends CommandContext {
 export async function createServer({
   cwd,
   slidesStatus,
-  fullConfig,
   clientRoot,
   port,
   host,
@@ -20,7 +23,6 @@ export async function createServer({
     ...createViteConfig({
       cwd,
       slidesStatus,
-      fullConfig,
       clientRoot,
       isStatic: false,
     }),
