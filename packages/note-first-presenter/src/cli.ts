@@ -1,7 +1,7 @@
 import { copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { defineCommand, runMain } from 'citty';
-import { build as viteBuild, createServer } from 'vite';
+import { build as viteBuild } from 'vite';
 import pkg from '../package.json' with { type: 'json' };
 import { resolveClientRoot } from './commands/shared';
 import { loadNfpConfig, resolveBuildOptions, resolveExportOptions } from './config';
@@ -31,20 +31,15 @@ const dev = defineCommand({
     const clientRoot = await resolveClientRoot();
     process.chdir(clientRoot);
 
+    const { createServer } = await import('./commands/dev');
     const server = await createServer({
-      ...createViteConfig({
-        cwd,
-        slidesStatus,
-        fullConfig: config,
-        mode: 'dev',
-        clientRoot,
-        isStatic: false,
-      }),
-      server: {
-        port: Number(args.port),
-        host: args.host,
-        open: args.open ? '/' : false,
-      },
+      cwd,
+      slidesStatus,
+      fullConfig: config,
+      clientRoot,
+      port: Number(args.port),
+      host: args.host,
+      open: args.open,
     });
 
     await server.listen();
