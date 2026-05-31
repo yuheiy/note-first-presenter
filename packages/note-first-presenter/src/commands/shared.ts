@@ -2,8 +2,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { InlineConfig } from 'vite';
 import { findClosestPkgJsonPath } from 'vitefu';
-import type { NoteFirstPresenterConfig } from '../config';
-import type { SlidesStatus } from '../slides';
+import { loadNfpConfig, type NoteFirstPresenterConfig } from '../config';
+import { resolveSlidesPath, type SlidesStatus } from '../slides';
 import { createNfpVitePlugins } from '../vite';
 
 export async function resolveClientRoot(): Promise<string> {
@@ -15,12 +15,32 @@ export async function resolveClientRoot(): Promise<string> {
   return path.dirname(clientPkgJson);
 }
 
-export interface CreateViteConfigInput {
+export interface CliContext {
+  cwd: string;
+  config: NoteFirstPresenterConfig | null;
+  filePath: string | null;
+  slidesStatus: SlidesStatus;
+}
+
+export async function loadCliContext(cwd: string): Promise<CliContext> {
+  const { config, filePath } = await loadNfpConfig(cwd);
+  const slidesStatus = await resolveSlidesPath({
+    cwd,
+    configuredSlides: config?.slides,
+    configFile: filePath,
+  });
+  return { cwd, config, filePath, slidesStatus };
+}
+
+export interface CommandContext {
   cwd: string;
   slidesStatus: SlidesStatus;
   fullConfig: NoteFirstPresenterConfig | null;
-  mode: 'dev' | 'build';
   clientRoot: string;
+}
+
+export interface CreateViteConfigInput extends CommandContext {
+  mode: 'dev' | 'build';
   isStatic: boolean;
   outDir?: string;
 }

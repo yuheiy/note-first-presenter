@@ -1,13 +1,7 @@
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
-import type { NoteFirstPresenterConfig } from '../config';
-import type { SlidesStatus } from '../slides';
-import { createViteConfig } from './shared';
+import { createViteConfig, type CommandContext } from './shared';
 
-export interface CreateServerInput {
-  cwd: string;
-  slidesStatus: SlidesStatus;
-  fullConfig: NoteFirstPresenterConfig | null;
-  clientRoot: string;
+export interface CreateServerInput extends CommandContext {
   port: number;
   host: string;
   open: boolean;

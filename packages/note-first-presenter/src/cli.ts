@@ -1,9 +1,8 @@
 import path from 'node:path';
 import { defineCommand, runMain } from 'citty';
 import pkg from '../package.json' with { type: 'json' };
-import { resolveClientRoot } from './commands/shared';
-import { loadNfpConfig, resolveBuildOptions, resolveExportOptions } from './config';
-import { resolveSlidesPath } from './slides';
+import { loadCliContext, resolveClientRoot } from './commands/shared';
+import { resolveBuildOptions, resolveExportOptions } from './config';
 
 const sharedServerArgs = {
   port: { type: 'string', default: '5173', alias: 'p' },
@@ -15,13 +14,7 @@ const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
   args: sharedServerArgs,
   async run({ args }) {
-    const cwd = process.cwd();
-    const { config, filePath } = await loadNfpConfig(cwd);
-    const slidesStatus = await resolveSlidesPath({
-      cwd,
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
+    const { cwd, config, slidesStatus } = await loadCliContext(process.cwd());
 
     const clientRoot = await resolveClientRoot();
     process.chdir(clientRoot);
@@ -53,13 +46,7 @@ const build = defineCommand({
   meta: { name: 'build', description: 'Generate a static read-only site' },
   args: { 'out-dir': { type: 'string' } },
   async run({ args }) {
-    const cwd = process.cwd();
-    const { config, filePath } = await loadNfpConfig(cwd);
-    const slidesStatus = await resolveSlidesPath({
-      cwd,
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
+    const { cwd, config, slidesStatus } = await loadCliContext(process.cwd());
     const { outDir } = resolveBuildOptions({
       cwd,
       config,
@@ -84,13 +71,7 @@ const export_ = defineCommand({
     template: { type: 'string' },
   },
   async run({ args }) {
-    const cwd = process.cwd();
-    const { config, filePath } = await loadNfpConfig(cwd);
-    const slidesStatus = await resolveSlidesPath({
-      cwd,
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
+    const { cwd, config, slidesStatus } = await loadCliContext(process.cwd());
     if (slidesStatus.kind !== 'resolved') {
       throw new Error(`slides not available: ${slidesStatus.kind}`);
     }

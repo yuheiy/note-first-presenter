@@ -1,7 +1,6 @@
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { build as viteBuild } from 'vite';
-import type { NoteFirstPresenterConfig } from '../config';
 import { dbPathFor, readDb } from '../notes';
 import {
   cacheRootFor,
@@ -10,13 +9,9 @@ import {
   renderAllSlides,
   type SlidesStatus,
 } from '../slides';
-import { createViteConfig } from './shared';
+import { createViteConfig, type CommandContext } from './shared';
 
-export interface BuildInput {
-  cwd: string;
-  slidesStatus: SlidesStatus;
-  fullConfig: NoteFirstPresenterConfig | null;
-  clientRoot: string;
+export interface BuildInput extends CommandContext {
   outDir: string;
 }
 
@@ -52,7 +47,7 @@ interface WriteBuildDataOptions {
   slidesStatus: SlidesStatus;
 }
 
-async function writeBuildData(opts: WriteBuildDataOptions): Promise<void> {
+export async function writeBuildData(opts: WriteBuildDataOptions): Promise<void> {
   const dataDir = path.join(opts.outDir, 'nfp-data');
   await mkdir(dataDir, { recursive: true });
 
@@ -67,8 +62,7 @@ async function writeBuildData(opts: WriteBuildDataOptions): Promise<void> {
   ensurePdfState({ slidesPath: opts.slidesStatus.path, cacheRoot: opts.cacheRoot });
   const { hash } = await getSlidesMeta();
   const slidesDir = path.join(dataDir, 'slides', hash);
-  const { promises: fs } = await import('node:fs');
-  await fs.rm(slidesDir, { recursive: true, force: true });
+  await rm(slidesDir, { recursive: true, force: true });
   const rendered = await renderAllSlides({
     slidesPath: opts.slidesStatus.path,
     cacheRoot: opts.cacheRoot,
@@ -80,5 +74,3 @@ async function writeBuildData(opts: WriteBuildDataOptions): Promise<void> {
     'utf8',
   );
 }
-
-export { writeBuildData };
