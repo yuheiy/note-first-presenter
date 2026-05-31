@@ -1,5 +1,4 @@
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import * as v from 'valibot';
 
 export const dbInputSchema = v.object({
@@ -10,13 +9,7 @@ export const dbInputSchema = v.object({
 
 export type DbInput = v.InferOutput<typeof dbInputSchema>;
 
-export interface DbOptions {
-  cwd?: string;
-}
-
-function getDbPath(cwd: string): string {
-  return path.join(cwd, '.note-first-presenter.json');
-}
+const DB_FILENAME = '.note-first-presenter.json';
 
 export function emptyDb(): DbInput {
   return {
@@ -34,9 +27,9 @@ export function emptyDb(): DbInput {
   };
 }
 
-export async function readDb({ cwd = process.cwd() }: DbOptions = {}): Promise<DbInput> {
+export async function readDb(): Promise<DbInput> {
   try {
-    const text = await fs.readFile(getDbPath(cwd), 'utf8');
+    const text = await fs.readFile(DB_FILENAME, 'utf8');
     return JSON.parse(text) as DbInput;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyDb();
@@ -44,6 +37,6 @@ export async function readDb({ cwd = process.cwd() }: DbOptions = {}): Promise<D
   }
 }
 
-export async function writeDb(db: DbInput, { cwd = process.cwd() }: DbOptions = {}): Promise<void> {
-  await fs.writeFile(getDbPath(cwd), `${JSON.stringify(db, null, 2)}\n`, 'utf8');
+export async function writeDb(db: DbInput): Promise<void> {
+  await fs.writeFile(DB_FILENAME, `${JSON.stringify(db, null, 2)}\n`, 'utf8');
 }

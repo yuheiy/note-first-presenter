@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Eta } from 'eta';
 import { readDb } from '../db';
 import { splitNoteGroups, type NoteNode } from '../notes';
-import { renderAllSlides, type RenderAllResult, type SlidesStatus } from '../slides';
+import { openSlides, type RenderAllResult, type SlidesStatus } from '../slides';
 
 export interface ExportSlide {
   number: number;
@@ -93,9 +93,8 @@ export const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 </html>
 `;
 
-interface PipelineExportOptions {
-  slidesPath: string;
-  cwd?: string;
+export interface ExportPageInput {
+  slidesStatus: SlidesStatus;
   outDir: string;
   imageDir: string;
   imageRelDir: string;
@@ -104,21 +103,23 @@ interface PipelineExportOptions {
   name: string;
 }
 
-async function runPipelineExport({
-  slidesPath,
-  cwd = process.cwd(),
+export async function exportPage({
+  slidesStatus,
   outDir,
   imageDir,
   imageRelDir,
   templatePath,
   extension,
   name,
-}: PipelineExportOptions): Promise<string> {
+}: ExportPageInput): Promise<string> {
+  if (slidesStatus.kind !== 'resolved') {
+    throw new Error(`slides not available: ${slidesStatus.kind}`);
+  }
   if (templatePath !== null && !existsSync(templatePath)) {
     throw new Error(`export template not found: ${templatePath}`);
   }
-  const rendered = await renderAllSlides({ slidesPath, cwd, outDir: imageDir });
-  const db = await readDb({ cwd });
+  const rendered = await openSlides(slidesStatus.path).renderAll(imageDir);
+  const db = await readDb();
   const groups = splitNoteGroups(db.outline);
   const context = buildExportContext({
     title: db.title,
@@ -136,26 +137,4 @@ async function runPipelineExport({
   const outFile = path.join(outDir, `${name}.${extension}`);
   await fs.writeFile(outFile, output, 'utf8');
   return outFile;
-}
-
-export interface ExportPageInput {
-  slidesStatus: SlidesStatus;
-  cwd?: string;
-  outDir: string;
-  imageDir: string;
-  imageRelDir: string;
-  templatePath: string | null;
-  extension: string;
-  name: string;
-}
-
-export async function exportPage({ slidesStatus, cwd, ...rest }: ExportPageInput): Promise<string> {
-  if (slidesStatus.kind !== 'resolved') {
-    throw new Error(`slides not available: ${slidesStatus.kind}`);
-  }
-  return runPipelineExport({
-    slidesPath: slidesStatus.path,
-    cwd,
-    ...rest,
-  });
 }

@@ -6,7 +6,6 @@ import type { SlidesStatus } from '../slides';
 import { ViteNfpPlugin } from './plugin';
 
 export interface CreateViteConfigInput {
-  cwd?: string;
   slidesStatus: SlidesStatus;
   clientRoot: string;
   isStatic: boolean;
@@ -16,7 +15,6 @@ export interface CreateViteConfigInput {
 export function createViteConfig({
   isStatic,
   outDir,
-  cwd = process.cwd(),
   slidesStatus,
   clientRoot,
 }: CreateViteConfigInput): InlineConfig {
@@ -39,7 +37,7 @@ export function createViteConfig({
         outdir: path.join(clientRoot, 'src/lib/paraglide'),
         strategy: ['preferredLanguage', 'baseLocale'],
       }),
-      ViteNfpPlugin({ cwd, slidesStatus }),
+      ViteNfpPlugin(slidesStatus),
     ],
     build: outDir ? { outDir, emptyOutDir: true } : undefined,
   };

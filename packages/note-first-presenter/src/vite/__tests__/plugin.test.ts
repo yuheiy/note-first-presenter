@@ -1,11 +1,10 @@
 import { promises as fs } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vite-plus/test';
 import { emptyDb } from '../../db';
-import type { SlidesStatus } from '../../slides';
-import { handleApiRequest, type RequestContext } from '../plugin';
+import { openSlides, type SlidesStatus } from '../../slides';
+import { useTempCwd } from '../../__tests__/use-temp-cwd';
+import { handleApiRequest } from '../plugin';
 
 interface MockResponse {
   statusCode: number;
@@ -55,19 +54,13 @@ function asRes(res: MockResponse) {
   return res as unknown as Parameters<ReturnType<typeof handleApiRequest>>[1];
 }
 
-async function mkCtx(overrides?: Partial<RequestContext>): Promise<RequestContext> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-api-'));
-  return {
-    cwd: dir,
-    slidesStatus: { kind: 'no-config-no-file' },
-    ...overrides,
-  };
-}
+const NO_SLIDES: SlidesStatus = { kind: 'no-config-no-file' };
+
+useTempCwd('nfp-api-');
 
 describe('handleApiRequest', () => {
   it('GET /api/db on a missing db file returns 200 with empty db', async () => {
-    const ctx = await mkCtx();
-    const mw = handleApiRequest(() => ctx);
+    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('GET', '/api/db'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -79,8 +72,7 @@ describe('handleApiRequest', () => {
   });
 
   it('PUT /api/db with a valid body returns 204 and writes the file', async () => {
-    const ctx = await mkCtx();
-    const mw = handleApiRequest(() => ctx);
+    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     const db = { version: 1, title: 'x', outline: { type: 'doc', content: [] } };
     mw(createMockReq('PUT', '/api/db', JSON.stringify(db)), asRes(res), () => {
@@ -89,15 +81,12 @@ describe('handleApiRequest', () => {
     await res.done;
     expect(res.statusCode).toBe(204);
     expect(res.body!.length).toBe(0);
-    const written = JSON.parse(
-      await fs.readFile(path.join(ctx.cwd, '.note-first-presenter.json'), 'utf8'),
-    );
+    const written = JSON.parse(await fs.readFile('.note-first-presenter.json', 'utf8'));
     expect(written).toEqual(db);
   });
 
   it('PUT /api/db with an invalid body returns 400', async () => {
-    const ctx = await mkCtx();
-    const mw = handleApiRequest(() => ctx);
+    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('PUT', '/api/db', JSON.stringify({ version: 2 })), asRes(res), () => {
       throw new Error('next should not be called');
@@ -107,8 +96,7 @@ describe('handleApiRequest', () => {
   });
 
   it('PUT /api/db with malformed JSON returns 400', async () => {
-    const ctx = await mkCtx();
-    const mw = handleApiRequest(() => ctx);
+    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('PUT', '/api/db', '{not json'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -118,21 +106,18 @@ describe('handleApiRequest', () => {
   });
 
   it('GET /api/slides/meta with unresolved slides returns 422 with the status body', async () => {
-    const slidesStatus: SlidesStatus = { kind: 'no-config-no-file' };
-    const ctx = await mkCtx({ slidesStatus });
-    const mw = handleApiRequest(() => ctx);
+    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('GET', '/api/slides/meta'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
     expect(res.statusCode).toBe(422);
-    expect(JSON.parse(res.body!.toString())).toEqual(slidesStatus);
+    expect(JSON.parse(res.body!.toString())).toEqual(NO_SLIDES);
   });
 
   it('calls next for a non-API path', async () => {
-    const ctx = await mkCtx();
-    const mw = handleApiRequest(() => ctx);
+    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     let nextCalled = false;
     mw(createMockReq('GET', '/whatever'), asRes(res), () => {

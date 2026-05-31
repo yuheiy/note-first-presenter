@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { defineCommand, runMain } from 'citty';
 import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../package.json' with { type: 'json' };
-import { loadConfigAndSlides, resolveBuildOptions, resolveExportOptions } from './config';
+import { loadNfpConfig } from './config';
+import { resolveSlidesPath } from './slides';
 
 async function resolveClientRoot(): Promise<string> {
   const clientPkgJsonStart = path.dirname(
@@ -24,16 +25,22 @@ const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
   args: sharedServerArgs,
   async run({ args }) {
-    const { slidesStatus } = await loadConfigAndSlides();
+    const { config, filePath } = await loadNfpConfig();
+    const slidesStatus = await resolveSlidesPath({
+      configuredSlides: config?.slides,
+      configFile: filePath,
+    });
     const clientRoot = await resolveClientRoot();
 
-    const { createServer } = await import('./commands/dev');
+    const { createServer } = await import('vite');
+    const { createViteConfig } = await import('./vite');
     const server = await createServer({
-      slidesStatus,
-      clientRoot,
-      port: Number(args.port),
-      host: args.host,
-      open: args.open,
+      ...createViteConfig({ slidesStatus, clientRoot, isStatic: false }),
+      server: {
+        port: Number(args.port),
+        host: args.host,
+        open: args.open ? '/' : false,
+      },
     });
 
     await server.listen();
@@ -52,15 +59,16 @@ const build = defineCommand({
   meta: { name: 'build', description: 'Generate a static read-only site' },
   args: { 'out-dir': { type: 'string' } },
   async run({ args }) {
-    const { config, slidesStatus } = await loadConfigAndSlides();
-    const { outDir } = resolveBuildOptions({
-      config,
-      flags: { outDir: args['out-dir'] },
+    const { config, filePath } = await loadNfpConfig();
+    const slidesStatus = await resolveSlidesPath({
+      configuredSlides: config?.slides,
+      configFile: filePath,
     });
+    const outDir = path.resolve(args['out-dir'] ?? config?.build?.outDir ?? 'dist');
     const clientRoot = await resolveClientRoot();
 
     const { build } = await import('./commands/build');
-    await build({ slidesStatus, clientRoot, outDir });
+    await build({ slidesStatus, outDir, clientRoot });
 
     console.log(`Built static site to ${outDir}`);
   },
@@ -74,28 +82,31 @@ const export_ = defineCommand({
     template: { type: 'string' },
   },
   async run({ args }) {
-    const { config, slidesStatus } = await loadConfigAndSlides();
+    const { config, filePath } = await loadNfpConfig();
+    const slidesStatus = await resolveSlidesPath({
+      configuredSlides: config?.slides,
+      configFile: filePath,
+    });
     if (slidesStatus.kind !== 'resolved') {
       throw new Error(`slides not available: ${slidesStatus.kind}`);
     }
-    const opts = resolveExportOptions({
-      config,
-      flags: {
-        outDir: args['out-dir'],
-        imageDir: args['image-dir'],
-        template: args.template,
-      },
-    });
+    const exportCfg = config?.export;
+    const template = args.template ?? exportCfg?.format?.template;
+    const extension = exportCfg?.format?.extension ?? 'html';
+    const outDir = path.resolve(args['out-dir'] ?? exportCfg?.outDir ?? 'export');
+    const imageDir = path.resolve(outDir, args['image-dir'] ?? exportCfg?.imageDir ?? 'images');
+    const imageRelDir = path.relative(outDir, imageDir).split(path.sep).join('/') || '.';
+    const templatePath = template ? path.resolve(template) : null;
     const name = path.basename(slidesStatus.path, path.extname(slidesStatus.path)) || 'notes';
 
     const { exportPage } = await import('./commands/export');
     const outFile = await exportPage({
       slidesStatus,
-      outDir: opts.outDir,
-      imageDir: opts.imageDir,
-      imageRelDir: opts.imageRelDir,
-      templatePath: opts.templatePath,
-      extension: opts.extension,
+      outDir,
+      imageDir,
+      imageRelDir,
+      templatePath,
+      extension,
       name,
     });
     console.log(`Exported to ${outFile}`);

@@ -1,9 +1,9 @@
 import { promises as fs } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
-import { buildExportContext, exportPage, toHtml, toMarkdown } from '../export';
+import { describe, expect, it } from 'vite-plus/test';
 import type { NoteNode } from '../../notes';
+import { useTempCwd } from '../../__tests__/use-temp-cwd';
+import { buildExportContext, exportPage, toHtml, toMarkdown } from '../export';
 
 const notes: NoteNode[] = [
   { text: 'parent', children: [{ text: 'child', children: [] }] },
@@ -74,54 +74,47 @@ describe('buildExportContext', () => {
 });
 
 const SAMPLE = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
-let tmp: string;
 
-beforeEach(async () => {
-  tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-export-'));
-});
-afterEach(async () => {
-  await fs.rm(tmp, { recursive: true, force: true });
-});
+useTempCwd('nfp-export-');
 
 describe('exportPage', () => {
   it('writes a single output file and slide images', async () => {
-    const templatePath = path.join(tmp, 'tpl.eta');
+    const templatePath = path.resolve('tpl.eta');
     await fs.writeFile(
       templatePath,
       '# <%= it.title %>\n<% it.slides.forEach(function (s) { %>![](<%= s.image %>)\n<%= it.toMarkdown(s.notes) %>\n<% }) %>',
     );
     const db = { version: 1, title: 'My Deck', outline: { type: 'doc', content: [] } };
-    const dbPath = path.join(tmp, '.note-first-presenter.json');
-    await fs.writeFile(dbPath, JSON.stringify(db));
+    await fs.writeFile('.note-first-presenter.json', JSON.stringify(db));
 
+    const outDir = path.resolve('out');
     const outFile = await exportPage({
       slidesStatus: { kind: 'resolved', path: SAMPLE },
-      cwd: tmp,
-      outDir: path.join(tmp, 'out'),
-      imageDir: path.join(tmp, 'out', 'images'),
+      outDir,
+      imageDir: path.join(outDir, 'images'),
       imageRelDir: 'images',
       templatePath,
       extension: 'md',
       name: 'sample',
     });
 
-    expect(outFile).toBe(path.join(tmp, 'out', 'sample.md'));
+    expect(outFile).toBe(path.join(outDir, 'sample.md'));
     const body = await fs.readFile(outFile, 'utf8');
     expect(body).toContain('# My Deck');
     expect(body).toContain('![](images/0001.webp)');
-    const img = await fs.stat(path.join(tmp, 'out', 'images', '0001.webp'));
+    const img = await fs.stat(path.join(outDir, 'images', '0001.webp'));
     expect(img.size).toBeGreaterThan(0);
   });
 
   it('throws a clear error when the template is missing', async () => {
+    const outDir = path.resolve('out');
     await expect(
       exportPage({
         slidesStatus: { kind: 'resolved', path: SAMPLE },
-        cwd: tmp,
-        outDir: path.join(tmp, 'out'),
-        imageDir: path.join(tmp, 'out', 'images'),
+        outDir,
+        imageDir: path.join(outDir, 'images'),
         imageRelDir: 'images',
-        templatePath: path.join(tmp, 'nope.eta'),
+        templatePath: path.resolve('nope.eta'),
         extension: 'md',
         name: 'sample',
       }),
@@ -130,21 +123,20 @@ describe('exportPage', () => {
 
   it('renders the built-in HTML template when templatePath is null', async () => {
     const db = { version: 1, title: 'My Deck', outline: { type: 'doc', content: [] } };
-    const dbPath = path.join(tmp, '.note-first-presenter.json');
-    await fs.writeFile(dbPath, JSON.stringify(db));
+    await fs.writeFile('.note-first-presenter.json', JSON.stringify(db));
 
+    const outDir = path.resolve('out');
     const outFile = await exportPage({
       slidesStatus: { kind: 'resolved', path: SAMPLE },
-      cwd: tmp,
-      outDir: path.join(tmp, 'out'),
-      imageDir: path.join(tmp, 'out', 'images'),
+      outDir,
+      imageDir: path.join(outDir, 'images'),
       imageRelDir: 'images',
       templatePath: null,
       extension: 'html',
       name: 'sample',
     });
 
-    expect(outFile).toBe(path.join(tmp, 'out', 'sample.html'));
+    expect(outFile).toBe(path.join(outDir, 'sample.html'));
     const body = await fs.readFile(outFile, 'utf8');
     expect(body).toContain('<!DOCTYPE html>');
     expect(body).toContain('<h1>My Deck</h1>');

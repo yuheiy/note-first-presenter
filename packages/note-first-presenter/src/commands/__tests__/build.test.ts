@@ -1,31 +1,20 @@
 import { promises as fs } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it } from 'vite-plus/test';
+import { useTempCwd } from '../../__tests__/use-temp-cwd';
 import { writeBuildData } from '../build';
 
 const SAMPLE = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
-let tmp: string;
 
-beforeEach(async () => {
-  tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-builddata-'));
-});
-afterEach(async () => {
-  await fs.rm(tmp, { recursive: true, force: true });
-});
+useTempCwd('nfp-builddata-');
 
 describe('writeBuildData', () => {
   it('writes db.json, meta.json and per-page webp under nfp-data', async () => {
     const db = { version: 1, title: 'T', outline: { type: 'doc', content: [] } };
-    const dbPath = path.join(tmp, '.note-first-presenter.json');
-    await fs.writeFile(dbPath, JSON.stringify(db));
-    const outDir = path.join(tmp, 'dist');
+    await fs.writeFile('.note-first-presenter.json', JSON.stringify(db));
+    const outDir = path.resolve('dist');
 
-    await writeBuildData({
-      outDir,
-      cwd: tmp,
-      slidesStatus: { kind: 'resolved', path: SAMPLE },
-    });
+    await writeBuildData({ outDir, slidesStatus: { kind: 'resolved', path: SAMPLE } });
 
     const meta = JSON.parse(await fs.readFile(path.join(outDir, 'nfp-data', 'meta.json'), 'utf8'));
     expect(meta.status).toBe('resolved');
@@ -37,18 +26,13 @@ describe('writeBuildData', () => {
   });
 
   it('writes only meta.json status when slides are not resolved', async () => {
-    const dbPath = path.join(tmp, '.note-first-presenter.json');
     await fs.writeFile(
-      dbPath,
+      '.note-first-presenter.json',
       JSON.stringify({ version: 1, title: '', outline: { type: 'doc', content: [] } }),
     );
-    const outDir = path.join(tmp, 'dist');
+    const outDir = path.resolve('dist');
 
-    await writeBuildData({
-      outDir,
-      cwd: tmp,
-      slidesStatus: { kind: 'no-config-no-file' },
-    });
+    await writeBuildData({ outDir, slidesStatus: { kind: 'no-config-no-file' } });
 
     const meta = JSON.parse(await fs.readFile(path.join(outDir, 'nfp-data', 'meta.json'), 'utf8'));
     expect(meta.kind).toBe('no-config-no-file');

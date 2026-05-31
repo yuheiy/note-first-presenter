@@ -1,26 +1,15 @@
-import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import * as v from 'valibot';
-import { loadConfigAndSlides } from '../config';
+import { loadNfpConfig } from '../config';
 import { dbInputSchema, readDb, writeDb } from '../db';
 import {
-  ensurePdfState,
-  getSlideImage,
-  getSlidesMeta,
+  openSlides,
   PageOutOfRangeError,
+  resolveSlidesPath,
+  type Slides,
   type SlidesStatus,
 } from '../slides';
-
-export interface NfpPluginOptions {
-  cwd: string;
-  slidesStatus: SlidesStatus;
-}
-
-export interface RequestContext {
-  cwd: string;
-  slidesStatus: SlidesStatus;
-}
 
 const SLIDE_RE = /^\/api\/slide\/([^/]+)\/(.+)$/;
 
@@ -34,7 +23,10 @@ function readBody(req: Connect.IncomingMessage): Promise<Buffer> {
 }
 
 export const handleApiRequest =
-  (getCtx: () => RequestContext): Connect.NextHandleFunction =>
+  (
+    getSlidesStatus: () => SlidesStatus,
+    getSlides: (slidesPath: string) => Slides,
+  ): Connect.NextHandleFunction =>
   (req, res, next) => {
     const url = (req.url ?? '').split('?')[0];
     const method = req.method ?? 'GET';
@@ -46,10 +38,10 @@ export const handleApiRequest =
     };
 
     const handle = async (): Promise<void> => {
-      const { cwd, slidesStatus } = getCtx();
+      const slidesStatus = getSlidesStatus();
 
       if (url === '/api/db' && method === 'GET') {
-        const db = await readDb({ cwd });
+        const db = await readDb();
         json(200, db);
         return;
       }
@@ -68,7 +60,7 @@ export const handleApiRequest =
           json(400, { error: 'invalid body' });
           return;
         }
-        await writeDb(result.output, { cwd });
+        await writeDb(result.output);
         res.statusCode = 204;
         res.end();
         return;
@@ -79,8 +71,7 @@ export const handleApiRequest =
           json(422, slidesStatus);
           return;
         }
-        ensurePdfState({ slidesPath: slidesStatus.path, cwd });
-        const meta = await getSlidesMeta();
+        const meta = await getSlides(slidesStatus.path).meta();
         json(200, { status: 'resolved', ...meta });
         return;
       }
@@ -99,10 +90,8 @@ export const handleApiRequest =
           return;
         }
 
-        ensurePdfState({ slidesPath: slidesStatus.path, cwd });
-
         try {
-          const { data, hash } = await getSlideImage(n);
+          const { data, hash } = await getSlides(slidesStatus.path).image(n);
           if (requestedHash !== hash) {
             json(404, { error: 'hash mismatch' });
             return;
@@ -128,23 +117,16 @@ export const handleApiRequest =
     handle().catch(next);
   };
 
-function startFileWatchers(
-  cwd: string,
-  slidesStatus: SlidesStatus,
-  onChange: () => void,
-): () => Promise<void> {
+function startFileWatchers(slidesStatus: SlidesStatus, onChange: () => void): () => Promise<void> {
   const watchers: FSWatcher[] = [];
 
-  const rootWatcher = chokidar.watch('*.pdf', { cwd, depth: 0, ignoreInitial: true });
+  const rootWatcher = chokidar.watch('*.pdf', { depth: 0, ignoreInitial: true });
   rootWatcher.on('add', onChange);
   rootWatcher.on('unlink', onChange);
   watchers.push(rootWatcher);
 
   const configWatcher = chokidar.watch(
-    [
-      path.join(cwd, 'note-first-presenter.config.ts'),
-      path.join(cwd, 'note-first-presenter.config.js'),
-    ],
+    ['note-first-presenter.config.ts', 'note-first-presenter.config.js'],
     { ignoreInitial: true },
   );
   configWatcher.on('add', onChange);
@@ -165,22 +147,40 @@ function startFileWatchers(
   };
 }
 
-export function ViteNfpPlugin(opts: NfpPluginOptions): Plugin {
-  let context = opts;
+export function ViteNfpPlugin(initialSlidesStatus: SlidesStatus): Plugin {
+  let slidesStatus = initialSlidesStatus;
   let closeWatchers: (() => Promise<void>) | null = null;
+
+  // Per-path cache: openSlides returns a fresh closure each call, so reusing
+  // the same Slides instance preserves its internal pdf-parse memoization
+  // across API requests for the same PDF file.
+  let cached: { path: string; slides: Slides } | null = null;
+  function getSlides(slidesPath: string): Slides {
+    if (!cached || cached.path !== slidesPath) {
+      cached = { path: slidesPath, slides: openSlides(slidesPath) };
+    }
+    return cached.slides;
+  }
+
   return {
     name: 'note-first-presenter',
     configureServer(server: ViteDevServer) {
-      server.middlewares.use(handleApiRequest(() => context));
+      server.middlewares.use(handleApiRequest(() => slidesStatus, getSlides));
 
       const onChange = () => {
         void (async () => {
-          const { slidesStatus } = await loadConfigAndSlides(context.cwd);
-          context = { ...context, slidesStatus };
+          const { config, filePath } = await loadNfpConfig();
+          slidesStatus = await resolveSlidesPath({
+            configuredSlides: config?.slides,
+            configFile: filePath,
+          });
+          // Drop the cached Slides so the next request re-opens (and re-parses
+          // if the PDF content changed at the same path).
+          cached = null;
           server.ws.send({ type: 'full-reload' });
         })();
       };
-      closeWatchers = startFileWatchers(context.cwd, context.slidesStatus, onChange);
+      closeWatchers = startFileWatchers(slidesStatus, onChange);
     },
     async closeBundle() {
       await closeWatchers?.();
