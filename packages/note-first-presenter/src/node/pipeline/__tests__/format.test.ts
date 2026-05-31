@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { toHtml, toMarkdown } from '../format';
-import type { NoteNode } from '../types';
+import type { NoteNode } from '../../../notes';
 
 const notes: NoteNode[] = [
   { text: 'parent', children: [{ text: 'child', children: [] }] },

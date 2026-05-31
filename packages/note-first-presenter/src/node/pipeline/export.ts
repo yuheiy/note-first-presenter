@@ -1,10 +1,9 @@
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Eta } from 'eta';
-import { readDb } from '../db-io';
+import { readDb, splitNoteGroups } from '../../notes';
 import { buildExportContext } from './context';
 import { DEFAULT_TEMPLATE } from './default-template';
-import { splitNoteGroups } from './note-tree';
 import { renderAllSlides } from './render-slides';
 
 export interface PipelineExportOptions {

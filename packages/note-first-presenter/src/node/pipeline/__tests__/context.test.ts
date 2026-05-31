@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { buildExportContext } from '../context';
-import type { NoteNode } from '../types';
+import type { NoteNode } from '../../../notes';
 
 const rendered = {
   hash: 'h',

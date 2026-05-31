@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { ensurePdfState, getSlidesMeta } from '../pdf-renderer';
-import { readDb } from '../db-io';
+import { readDb } from '../../notes';
 import { renderAllSlides } from './render-slides';
 import type { SlidesStatus } from '../../config/resolve-slides-path';
 

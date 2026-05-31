@@ -1,7 +1,4 @@
-export interface NoteNode {
-  text: string;
-  children: NoteNode[];
-}
+import type { NoteNode } from '../../notes';
 
 export interface ExportSlide {
   number: number;

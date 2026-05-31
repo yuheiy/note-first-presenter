@@ -1,4 +1,4 @@
-import type { NoteNode } from './types';
+import type { NoteNode } from '../../notes';
 
 export function toMarkdown(notes: NoteNode[]): string {
   const lines: string[] = [];

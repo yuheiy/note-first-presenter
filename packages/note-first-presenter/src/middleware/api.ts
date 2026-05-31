@@ -1,8 +1,7 @@
 import type { Connect } from 'vite';
 import * as v from 'valibot';
 import type { SlidesStatus } from '../config/resolve-slides-path';
-import { readDb, writeDb } from '../node/db-io';
-import { dbInputSchema } from '../node/db-schema';
+import { readDb, writeDb, dbInputSchema } from '../notes';
 import {
   ensurePdfState,
   getSlideImage,
