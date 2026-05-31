@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { loadNfpConfig } from '../config/load-config';
+import { loadNfpConfig } from '../config';
 import { resolveSlidesPath } from '../slides';
 import { createApiMiddleware } from '../middleware/api';
 import { initFileWatchers } from './file-watchers';

@@ -1,6 +1,6 @@
 import { dbPathFor } from '../notes';
 import { cacheRootFor, type SlidesStatus } from '../slides';
-import type { NoteFirstPresenterConfig } from '../config/schema';
+import type { NoteFirstPresenterConfig } from '../config';
 
 export interface RuntimeConfigInput {
   cwd: string;
