@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test';
 
 const pkgDir = path.resolve(import.meta.dirname, '../..');
 const binPath = path.join(pkgDir, 'bin', 'note-first-presenter.mjs');
-const SAMPLE = path.resolve(import.meta.dirname, '../node/__tests__/fixtures/sample.pdf');
+const SAMPLE = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
 
 let tmp: string;
 

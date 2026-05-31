@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vite-plus/test';
-import type { SlidesStatus } from '../../config/resolve-slides-path';
+import type { SlidesStatus } from '../../slides';
 import { type ApiContext, createApiMiddleware } from '../api';
 
 interface MockResponse {

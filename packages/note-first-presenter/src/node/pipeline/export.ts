@@ -4,7 +4,7 @@ import { Eta } from 'eta';
 import { readDb, splitNoteGroups } from '../../notes';
 import { buildExportContext } from './context';
 import { DEFAULT_TEMPLATE } from './default-template';
-import { renderAllSlides } from './render-slides';
+import { renderAllSlides } from '../../slides';
 
 export interface PipelineExportOptions {
   slidesPath: string;

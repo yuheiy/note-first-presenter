@@ -1,9 +1,8 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { ensurePdfState, getSlidesMeta } from '../pdf-renderer';
+import { ensurePdfState, getSlidesMeta, renderAllSlides } from '../../slides';
 import { readDb } from '../../notes';
-import { renderAllSlides } from './render-slides';
-import type { SlidesStatus } from '../../config/resolve-slides-path';
+import type { SlidesStatus } from '../../slides';
 
 export interface WriteBuildDataOptions {
   outDir: string;

@@ -1,5 +1,5 @@
 import { toHtml, toMarkdown } from './format';
-import type { RenderAllResult } from './render-slides';
+import type { RenderAllResult } from '../../slides';
 import type { NoteNode } from '../../notes';
 import type { ExportContext, ExportSlide } from './types';
 

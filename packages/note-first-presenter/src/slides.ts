@@ -1,9 +1,60 @@
 import { createHash } from 'node:crypto';
-import { promises as fs } from 'node:fs';
+import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createCanvas } from '@napi-rs/canvas';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { pruneOtherHashes, slideCachePath } from './slide-cache';
+import { glob } from 'tinyglobby';
+
+export type SlidesStatus =
+  | { kind: 'resolved'; path: string }
+  | { kind: 'configured-but-missing'; configuredPath: string }
+  | { kind: 'no-config-no-file' }
+  | { kind: 'no-config-multiple-files'; candidates: string[] };
+
+export interface ResolveSlidesArgs {
+  cwd: string;
+  configuredSlides: string | undefined;
+  configFile: string | null;
+}
+
+export async function resolveSlidesPath(args: ResolveSlidesArgs): Promise<SlidesStatus> {
+  if (args.configuredSlides) {
+    const base = args.configFile ? path.dirname(args.configFile) : args.cwd;
+    const abs = path.resolve(base, args.configuredSlides);
+    return existsSync(abs)
+      ? { kind: 'resolved', path: abs }
+      : { kind: 'configured-but-missing', configuredPath: abs };
+  }
+
+  const pdfs = await glob('*.pdf', { cwd: args.cwd, absolute: true });
+  if (pdfs.length === 0) return { kind: 'no-config-no-file' };
+  if (pdfs.length === 1) return { kind: 'resolved', path: pdfs[0] };
+  return { kind: 'no-config-multiple-files', candidates: pdfs };
+}
+
+export function slideFilename(pageNumber: number): string {
+  return `${String(pageNumber).padStart(4, '0')}.webp`;
+}
+
+export function slideCachePath(cacheRoot: string, hash: string, pageNumber: number): string {
+  return path.join(cacheRoot, 'slides', hash, slideFilename(pageNumber));
+}
+
+export async function pruneOtherHashes(cacheRoot: string, currentHash: string): Promise<void> {
+  const slidesDir = path.join(cacheRoot, 'slides');
+  let entries: string[];
+  try {
+    entries = await fs.readdir(slidesDir);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+    throw err;
+  }
+  await Promise.all(
+    entries
+      .filter((name) => name !== currentHash)
+      .map((name) => fs.rm(path.join(slidesDir, name), { recursive: true, force: true })),
+  );
+}
 
 const TARGET_SCALE = 2.0;
 const WEBP_QUALITY = 85;
@@ -123,4 +174,42 @@ async function encodePage(
     viewport,
   }).promise;
   return canvas.encode('webp', WEBP_QUALITY);
+}
+
+export interface RenderedSlide {
+  number: number;
+  width: number;
+  height: number;
+  file: string;
+}
+
+export interface RenderAllResult {
+  hash: string;
+  pageCount: number;
+  slides: RenderedSlide[];
+}
+
+export interface RenderAllOptions {
+  slidesPath: string;
+  cacheRoot: string;
+  outDir: string;
+}
+
+export async function renderAllSlides(opts: RenderAllOptions): Promise<RenderAllResult> {
+  ensurePdfState({ slidesPath: opts.slidesPath, cacheRoot: opts.cacheRoot });
+  const { hash, pageCount } = await getSlidesMeta();
+  await fs.mkdir(opts.outDir, { recursive: true });
+  const slides: RenderedSlide[] = [];
+  for (let n = 1; n <= pageCount; n++) {
+    const { data } = await getSlideImage(n);
+    const { width, height } = await getSlideSize(n);
+    const name = slideFilename(n);
+    await fs.writeFile(path.join(opts.outDir, name), data);
+    slides.push({ number: n, width, height, file: name });
+  }
+  return { hash, pageCount, slides };
+}
+
+export function cacheRootFor(cwd: string): string {
+  return path.join(cwd, 'node_modules', '.note-first-presenter');
 }

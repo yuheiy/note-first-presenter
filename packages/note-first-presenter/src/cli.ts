@@ -7,7 +7,7 @@ import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../package.json' with { type: 'json' };
 import { resolveBuildOptions, resolveExportOptions } from './config/defaults';
 import { loadNfpConfig } from './config/load-config';
-import { resolveSlidesPath } from './config/resolve-slides-path';
+import { cacheRootFor, resolveSlidesPath } from './slides';
 import { writeBuildData } from './node/pipeline/build-data';
 import { runPipelineExport } from './node/pipeline/export';
 import { createViteConfig } from './vite/config';
@@ -107,7 +107,7 @@ const build = defineCommand({
     await writeBuildData({
       outDir,
       dbPath: path.join(cwd, '.note-first-presenter.json'),
-      cacheRoot: path.join(cwd, 'node_modules', '.note-first-presenter'),
+      cacheRoot: cacheRootFor(cwd),
       slidesStatus,
     });
 
@@ -147,7 +147,7 @@ const export_ = defineCommand({
     const outFile = await runPipelineExport({
       slidesPath: slidesStatus.path,
       dbPath: path.join(cwd, '.note-first-presenter.json'),
-      cacheRoot: path.join(cwd, 'node_modules', '.note-first-presenter'),
+      cacheRoot: cacheRootFor(cwd),
       outDir: opts.outDir,
       imageDir: opts.imageDir,
       imageRelDir: opts.imageRelDir,
