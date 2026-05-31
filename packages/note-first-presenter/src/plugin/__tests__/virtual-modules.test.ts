@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { buildModeModuleSource, buildRuntimeConfigObject } from '../virtual-modules';
+import { buildRuntimeConfigObject } from '../virtual-modules';
 
 describe('buildRuntimeConfigObject', () => {
   it('emits cwd, slidesStatus, dbPath, cacheRoot', () => {
@@ -13,14 +13,5 @@ describe('buildRuntimeConfigObject', () => {
     expect(rc.slidesStatus).toEqual({ kind: 'resolved', path: '/proj/a.pdf' });
     expect(rc.dbPath).toBe('/proj/.note-first-presenter.json');
     expect(rc.cacheRoot).toBe('/proj/node_modules/.note-first-presenter');
-  });
-});
-
-describe('buildModeModuleSource', () => {
-  it('emits isStatic=true for build mode', () => {
-    expect(buildModeModuleSource('build')).toContain('isStatic = true');
-  });
-  it('emits isStatic=false for dev mode', () => {
-    expect(buildModeModuleSource('dev')).toContain('isStatic = false');
   });
 });

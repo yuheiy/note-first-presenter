@@ -32,7 +32,9 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@inlang/paraglide-js": "catalog:",
     "@napi-rs/canvas": "catalog:",
+    "@sveltejs/vite-plugin-svelte": "catalog:",
     "chokidar": "^5.0.0",
     "citty": "catalog:",
     "eta": "catalog:",

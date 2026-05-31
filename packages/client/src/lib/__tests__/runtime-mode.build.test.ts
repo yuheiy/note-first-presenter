@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vite-plus/test';
+import { beforeAll, describe, expect, it, vi } from 'vite-plus/test';
 
-vi.mock('virtual:nfp/mode', () => ({ isStatic: true }));
+beforeAll(() => {
+  vi.stubGlobal('__NFP_STATIC__', true);
+});
 
 describe('runtime-mode (build)', () => {
   it('returns static nfp-data URLs in build mode', async () => {

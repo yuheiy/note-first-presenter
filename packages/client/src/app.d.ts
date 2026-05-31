@@ -1,3 +1,1 @@
-declare module 'virtual:nfp/mode' {
-  export const isStatic: boolean;
-}
+declare const __NFP_STATIC__: boolean;
