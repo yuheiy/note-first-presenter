@@ -3,8 +3,7 @@ import { defineCommand, runMain } from 'citty';
 import pkg from '../package.json' with { type: 'json' };
 import { resolveClientRoot } from './commands/shared';
 import { loadNfpConfig, resolveBuildOptions, resolveExportOptions } from './config';
-import { cacheRootFor, resolveSlidesPath } from './slides';
-import { runPipelineExport } from './node/pipeline/export';
+import { resolveSlidesPath } from './slides';
 
 const sharedServerArgs = {
   port: { type: 'string', default: '5173', alias: 'p' },
@@ -106,10 +105,10 @@ const export_ = defineCommand({
     });
     const name = path.basename(slidesStatus.path, path.extname(slidesStatus.path)) || 'notes';
 
-    const outFile = await runPipelineExport({
-      slidesPath: slidesStatus.path,
-      dbPath: path.join(cwd, '.note-first-presenter.json'),
-      cacheRoot: cacheRootFor(cwd),
+    const { exportPage } = await import('./commands/export');
+    const outFile = await exportPage({
+      slidesStatus,
+      cwd,
       outDir: opts.outDir,
       imageDir: opts.imageDir,
       imageRelDir: opts.imageRelDir,
