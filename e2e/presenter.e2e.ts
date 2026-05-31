@@ -45,11 +45,11 @@ test('--- separator splits notes into two slide groups', async ({ page }) => {
 });
 
 test('title input saves and reloads', async ({ page }) => {
-  const title = page.getByRole('textbox', { name: 'Untitled' });
+  const title = page.getByRole('textbox', { name: 'Title' });
   await title.click();
   const saved = waitForDbSave(page);
   await title.pressSequentially('My Talk');
   await saved;
   await page.reload();
-  await expect(page.getByRole('textbox', { name: 'Untitled' })).toHaveValue('My Talk');
+  await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue('My Talk');
 });

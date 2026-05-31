@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { ActiveSlideStore } from '$lib/active-slide/active-slide-store.svelte';
 	import { DbStore } from '$lib/db/client.svelte';
-	import type { DbV1 } from '$lib/db/schema';
+	import { defaultDb, type DbV1 } from '$lib/db/schema';
 	import { countNoteGroups } from '$lib/outliner/count-groups';
 	import Outliner from '$lib/outliner/Outliner.svelte';
 	import { m } from '$lib/paraglide/messages';
@@ -17,10 +17,9 @@
 	import { ThemeStore } from '$lib/theme/theme-store.svelte';
 
 	const LIST_OPEN_KEY = 'nfp:listOpen';
-	const EMPTY_DOC = { type: 'doc', content: [] };
 
 	const db = new DbStore({
-		initial: { version: 1, title: '', outline: EMPTY_DOC },
+		initial: defaultDb(),
 		save: (state) => (isStatic ? Promise.resolve() : api('/api/db', { method: 'PUT', body: state })),
 	});
 	const meta = new SlidesMetaStore();
@@ -43,6 +42,7 @@
 		void (async () => {
 			const initial = (await api(dbUrl())) as DbV1;
 			db.replace(initial);
+			if (!isStatic && db.state.title === '') db.setTitle(m.title_default());
 			await meta.load();
 			ready = true;
 		})();
@@ -76,6 +76,10 @@
 		db.setTitle(e.currentTarget.value);
 	}
 
+	function onTitleBlur() {
+		if (db.state.title === '') db.setTitle(m.title_default());
+	}
+
 	function onOutlineChange(doc: unknown) {
 		db.setOutline(doc);
 	}
@@ -92,10 +96,10 @@
 <header>
 	<input
 		type="text"
-		placeholder={m.title_placeholder()}
-		value={db.state.title}
+		value={isStatic && db.state.title === '' ? m.title_default() : db.state.title}
 		oninput={onTitleInput}
-		aria-label={m.title_placeholder()}
+		onblur={onTitleBlur}
+		aria-label={m.title_label()}
 		readonly={isStatic}
 	/>
 	{#if db.saveStatus === 'error'}

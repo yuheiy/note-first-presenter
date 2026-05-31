@@ -1,4 +1,4 @@
-import type { DbV1 } from './schema';
+import { defaultDb, type DbV1 } from './schema';
 
 const SAVE_DEBOUNCE_MS = 500;
 
@@ -8,7 +8,7 @@ export interface DbStoreOptions {
 }
 
 export class DbStore {
-  state: DbV1 = $state({ version: 1, title: '', outline: { type: 'doc', content: [] } });
+  state: DbV1 = $state(defaultDb());
   saveStatus: 'idle' | 'saving' | 'error' = $state('idle');
   lastError: string | null = $state(null);
 

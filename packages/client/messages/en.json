@@ -1,6 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "title_placeholder": "Untitled",
+  "title_label": "Title",
+  "title_default": "Untitled",
   "theme_label": "Theme",
   "theme_system": "System",
   "theme_light": "Light",

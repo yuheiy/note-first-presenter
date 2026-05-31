@@ -11,7 +11,19 @@ export const dbInputSchema = v.object({
 export type DbInput = v.InferOutput<typeof dbInputSchema>;
 
 export function emptyDb(): DbInput {
-  return { version: 1, title: '', outline: { type: 'doc', content: [] } };
+  return {
+    version: 1,
+    title: '',
+    outline: {
+      type: 'doc',
+      content: [
+        {
+          type: 'bullet_list',
+          content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
+        },
+      ],
+    },
+  };
 }
 
 export async function readDb(dbPath: string): Promise<DbInput> {

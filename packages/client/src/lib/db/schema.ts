@@ -9,5 +9,17 @@ export const dbSchema = v.object({
 export type DbV1 = v.InferOutput<typeof dbSchema>;
 
 export function defaultDb(): DbV1 {
-  return { version: 1, title: '', outline: { type: 'doc', content: [] } };
+  return {
+    version: 1,
+    title: '',
+    outline: {
+      type: 'doc',
+      content: [
+        {
+          type: 'bullet_list',
+          content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
+        },
+      ],
+    },
+  };
 }

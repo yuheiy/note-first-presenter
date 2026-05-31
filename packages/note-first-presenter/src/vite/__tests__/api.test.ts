@@ -76,7 +76,19 @@ describe('createApiMiddleware', () => {
     await res.done;
     expect(res.statusCode).toBe(200);
     const parsed = JSON.parse(res.body!.toString());
-    expect(parsed).toEqual({ version: 1, title: '', outline: { type: 'doc', content: [] } });
+    expect(parsed).toEqual({
+      version: 1,
+      title: '',
+      outline: {
+        type: 'doc',
+        content: [
+          {
+            type: 'bullet_list',
+            content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
+          },
+        ],
+      },
+    });
   });
 
   it('PUT /api/db with a valid body returns 204 and writes the file', async () => {

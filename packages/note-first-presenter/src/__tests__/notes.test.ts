@@ -2,11 +2,29 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
-import { dbPathFor, readDb, splitNoteGroups, writeDb } from '../notes';
+import { dbPathFor, emptyDb, readDb, splitNoteGroups, writeDb } from '../notes';
 
 async function makeTmp() {
   return fs.mkdtemp(path.join(tmpdir(), 'nfp-db-'));
 }
+
+describe('emptyDb', () => {
+  it('returns an empty title and a single empty list_item', () => {
+    expect(emptyDb()).toEqual({
+      version: 1,
+      title: '',
+      outline: {
+        type: 'doc',
+        content: [
+          {
+            type: 'bullet_list',
+            content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
+          },
+        ],
+      },
+    });
+  });
+});
 
 describe('readDb / writeDb', () => {
   it('returns default when file missing', async () => {

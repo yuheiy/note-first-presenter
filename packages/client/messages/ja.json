@@ -1,6 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "title_placeholder": "無題",
+  "title_label": "タイトル",
+  "title_default": "名称未設定",
   "theme_label": "テーマ",
   "theme_system": "システム",
   "theme_light": "ライト",
