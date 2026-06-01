@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import { DbStore } from '../client.svelte';
+import { DbStore, SAVE_DEBOUNCE_MS } from '../client.svelte';
 import { defaultDb } from '../schema';
 
 describe('DbStore', () => {
@@ -25,23 +25,23 @@ describe('DbStore', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it('setTitle() debounces save by 500ms', async () => {
+  it('setTitle() coalesces rapid edits into a single save after the debounce window', async () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const s = new DbStore({ initial: defaultDb(), save });
     s.setTitle('a');
     s.setTitle('ab');
     s.setTitle('abc');
     expect(save).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
     expect(save).toHaveBeenCalledTimes(1);
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ title: 'abc' }));
   });
 
-  it('flush() reports saveStatus transitions on success', async () => {
+  it('settles saveStatus to idle and clears lastError on a successful save', async () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const s = new DbStore({ initial: defaultDb(), save });
     s.setTitle('x');
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
     expect(s.saveStatus).toBe('idle');
     expect(s.lastError).toBeNull();
   });
@@ -50,7 +50,7 @@ describe('DbStore', () => {
     const save = vi.fn().mockRejectedValue(new Error('boom'));
     const s = new DbStore({ initial: defaultDb(), save });
     s.setTitle('x');
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
     expect(s.saveStatus).toBe('error');
     expect(s.lastError).toBe('boom');
   });
