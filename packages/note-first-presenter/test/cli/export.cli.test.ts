@@ -24,7 +24,7 @@ beforeAll(async () => {
   // No --template flag and no configured template: exercises the built-in
   // default template, which must be bundled into the packed bin.
   execFileSync(process.execPath, [binPath, 'export'], { cwd: tmp, stdio: 'pipe' });
-}, 180_000);
+});
 
 afterAll(async () => {
   if (tmp) await fs.rm(tmp, { recursive: true, force: true });

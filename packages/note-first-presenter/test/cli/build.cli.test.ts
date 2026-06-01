@@ -22,7 +22,7 @@ beforeAll(async () => {
     `export default { slides: 'slides.pdf' };\n`,
   );
   execFileSync(process.execPath, [binPath, 'build'], { cwd: tmp, stdio: 'pipe' });
-}, 180_000);
+});
 
 afterAll(async () => {
   if (tmp) await fs.rm(tmp, { recursive: true, force: true });
