@@ -11,4 +11,8 @@ export default defineConfig({
   },
   lint: { options: { typeAware: true, typeCheck: true } },
   fmt: { ignorePatterns: ['dist/**'] },
+  test: {
+    environment: 'node',
+    include: ['src/**/__tests__/*.test.ts'],
+  },
 });
