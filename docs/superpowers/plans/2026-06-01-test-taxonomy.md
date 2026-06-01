@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** vitest と Playwright の責務境界を明文化し、vitest workspaces で unit / component / cli-integration の 3 project に分割、Svelte コンポーネント／ストア／sync の空白 6 ファイルを追加、重複する e2e 3 件と per-file env directive を削除する。
+**Goal:** vitest と Playwright の責務境界を明文化し、層ごとに別 vitest config（unit / component / cli-integration）を立て、Svelte コンポーネント／ストア／sync の空白 6 ファイルを追加、重複する e2e 3 件と per-file env directive を削除する。
 
-**Architecture:** 仕様 `docs/superpowers/specs/2026-06-01-test-taxonomy-design.md` の通り 4 層構造（unit / component / cli-integration / e2e）。層はファイル名で一意決定。vitest 4.1 の `test.projects` で workspaces を実現。CLI 統合は `pnpm test:cli` から `--project=cli` で明示起動し、ローカルの `vp test` からは除外。
+**Architecture:** 仕様 `docs/superpowers/specs/2026-06-01-test-taxonomy-design.md` の通り 4 層構造（unit / component / cli-integration / e2e）。層はファイル名で一意決定。**仕様 R1 フォールバック採用**：vitest 4.1 の `test.projects` は `vite-plus/test` shim と worker module graph で衝突して走らないため、層ごとに別 config ファイル（`vite.config.ts` / `vitest.browser.config.ts` / `vitest.cli.config.ts`）に分割し、`vp test -c <path>` で起動する。設計の核（ファイル名で層決定、追加/削除すべきテスト一覧）は不変。
 
 **Tech Stack:** vite-plus（vitest 4 / oxlint / oxfmt）、`@vitest/browser-playwright` 4.1、`vitest-browser-svelte` 2.1、happy-dom 20、Svelte 5（runes）、Playwright 1.60。
 
@@ -35,10 +35,10 @@
 
 ### 変更
 
-- `packages/note-first-presenter/vite.config.ts` — `test.projects: [unit, cli]` を追記
-- `packages/note-first-presenter/package.json` — `test` スクリプトを `vp test --project=unit` に変更
-- `packages/client/package.json` — `test` スクリプトを `vp test --project=unit,component` に変更
-- `package.json`（root）— `test:cli` 追加、`ready` を再定義
+- `packages/note-first-presenter/vite.config.ts` — 既存 `pack`/`lint`/`fmt` に `test`（unit 用）を追記
+- `packages/note-first-presenter/package.json` — `test` スクリプトは既存 `vp test` のまま維持（unit のみ走る）
+- `packages/client/package.json` — `test` スクリプトを `vp test && vp test -c vitest.browser.config.ts` に変更（Task 5 で）
+- `package.json`（root）— `test:cli` 追加（`vp test -c vitest.cli.config.ts`）、`ready` を再定義
 - `packages/note-first-presenter/src/__tests__/db.test.ts` 他 4 ファイル — `use-temp-cwd` の import パスと fixture path を更新
 - `packages/note-first-presenter/src/__tests__/slides.test.ts` — fixture path 更新
 - `packages/note-first-presenter/src/commands/__tests__/build.test.ts` — fixture path と use-temp-cwd import 更新
@@ -59,7 +59,7 @@
 
 ## Task 1: vitest workspaces 設定基盤
 
-**Goal:** `test.projects` を両パッケージの `vite.config.ts` に入れ、`package.json` の `test` スクリプトを明示 `--project` 化する。テスト本体は触らず、既存テストがすべて緑のまま新 project 名で走ることを確認する。
+**Goal:** 各パッケージに `vite.config.ts` を整え、`test` ブロックを「unit 専用」設定として確立する。仕様 R1 のフォールバック構成のため `test.projects` は使わず、component / cli の config は別ファイルで後の Task で追加する。既存テストがすべて緑のまま新 include glob 経由で走ることを確認する。
 
 **Files:**
 
@@ -135,7 +135,7 @@ export default defineConfig({
 `packages/note-first-presenter/package.json` の `"test"` を以下に変更:
 
 ```json
-"test": "vp test --project=unit",
+"test": "vp test",
 ```
 
 - [ ] **Step 4: client の package.json の test スクリプトを更新**
@@ -143,13 +143,13 @@ export default defineConfig({
 `packages/client/package.json` の `"test"` を以下に変更（component は Task 5 で追加するため、現時点は unit のみ）:
 
 ```json
-"test": "vp test --project=unit",
+"test": "vp test",
 ```
 
 - [ ] **Step 5: nfp の test を走らせて緑であることを確認**
 
 ```bash
-cd packages/note-first-presenter && vp test --project=unit
+cd packages/note-first-presenter && vp test
 ```
 
 期待: 既存の nfp unit 9 ファイル（notes / db / config / slides / build-integration / export-bin-integration / build / export / plugin）が全件 pass。run 出力に `unit` project ラベルが表示される。
@@ -157,7 +157,7 @@ cd packages/note-first-presenter && vp test --project=unit
 - [ ] **Step 6: client の test を走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 既存 client unit 16 ファイル（runtime-mode 2 + outliner 14）が全件 pass。`unit` project ラベル表示。
@@ -299,7 +299,7 @@ const SAMPLE = path.resolve(import.meta.dirname, '../../../test/__fixtures__/sam
 - [ ] **Step 9: nfp test を走らせて全件緑であることを確認**
 
 ```bash
-cd packages/note-first-presenter && vp test --project=unit
+cd packages/note-first-presenter && vp test
 ```
 
 期待: 既存件数のまま全件 pass（fixture path / import path 切り替えの回帰がないこと）。
@@ -333,7 +333,7 @@ git commit -m "test(nfp): consolidate fixture and helper under test/ directory"
 
 ## Task 3: CLI integration テスト移設 + globalSetup 集約
 
-**Goal:** 2 つの `*-integration.test.ts` を `test/cli/*.cli.test.ts` へ移動・改名し、nfp `vite.config.ts` に `cli` project を追加、`globalSetup` で `vp pack` を 1 回に集約、ルート `package.json` に `test:cli` スクリプトと `ready` 再定義を入れる。
+**Goal:** 2 つの `*-integration.test.ts` を `test/cli/*.cli.test.ts` へ移動・改名し、nfp に `vitest.cli.config.ts` を新規作成（`globalSetup` で `vp pack` を 1 回に集約）、ルート `package.json` に `test:cli` スクリプトと `ready` 再定義を入れる。仕様 R1 フォールバックのため `test.projects` ではなく独立した config ファイルを使う。
 
 **Files:**
 
@@ -411,7 +411,7 @@ execFileSync('vp', ['pack'], { cwd: pkgDir, stdio: 'pipe' });
 
 - [ ] **Step 6: nfp vite.config.ts に cli project を追加**
 
-`packages/note-first-presenter/vite.config.ts` の `test.projects` 配列に追記:
+`packages/note-first-presenter/vitest.cli.config.ts` を新規作成:
 
 ```ts
 test: {
@@ -444,7 +444,7 @@ test: {
 ```json
 "scripts": {
   "ready": "vp check && vp run -r test && pnpm test:cli && vp run test:e2e && vp run -r build",
-  "test:cli": "pnpm -F note-first-presenter exec vitest run --project=cli",
+  "test:cli": "pnpm -F note-first-presenter exec vp test -c vitest.cli.config.ts",
   "test:e2e": "playwright test",
   "prepare": "vp config"
 }
@@ -453,7 +453,7 @@ test: {
 - [ ] **Step 8: unit テストが cli を取り込まないことを確認**
 
 ```bash
-cd packages/note-first-presenter && vp test --project=unit
+cd packages/note-first-presenter && vp test
 ```
 
 期待: cli の 2 ファイルは include されず、unit 7 ファイル（notes / db / config / slides / build / export / plugin）のみ走る。180 秒タイムアウトの重テストが消えていることを確認。
@@ -575,7 +575,7 @@ git commit -m "test(nfp): cover --template flag in export CLI integration"
 
 - [ ] **Step 1: client vite.config.ts に component project を追加**
 
-`packages/client/vite.config.ts` の `test.projects` 配列に追記:
+`packages/client/vitest.browser.config.ts` を新規作成:
 
 ```ts
 {
@@ -598,7 +598,7 @@ git commit -m "test(nfp): cover --template flag in export CLI integration"
 `packages/client/package.json` の `"test"` を:
 
 ```json
-"test": "vp test --project=unit,component",
+"test": "vp test && vp test -c vitest.browser.config.ts",
 ```
 
 - [ ] **Step 3: 最初の component テストを書く**
@@ -629,7 +629,7 @@ describe('SlideListErrorOverlay', () => {
 - [ ] **Step 4: テストを走らせて緑であることを確認（R2 検証）**
 
 ```bash
-cd packages/client && vp test --project=component
+cd packages/client && vp test -c vitest.browser.config.ts
 ```
 
 期待: Chromium が headless で起動し、2 ケース全件 pass。
@@ -735,7 +735,7 @@ describe('SlideImage (dev mode)', () => {
 - [ ] **Step 4: テストを走らせて全件緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=component
+cd packages/client && vp test -c vitest.browser.config.ts
 ```
 
 期待: SlideListErrorOverlay + 上記 3 件で合計 4 ファイル全件 pass。
@@ -824,7 +824,7 @@ describe('ActiveSlideStore', () => {
 - [ ] **Step 2: テストを走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 5 ケース全件 pass。
@@ -884,7 +884,7 @@ describe('SlidesMetaStore', () => {
 - [ ] **Step 4: テストを走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 3 ケース全件 pass。
@@ -958,7 +958,7 @@ describe('DbStore', () => {
 - [ ] **Step 6: テストを走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 5 ケース全件 pass。fail する場合、`$state` を持つクラスを new するために component test に上げる必要があるかもしれない（runes の reactive context が unit env に無いと props 不要なクラスでも初期化エラーが出る可能性）。fail した場合は当該ファイルを `*.browser.test.ts` にリネームして component project に移動。
@@ -1030,7 +1030,7 @@ describe('ThemeStore', () => {
 - [ ] **Step 8: テストを走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 4 ケース全件 pass。
@@ -1109,7 +1109,7 @@ describe('SyncPublisher', () => {
 - [ ] **Step 2: テストを走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 2 ケース全件 pass。
@@ -1161,7 +1161,7 @@ describe('SyncSubscriber', () => {
 - [ ] **Step 4: テストを走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: 2 ケース全件 pass。
@@ -1253,7 +1253,7 @@ import { parseHtmlList, parsePlainTextOutline } from '../plugins/paste';
 - [ ] **Step 2: paste.test.ts を走らせて緑であることを確認**
 
 ```bash
-cd packages/client && vp test --project=unit
+cd packages/client && vp test
 ```
 
 期待: paste.test.ts のケース全件 pass（unit project の `environment: 'happy-dom'` が引き継がれ、`DOMParser` が動作する）。

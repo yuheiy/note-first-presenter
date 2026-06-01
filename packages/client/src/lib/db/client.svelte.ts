@@ -1,6 +1,6 @@
 import { defaultDb, type DbV1 } from './schema';
 
-const SAVE_DEBOUNCE_MS = 500;
+export const SAVE_DEBOUNCE_MS = 500;
 
 export interface DbStoreOptions {
   initial: DbV1;

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, it } from 'vite-plus/test';
 import { parseHtmlList, parsePlainTextOutline } from '../plugins/paste';
 

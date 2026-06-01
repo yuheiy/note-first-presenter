@@ -6,13 +6,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test';
 
 const pkgDir = path.resolve(import.meta.dirname, '../..');
 const binPath = path.join(pkgDir, 'bin', 'note-first-presenter.mjs');
-const SAMPLE = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
+const SAMPLE = path.resolve(import.meta.dirname, '../__fixtures__/sample.pdf');
 
 let tmp: string;
 
 beforeAll(async () => {
-  // Ensure the CLI is built so the bin can run.
-  execFileSync('vp', ['pack'], { cwd: pkgDir, stdio: 'pipe' });
   tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-build-int-'));
   await fs.copyFile(SAMPLE, path.join(tmp, 'slides.pdf'));
   await fs.writeFile(
@@ -24,7 +22,7 @@ beforeAll(async () => {
     `export default { slides: 'slides.pdf' };\n`,
   );
   execFileSync(process.execPath, [binPath, 'build'], { cwd: tmp, stdio: 'pipe' });
-}, 180_000);
+});
 
 afterAll(async () => {
   if (tmp) await fs.rm(tmp, { recursive: true, force: true });
