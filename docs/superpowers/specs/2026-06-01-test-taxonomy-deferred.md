@@ -1,14 +1,20 @@
 # テスト層の再設計 — 保留作業（Task 5 / 6）
 
-- 日付: 2026-06-01
+- 日付: 2026-06-01（記録）／ 2026-06-02（解消）
 - 関連: `docs/superpowers/specs/2026-06-01-test-taxonomy-design.md`、`docs/superpowers/plans/2026-06-01-test-taxonomy.md`
-- ステータス: 保留（R2 で実装不能、upstream 修正待ち）
+- ステータス: **解消（2026-06-02）**。0.1.23 のまま browser orchestrator のハングが再現しなくなり、Task 5 / Task 6 を実施して component 層 4 ファイル / 5 件を本体に取り込んだ。
 
-## 概要
+## 解消ノート（2026-06-02）
 
-仕様で定義した 4 層のうち **component 層（vitest browser モード）が実装不能と判明**したため、Task 5（component config + R2 スモーク）と Task 6（残り leaf component 3 件）を本 PR から外す。他のすべてのタスク（1〜4、7〜12）は予定どおり実施し、4 層中 3 層（unit / cli-integration / e2e）を整備した。
+vite-plus 0.1.24 へのバンプ検証中に、`packages/client/vitest.browser.config.ts` を立てて `vp test -c vitest.browser.config.ts` を直叩きしたところ、**0.1.23 のままで Chromium ヘッドレスが起動して component テストが緑になった**（`@voidzero-dev/vite-plus-test@0.1.23` のまま再現せず）。インストール済みパッケージの ID は同じだが、catalog 経由で取得した実体に upstream の修正が反映された可能性が高い。
 
-## R2 の根本原因
+0.1.24 では別途 TypeScript 型の regression（`InlineConfig` / `PluginOption` の Excessive stack depth、`packages/note-first-presenter/src/vite/index.ts` の `paraglideVitePlugin` 周辺で 3 件）が確認されたため、バンプは見送り 0.1.23 のまま component 層を有効化した。
+
+## 当時の概要（参考）
+
+仕様で定義した 4 層のうち **component 層（vitest browser モード）が実装不能と判明**したため、Task 5（component config + R2 スモーク）と Task 6（残り leaf component 3 件）を本 PR から外した。他のすべてのタスク（1〜4、7〜12）は予定どおり実施し、4 層中 3 層（unit / cli-integration / e2e）を整備した。
+
+## R2 の根本原因（当時）
 
 `@voidzero-dev/vite-plus-test`（vite-plus 0.1.23 が依存する内部実装）の browser orchestrator が、worker module graph の分離下で正しく動作しない。具体的には:
 

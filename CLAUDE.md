@@ -17,10 +17,11 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 
 ## Testing layers
 
-Tests are split into three layers, determined by filename:
+Tests are split into four layers, determined by filename:
 
 - `**/__tests__/*.test.ts` — unit (vitest, Node for nfp / happy-dom for client). The default `vp test` target.
+- `packages/client/src/**/__tests__/*.browser.test.ts` — component (vitest browser mode, Chromium via Playwright). Runs through `vp test -c vitest.browser.config.ts`, chained after unit by the client package's `test` script.
 - `packages/note-first-presenter/test/cli/*.cli.test.ts` — CLI integration (vitest, runs the packed bin via `globalSetup`). Run with `pnpm test:cli`.
 - `e2e/*.e2e.ts` — end-to-end (Playwright against `pnpm -F ./e2e/fixtures/basic dev`). Run with `pnpm test:e2e`.
 
-`pnpm ready` runs `vp check` → unit (`vp run -r test`) → CLI integration → e2e → builds. See `docs/superpowers/specs/2026-06-01-test-taxonomy-design.md` for the four-layer plan (incl. the deferred Svelte component layer), and `docs/superpowers/specs/2026-06-01-test-taxonomy-deferred.md` for what is pending an upstream vite-plus browser-mode fix.
+`pnpm ready` runs `vp check` → unit + component (`vp run -r test`) → CLI integration → e2e → builds. See `docs/superpowers/specs/2026-06-01-test-taxonomy-design.md` for the four-layer plan.
