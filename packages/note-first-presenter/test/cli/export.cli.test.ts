@@ -43,3 +43,42 @@ describe('note-first-presenter export (bin integration, built-in template)', () 
     expect(img.size).toBeGreaterThan(0);
   });
 });
+
+describe('note-first-presenter export (bin integration, --template flag)', () => {
+  let tmplTmp: string;
+
+  beforeAll(async () => {
+    tmplTmp = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-export-tmpl-'));
+    await fs.copyFile(SAMPLE, path.join(tmplTmp, 'slides.pdf'));
+    await fs.writeFile(
+      path.join(tmplTmp, '.note-first-presenter.json'),
+      JSON.stringify({ version: 1, title: 'Tmpl Deck', outline: { type: 'doc', content: [] } }),
+    );
+    await fs.writeFile(
+      path.join(tmplTmp, 'tpl.eta'),
+      '# <%= it.title %>\n<% it.slides.forEach(function (s) { %>![](<%= s.image %>)\n<% }) %>',
+    );
+    // The extension is sourced from config (no --extension CLI flag exists).
+    // The template is intentionally set to a non-existent path in config so
+    // the assertion that --template overrides it is meaningful.
+    await fs.writeFile(
+      path.join(tmplTmp, 'note-first-presenter.config.ts'),
+      `export default { slides: 'slides.pdf', export: { format: { template: 'unused.eta', extension: 'md' } } };\n`,
+    );
+    execFileSync(process.execPath, [binPath, 'export', '--template', 'tpl.eta'], {
+      cwd: tmplTmp,
+      stdio: 'pipe',
+    });
+  });
+
+  afterAll(async () => {
+    if (tmplTmp) await fs.rm(tmplTmp, { recursive: true, force: true });
+  });
+
+  it('renders user-specified eta template into .md output', async () => {
+    const out = await fs.readFile(path.join(tmplTmp, 'export', 'slides.md'), 'utf8');
+    expect(out).toContain('# Tmpl Deck');
+    expect(out).toContain('![](images/0001.webp)');
+    expect(out).not.toContain('<!DOCTYPE html>');
+  });
+});
