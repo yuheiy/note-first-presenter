@@ -1,10 +1,10 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
-import { useTempCwd } from '../../__tests__/use-temp-cwd';
+import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
 import { writeBuildData } from '../build';
 
-const SAMPLE = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
+const SAMPLE = path.resolve(import.meta.dirname, '../../../test/__fixtures__/sample.pdf');
 
 useTempCwd('nfp-builddata-');
 

@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vite-plus/test';
 import { emptyDb } from '../../db';
 import { openSlides, type SlidesStatus } from '../../slides';
-import { useTempCwd } from '../../__tests__/use-temp-cwd';
+import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
 import { handleApiRequest } from '../plugin';
 
 interface MockResponse {
