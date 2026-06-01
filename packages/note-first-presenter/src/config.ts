@@ -13,13 +13,9 @@ export const configSchema = v.strictObject({
   export: v.optional(
     v.strictObject({
       outDir: v.optional(v.string()),
-      imageDir: v.optional(v.string()),
-      format: v.optional(
-        v.strictObject({
-          template: v.string(),
-          extension: v.string(),
-        }),
-      ),
+      assetsDir: v.optional(v.string()),
+      filename: v.optional(v.string()),
+      template: v.optional(v.string()),
     }),
   ),
 });

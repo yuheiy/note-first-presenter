@@ -78,8 +78,7 @@ const export_ = defineCommand({
   meta: { name: 'export', description: 'Export the deck via an eta template' },
   args: {
     'out-dir': { type: 'string' },
-    'image-dir': { type: 'string' },
-    template: { type: 'string' },
+    'assets-dir': { type: 'string' },
   },
   async run({ args }) {
     const { config, filePath } = await loadNfpConfig();
@@ -91,23 +90,20 @@ const export_ = defineCommand({
       throw new Error(`slides not available: ${slidesStatus.kind}`);
     }
     const exportCfg = config?.export;
-    const template = args.template ?? exportCfg?.format?.template;
-    const extension = exportCfg?.format?.extension ?? 'html';
+    const filename = exportCfg?.filename ?? 'index.html';
+    const template = exportCfg?.template ?? null;
     const outDir = path.resolve(args['out-dir'] ?? exportCfg?.outDir ?? 'export');
-    const imageDir = path.resolve(outDir, args['image-dir'] ?? exportCfg?.imageDir ?? 'images');
-    const imageRelDir = path.relative(outDir, imageDir).split(path.sep).join('/') || '.';
-    const templatePath = template ? path.resolve(template) : null;
-    const name = path.basename(slidesStatus.path, path.extname(slidesStatus.path)) || 'notes';
+    const assetsDir = path.resolve(outDir, args['assets-dir'] ?? exportCfg?.assetsDir ?? 'assets');
+    const assetsRelDir = path.relative(outDir, assetsDir).split(path.sep).join('/') || '.';
 
     const { exportPage } = await import('./commands/export');
     const outFile = await exportPage({
       slidesStatus,
       outDir,
-      imageDir,
-      imageRelDir,
-      templatePath,
-      extension,
-      name,
+      assetsDir,
+      assetsRelDir,
+      template,
+      filename,
     });
     console.log(`Exported to ${outFile}`);
   },

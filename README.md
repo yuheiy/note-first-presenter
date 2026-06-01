@@ -51,9 +51,9 @@ note-first-presenter build --out-dir public
 
 Eta テンプレートを使ってデッキ全体を単一ファイルにレンダリングします。スライド画像は画像ディレクトリに書き出され、テンプレート出力から相対パスで参照されます。
 
-出力先: `<export.outDir>/<PDF ファイル名>.<extension>`（例: `export/slides.html`）。デフォルト値は `export.outDir = export`、`export.imageDir = images`（outDir からの相対）。
+出力先: `<export.outDir>/<filename>`（例: `export/index.html`）。デフォルト値は `export.outDir = export`、`export.assetsDir = assets`（outDir からの相対）。
 
-`export.format` は省略可能です。省略した場合は組み込みの HTML テンプレートが使われ、拡張子は `html` になります（設定なしでも `note-first-presenter export` が動作します）。独自フォーマットを出力する場合は `export.format.template` と `export.format.extension` を指定します。
+`export.filename` / `export.template` は省略可能です。省略時は `filename = 'index.html'`、`template` は組み込みの HTML テンプレートが使われます（設定なしでも `note-first-presenter export` が動作します）。独自フォーマットを出力する場合は `export.template` に Eta テンプレート文字列を直接指定し、必要に応じて `export.filename` に拡張子込みの出力ファイル名を指定します。
 
 ```ts
 // note-first-presenter.config.ts
@@ -61,15 +61,23 @@ export default {
   slides: 'slides.pdf',
   export: {
     outDir: 'export',
-    imageDir: 'images',
-    format: { template: 'template.eta', extension: 'md' },
+    assetsDir: 'assets',
+    filename: 'index.md',
+    template: `# <%= it.title %>
+
+<% it.slides.forEach(function (slide) { %>
+## Slide <%= slide.number %>
+<% if (slide.image) { %>![](<%= slide.image %>)<% } %>
+
+<%~ it.toMarkdown(slide.notes) %>
+<% }) %>`,
   },
 };
 ```
 
 ```bash
 note-first-presenter export
-note-first-presenter export --out-dir out --image-dir imgs --template custom.eta
+note-first-presenter export --out-dir out --assets-dir imgs
 ```
 
 テンプレートは `it` オブジェクトで以下のコンテキストを受け取ります:
@@ -87,7 +95,7 @@ note-first-presenter export --out-dir out --image-dir imgs --template custom.eta
 | プロパティ         | 型               | 説明                                                                                                                               |
 | ------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `number`           | `number`         | 1 始まりのスライド番号                                                                                                             |
-| `image`            | `string \| null` | スライド画像への相対パス（例: `images/0001.webp`）。PDF ページを持たないダミースライドは `null`                                    |
+| `image`            | `string \| null` | スライド画像への相対パス（例: `assets/0001.webp`）。PDF ページを持たないダミースライドは `null`                                    |
 | `width` / `height` | `number`         | 画像のピクセルサイズ（ダミースライドは `0`）                                                                                       |
 | `notes`            | 配列             | このスライドのノートツリー（`{ text, children }` ノードの配列）。アウトライン内のトップレベル `---` セパレータでスライドごとに分割 |
 

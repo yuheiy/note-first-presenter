@@ -1,4 +1,4 @@
-import { existsSync, promises as fs } from 'node:fs';
+import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Eta } from 'eta';
 import { readDb } from '../db';
@@ -53,18 +53,18 @@ export interface BuildContextOptions {
   title: string;
   rendered: RenderAllResult;
   groups: NoteNode[][];
-  imageRelDir: string;
+  assetsRelDir: string;
 }
 
 export function buildExportContext(opts: BuildContextOptions): ExportContext {
-  const { rendered, groups, imageRelDir } = opts;
+  const { rendered, groups, assetsRelDir } = opts;
   const count = Math.max(rendered.pageCount, groups.length);
   const slides: ExportSlide[] = [];
   for (let i = 0; i < count; i++) {
     const rs = rendered.slides[i];
     slides.push({
       number: i + 1,
-      image: rs ? `${imageRelDir}/${rs.file}` : null,
+      image: rs ? `${assetsRelDir}/${rs.file}` : null,
       width: rs?.width ?? 0,
       height: rs?.height ?? 0,
       notes: groups[i] ?? [],
@@ -96,45 +96,37 @@ export const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 export interface ExportPageInput {
   slidesStatus: SlidesStatus;
   outDir: string;
-  imageDir: string;
-  imageRelDir: string;
-  templatePath: string | null;
-  extension: string;
-  name: string;
+  assetsDir: string;
+  assetsRelDir: string;
+  template: string | null;
+  filename: string;
 }
 
 export async function exportPage({
   slidesStatus,
   outDir,
-  imageDir,
-  imageRelDir,
-  templatePath,
-  extension,
-  name,
+  assetsDir,
+  assetsRelDir,
+  template,
+  filename,
 }: ExportPageInput): Promise<string> {
   if (slidesStatus.kind !== 'resolved') {
     throw new Error(`slides not available: ${slidesStatus.kind}`);
   }
-  if (templatePath !== null && !existsSync(templatePath)) {
-    throw new Error(`export template not found: ${templatePath}`);
-  }
-  const rendered = await openSlides(slidesStatus.path).renderAll(imageDir);
+  const rendered = await openSlides(slidesStatus.path).renderAll(assetsDir);
   const db = await readDb();
   const groups = splitNoteGroups(db.outline);
   const context = buildExportContext({
     title: db.title,
     rendered,
     groups,
-    imageRelDir,
+    assetsRelDir,
   });
 
-  const output =
-    templatePath === null
-      ? new Eta().renderString(DEFAULT_TEMPLATE, context)
-      : new Eta({ views: path.dirname(templatePath) }).render(path.basename(templatePath), context);
+  const output = new Eta().renderString(template ?? DEFAULT_TEMPLATE, context);
 
   await fs.mkdir(outDir, { recursive: true });
-  const outFile = path.join(outDir, `${name}.${extension}`);
+  const outFile = path.join(outDir, filename);
   await fs.writeFile(outFile, output, 'utf8');
   return outFile;
 }

@@ -31,20 +31,20 @@ afterAll(async () => {
 });
 
 describe('note-first-presenter export (bin integration, built-in template)', () => {
-  it('renders the built-in HTML template without a configured template file', async () => {
-    const out = await fs.readFile(path.join(tmp, 'export', 'slides.html'), 'utf8');
+  it('renders the built-in HTML template without a configured template', async () => {
+    const out = await fs.readFile(path.join(tmp, 'export', 'index.html'), 'utf8');
     expect(out).toContain('<!DOCTYPE html>');
     expect(out).toContain('<h1>Deck</h1>');
-    expect(out).toContain('<img src="images/0001.webp"');
+    expect(out).toContain('<img src="assets/0001.webp"');
   });
 
   it('writes slide images alongside the export', async () => {
-    const img = await fs.stat(path.join(tmp, 'export', 'images', '0001.webp'));
+    const img = await fs.stat(path.join(tmp, 'export', 'assets', '0001.webp'));
     expect(img.size).toBeGreaterThan(0);
   });
 });
 
-describe('note-first-presenter export (bin integration, --template flag)', () => {
+describe('note-first-presenter export (bin integration, configured template string)', () => {
   let tmplTmp: string;
 
   beforeAll(async () => {
@@ -54,31 +54,23 @@ describe('note-first-presenter export (bin integration, --template flag)', () =>
       path.join(tmplTmp, '.note-first-presenter.json'),
       JSON.stringify({ version: 1, title: 'Tmpl Deck', outline: { type: 'doc', content: [] } }),
     );
-    await fs.writeFile(
-      path.join(tmplTmp, 'tpl.eta'),
-      '# <%= it.title %>\n<% it.slides.forEach(function (s) { %>![](<%= s.image %>)\n<% }) %>',
-    );
-    // The extension is sourced from config (no --extension CLI flag exists).
-    // The template is intentionally set to a non-existent path in config so
-    // the assertion that --template overrides it is meaningful.
+    const template =
+      '# <%= it.title %>\n<% it.slides.forEach(function (s) { %>![](<%= s.image %>)\n<% }) %>';
     await fs.writeFile(
       path.join(tmplTmp, 'note-first-presenter.config.ts'),
-      `export default { slides: 'slides.pdf', export: { format: { template: 'unused.eta', extension: 'md' } } };\n`,
+      `export default { slides: 'slides.pdf', export: { filename: 'index.md', template: ${JSON.stringify(template)} } };\n`,
     );
-    execFileSync(process.execPath, [binPath, 'export', '--template', 'tpl.eta'], {
-      cwd: tmplTmp,
-      stdio: 'pipe',
-    });
+    execFileSync(process.execPath, [binPath, 'export'], { cwd: tmplTmp, stdio: 'pipe' });
   });
 
   afterAll(async () => {
     if (tmplTmp) await fs.rm(tmplTmp, { recursive: true, force: true });
   });
 
-  it('renders user-specified eta template into .md output', async () => {
-    const out = await fs.readFile(path.join(tmplTmp, 'export', 'slides.md'), 'utf8');
+  it('renders the configured eta template string into .md output', async () => {
+    const out = await fs.readFile(path.join(tmplTmp, 'export', 'index.md'), 'utf8');
     expect(out).toContain('# Tmpl Deck');
-    expect(out).toContain('![](images/0001.webp)');
+    expect(out).toContain('![](assets/0001.webp)');
     expect(out).not.toContain('<!DOCTYPE html>');
   });
 });
