@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run -r test && vp run test:e2e && vp run -r build",
+    "ready": "vp check && vp run -r test && pnpm test:cli && vp run test:e2e && vp run -r build",
+    "test:cli": "pnpm -F note-first-presenter exec vp test -c vitest.cli.config.ts",
     "test:e2e": "playwright test",
     "prepare": "vp config"
   },
