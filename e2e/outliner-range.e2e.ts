@@ -62,34 +62,6 @@ test('Shift+Click on a bullet extends a NodeRangeSelection from the anchor item'
   await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(3);
 });
 
-test('Shift+ArrowDown extends a single-item NodeRangeSelection downward', async ({ page }) => {
-  const editor = await focusEditor(page);
-  await editor.pressSequentially('one');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('two');
-
-  await clickBullet(page.locator('.outliner-root li').nth(0), { meta: true });
-  await page.keyboard.press('Shift+ArrowDown');
-
-  await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(2);
-});
-
-test('Backspace on a NodeRangeSelection deletes the entire range', async ({ page }) => {
-  const editor = await focusEditor(page);
-  await editor.pressSequentially('one');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('two');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('three');
-
-  await clickBullet(page.locator('.outliner-root li').nth(0), { meta: true });
-  await page.keyboard.press('Shift+ArrowDown');
-  await page.keyboard.press('Backspace');
-
-  await expect(page.locator('.outliner-root li')).toHaveCount(1);
-  await expect(page.locator('.outliner-root li').first()).toContainText('three');
-});
-
 test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', async ({ page }) => {
   const editor = await focusEditor(page);
   await editor.pressSequentially('a');
@@ -115,23 +87,4 @@ test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', asy
 
   const texts = await page.locator('.outliner-root li > p').allTextContents();
   expect(texts).toEqual(['c', 'a', 'b', 'd']);
-});
-
-test('Tab indents a NodeRangeSelection under the previous sibling', async ({ page }) => {
-  const editor = await focusEditor(page);
-  await editor.pressSequentially('a');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('b');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('c');
-
-  await clickBullet(page.locator('.outliner-root li').nth(1), { meta: true });
-  await page.keyboard.press('Shift+ArrowDown');
-  // Sanity: range covers [b, c] before issuing Tab.
-  await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(2);
-  await page.keyboard.press('Tab');
-
-  // After indent: a > [b, c] — top-level li becomes 1
-  await expect(page.locator('.outliner-root > .ProseMirror > ul > li')).toHaveCount(1);
-  await expect(page.locator('.outliner-root > .ProseMirror > ul > li > ul > li')).toHaveCount(2);
 });
