@@ -6,7 +6,7 @@ import { dbInputSchema, readDb, writeDb } from '../db';
 import {
   openSlides,
   PageOutOfRangeError,
-  resolveSlidesPath,
+  resolveSlides,
   type Slides,
   type SlidesStatus,
 } from '../slides';
@@ -170,7 +170,7 @@ export function ViteNfpPlugin(initialSlidesStatus: SlidesStatus): Plugin {
       const onChange = () => {
         void (async () => {
           const { config, filePath } = await loadNfpConfig();
-          slidesStatus = await resolveSlidesPath({
+          slidesStatus = await resolveSlides({
             configuredSlides: config?.slides,
             configFile: filePath,
           });

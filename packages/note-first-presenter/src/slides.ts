@@ -15,7 +15,7 @@ export interface ResolveSlidesArgs {
 
 const SLIDES_EXTENSIONS = ['pdf'] as const;
 
-export async function resolveSlidesPath({
+export async function resolveSlides({
   configuredSlides,
   configFile,
 }: ResolveSlidesArgs): Promise<SlidesStatus> {

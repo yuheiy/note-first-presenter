@@ -4,7 +4,7 @@ import { defineCommand, runMain } from 'citty';
 import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../package.json' with { type: 'json' };
 import { loadNfpConfig } from './config';
-import { resolveSlidesPath } from './slides';
+import { resolveSlides } from './slides';
 
 async function resolveClientRoot(): Promise<string> {
   const clientPkgJsonStart = path.dirname(
@@ -26,7 +26,7 @@ const dev = defineCommand({
   args: sharedServerArgs,
   async run({ args }) {
     const { config, filePath } = await loadNfpConfig();
-    const slidesStatus = await resolveSlidesPath({
+    const slidesStatus = await resolveSlides({
       configuredSlides: config?.slides,
       configFile: filePath,
     });
@@ -60,7 +60,7 @@ const build = defineCommand({
   args: { 'out-dir': { type: 'string' } },
   async run({ args }) {
     const { config, filePath } = await loadNfpConfig();
-    const slidesStatus = await resolveSlidesPath({
+    const slidesStatus = await resolveSlides({
       configuredSlides: config?.slides,
       configFile: filePath,
     });
@@ -82,7 +82,7 @@ const export_ = defineCommand({
   },
   async run({ args }) {
     const { config, filePath } = await loadNfpConfig();
-    const slidesStatus = await resolveSlidesPath({
+    const slidesStatus = await resolveSlides({
       configuredSlides: config?.slides,
       configFile: filePath,
     });

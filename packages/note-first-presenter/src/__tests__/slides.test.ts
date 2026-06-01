@@ -1,34 +1,34 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
-import { openSlides, resolveSlidesPath } from '../slides';
+import { openSlides, resolveSlides } from '../slides';
 import { useTempCwd } from '../../test/_helpers/use-temp-cwd';
 
 const fixture = path.resolve(import.meta.dirname, '../../test/__fixtures__/sample.pdf');
 
 useTempCwd('nfp-slides-');
 
-describe('resolveSlidesPath', () => {
+describe('resolveSlides', () => {
   it('returns no-config-no-file when nothing exists', async () => {
-    const result = await resolveSlidesPath({ configuredSlides: undefined, configFile: null });
+    const result = await resolveSlides({ configuredSlides: undefined, configFile: null });
     expect(result.kind).toBe('no-config-no-file');
   });
 
   it('returns resolved when a single PDF exists', async () => {
     await fs.writeFile('slides.pdf', '%PDF-1.4');
-    const result = await resolveSlidesPath({ configuredSlides: undefined, configFile: null });
+    const result = await resolveSlides({ configuredSlides: undefined, configFile: null });
     expect(result).toEqual({ kind: 'resolved', path: path.resolve('slides.pdf') });
   });
 
   it('returns no-config-multiple-files when many', async () => {
     await fs.writeFile('a.pdf', '%PDF-1.4');
     await fs.writeFile('b.pdf', '%PDF-1.4');
-    const result = await resolveSlidesPath({ configuredSlides: undefined, configFile: null });
+    const result = await resolveSlides({ configuredSlides: undefined, configFile: null });
     expect(result.kind).toBe('no-config-multiple-files');
   });
 
   it('returns configured-but-missing when path does not exist', async () => {
-    const result = await resolveSlidesPath({
+    const result = await resolveSlides({
       configuredSlides: './missing.pdf',
       configFile: path.resolve('note-first-presenter.config.ts'),
     });
@@ -38,7 +38,7 @@ describe('resolveSlidesPath', () => {
   it('resolves configured path relative to config file directory', async () => {
     await fs.mkdir('docs', { recursive: true });
     await fs.writeFile('docs/main.pdf', '%PDF-1.4');
-    const result = await resolveSlidesPath({
+    const result = await resolveSlides({
       configuredSlides: './docs/main.pdf',
       configFile: path.resolve('note-first-presenter.config.ts'),
     });
