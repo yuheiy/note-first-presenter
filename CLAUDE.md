@@ -31,11 +31,13 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 
 ## Testing layers
 
-Tests are split into four layers, determined by filename:
+Four layers, keyed by filename. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
 
-- `**/__tests__/*.test.ts` — unit (vitest, Node for nfp / happy-dom for client). The default `vp test` target.
-- `packages/client/src/**/__tests__/*.browser.test.ts` — component (vitest browser mode, Chromium via Playwright). Runs through `vp test -c vitest.browser.config.ts`, chained after unit by the client package's `test` script.
-- `packages/note-first-presenter/test/cli/*.cli.test.ts` — CLI integration (vitest, runs the packed bin via `globalSetup`). Run with `pnpm test:cli`.
-- `e2e/*.e2e.ts` — end-to-end (Playwright against `pnpm -F ./e2e/fixtures/basic dev`). Run with `pnpm test:e2e`.
+| Pattern                                                | Layer                                     | Run with                                                                               |
+| ------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| `**/__tests__/*.test.ts`                               | unit (Node for nfp, happy-dom for client) | `vp test`                                                                              |
+| `packages/client/src/**/__tests__/*.browser.test.ts`   | component (vitest browser, Chromium)      | `vp test -c vitest.browser.config.ts` (chained after unit by the client `test` script) |
+| `packages/note-first-presenter/test/cli/*.cli.test.ts` | CLI integration (packed bin)              | `pnpm test:cli`                                                                        |
+| `e2e/*.e2e.ts`                                         | end-to-end (Playwright, `basic` fixture)  | `pnpm test:e2e`                                                                        |
 
-`pnpm ready` runs `vp check` → unit + component (`vp run -r test`) → CLI integration → e2e → builds. See `docs/superpowers/specs/2026-06-01-test-taxonomy-design.md` for the four-layer plan.
+`pnpm ready` runs check → unit + component → CLI integration → e2e → builds.
