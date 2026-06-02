@@ -4,6 +4,7 @@ packages:
   - e2e/fixtures/*
 
 catalogMode: prefer
+cleanupUnusedCatalogs: true
 
 catalog:
   '@types/node': ^22.19.19
@@ -12,9 +13,7 @@ catalog:
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
   svelte: ^5.55.10
-  '@sveltejs/kit': ^2.61.1
   '@sveltejs/vite-plugin-svelte': ^7.1.2
-  '@sveltejs/adapter-auto': ^7.0.1
   prosemirror-model: ^1.25.7
   prosemirror-state: ^1.4.4
   prosemirror-view: ^1.41.8
@@ -43,7 +42,6 @@ catalog:
   happy-dom: ^20.9.0
   '@typescript/native-preview': 7.0.0-dev.20260527.2
   eta: ^4.6.0
-  '@sveltejs/adapter-static': ^3.0.10
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'
