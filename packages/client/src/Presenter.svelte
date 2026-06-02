@@ -80,8 +80,8 @@
 		if (db.state.title === '') db.setTitle(m.title_default());
 	}
 
-	function onOutlineChange(doc: unknown) {
-		db.setOutline(doc);
+	function onOutlineChange(outline: unknown) {
+		db.setOutline(outline);
 	}
 
 	function onActiveSlideFromEditor(n: number) {
@@ -127,7 +127,7 @@
 	<section class="outliner-pane">
 		{#if ready}
 			<Outliner
-				doc={db.state.outline}
+				outline={db.state.outline}
 				onChange={onOutlineChange}
 				onActiveSlideChange={onActiveSlideFromEditor}
 				editable={!isStatic}

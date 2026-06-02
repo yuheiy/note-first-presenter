@@ -1,8 +1,8 @@
 # note-first-presenter
 
-Workflowy 風アウトライナーに書いたノートに沿って、PDF を素材に手元のプレゼンを進行できる開発サーバー型のツール。プロジェクト直下に PDF を置いて `note-first-presenter` を起動すると、SvelteKit dev サーバーが立ち上がり、ノートを書きながらスライド一覧と発表者ビューが連動して動きます。
+Workflowy 風アウトライナーに書いたノートに沿って、PDF を素材に手元のプレゼンを進行できる開発サーバー型のツール。プロジェクト直下に PDF を置いて `note-first-presenter` を起動すると、CLI が dev サーバーを立ち上げ、ノートを書きながらスライド一覧と発表者ビューが連動して動きます。
 
-設計は [`docs/superpowers/specs/2026-05-26-note-first-presenter-design.md`](./docs/superpowers/specs/2026-05-26-note-first-presenter-design.md)、実装計画は [`docs/superpowers/plans/2026-05-26-note-first-presenter-mvp.md`](./docs/superpowers/plans/2026-05-26-note-first-presenter-mvp.md) を参照。
+ドメイン語彙は [`CONTEXT.md`](./CONTEXT.md)、主要な設計判断の経緯は [`docs/adr/`](./docs/adr/) を参照。
 
 ## クイックスタート
 
@@ -118,12 +118,14 @@ note-first-presenter export --out-dir out --assets-dir imgs
 
 ```
 packages/
-├── note-first-presenter/   # CLI + Vite plugin (programmatic dev server)
-└── client/                 # SvelteKit app (presenter + slideshow + outliner)
+├── note-first-presenter/   # CLI: Node / サーバ / Vite / API ミドルウェアを全所有
+└── client/                 # 純 Svelte SPA (presenter + slideshow + outliner)
 ```
 
-- `note-first-presenter` (CLI): 利用者プロジェクトの cwd で起動し、`@note-first-presenter/client` の SvelteKit dev サーバーを programmatic に起動。`virtual:nfp/runtime-config` でランタイム設定を client に流し込む。
-- `client` (SvelteKit): ProseMirror ベースの outliner、ARIA listbox のスライド一覧、`pdfjs-dist` + `@napi-rs/canvas` で WebP にレンダリングしたスライド画像をディスクキャッシュ越しに配信。
+依存は `cli → client` の一方向のみ。詳細な設計判断は [`docs/adr/`](./docs/adr/) を参照。
+
+- `note-first-presenter` (CLI): 利用者プロジェクトの cwd で起動し、Vite dev サーバーと API ミドルウェアを programmatic に立ち上げる。config・slides 解決・DB I/O・`pdfjs-dist` + `@napi-rs/canvas` での WebP レンダリング（ディスクキャッシュ）といったサーバ責務をすべて担う。
+- `client` (純 Svelte SPA): ProseMirror ベースの outliner、ARIA listbox のスライド一覧、発表者／スライドショービュー。サーバとは API 越しに JSON を fetch するだけで、上流に依存しない。
 
 ## 開発
 
@@ -141,4 +143,4 @@ pnpm test:e2e
 pnpm ready
 ```
 
-技術スタック: TypeScript、SvelteKit、Svelte 5 runes、Vite+、ProseMirror、pdfjs-dist、@napi-rs/canvas、chokidar、ofetch、valibot、@inlang/paraglide-js (en/ja)、Vitest、Playwright。
+技術スタック: TypeScript、Svelte 5 runes、Vite+、ProseMirror、pdfjs-dist、@napi-rs/canvas、chokidar、ofetch、valibot、@inlang/paraglide-js (en/ja)、Vitest、Playwright。
