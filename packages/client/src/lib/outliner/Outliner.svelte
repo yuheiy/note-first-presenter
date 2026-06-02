@@ -29,8 +29,8 @@
 	import './selections/node-range-selection';
 
 	interface Props {
-		doc: unknown;
-		onChange: (doc: unknown) => void;
+		outline: unknown;
+		onChange: (outline: unknown) => void;
 		onActiveSlideChange: (n: number) => void;
 		editable?: boolean;
 	}
@@ -48,7 +48,7 @@
 		const initialState = untrack(() =>
 			EditorState.create({
 				schema: outlinerSchema,
-				doc: outlinerSchema.nodeFromJSON(props.doc),
+				doc: outlinerSchema.nodeFromJSON(props.outline),
 				plugins: [
 					history(),
 					keymap({
