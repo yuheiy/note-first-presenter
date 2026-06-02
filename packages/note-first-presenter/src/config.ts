@@ -22,18 +22,30 @@ export const configSchema = v.strictObject({
 
 export type NoteFirstPresenterConfig = v.InferOutput<typeof configSchema>;
 
-const CONFIG_NAMES = ['note-first-presenter.config.ts', 'note-first-presenter.config.js'] as const;
+export const CONFIG_FILENAMES = [
+  'note-first-presenter.config.ts',
+  'note-first-presenter.config.js',
+] as const;
 
-export async function loadNfpConfig(): Promise<{
+export async function loadNfpConfig(command: 'dev' | 'build'): Promise<{
   config: NoteFirstPresenterConfig | null;
   filePath: string | null;
+  dependencies: string[];
 }> {
-  for (const name of CONFIG_NAMES) {
+  const env =
+    command === 'dev'
+      ? ({ command: 'serve', mode: 'development' } as const)
+      : ({ command: 'build', mode: 'production' } as const);
+  for (const name of CONFIG_FILENAMES) {
     if (!existsSync(name)) continue;
     const filePath = path.resolve(name);
-    const loaded = await loadConfigFromFile({ command: 'serve', mode: 'development' }, filePath);
+    const loaded = await loadConfigFromFile(env, filePath);
     if (!loaded) continue;
-    return { config: v.parse(configSchema, loaded.config), filePath };
+    return {
+      config: v.parse(configSchema, loaded.config),
+      filePath,
+      dependencies: loaded.dependencies.map((d) => path.resolve(d)),
+    };
   }
-  return { config: null, filePath: null };
+  return { config: null, filePath: null, dependencies: [] };
 }

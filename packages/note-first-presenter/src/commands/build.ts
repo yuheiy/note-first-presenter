@@ -12,7 +12,7 @@ export interface BuildInput {
 }
 
 export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): Promise<void> {
-  await viteBuild(createViteConfig({ slidesStatus, clientRoot, isStatic: true, outDir }));
+  await viteBuild(createViteConfig({ clientRoot, isStatic: true, outDir }));
 
   await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '200.html'));
 

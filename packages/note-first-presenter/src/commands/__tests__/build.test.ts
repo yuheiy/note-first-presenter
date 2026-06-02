@@ -1,10 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
+import { SAMPLE_PDF } from '../../../test/_helpers/fixtures';
 import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
 import { writeBuildData } from '../build';
-
-const SAMPLE = path.resolve(import.meta.dirname, '../../../test/__fixtures__/sample.pdf');
 
 useTempCwd('nfp-builddata-');
 
@@ -14,7 +13,7 @@ describe('writeBuildData', () => {
     await fs.writeFile('.note-first-presenter.json', JSON.stringify(db));
     const outDir = path.resolve('dist');
 
-    await writeBuildData({ outDir, slidesStatus: { kind: 'resolved', path: SAMPLE } });
+    await writeBuildData({ outDir, slidesStatus: { kind: 'resolved', path: SAMPLE_PDF } });
 
     const meta = JSON.parse(await fs.readFile(path.join(outDir, 'nfp-data', 'meta.json'), 'utf8'));
     expect(meta.status).toBe('resolved');
