@@ -3,16 +3,16 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test';
+import { SAMPLE_PDF } from '../_helpers/fixtures';
 
 const pkgDir = path.resolve(import.meta.dirname, '../..');
 const binPath = path.join(pkgDir, 'bin', 'note-first-presenter.mjs');
-const SAMPLE = path.resolve(import.meta.dirname, '../__fixtures__/sample.pdf');
 
 let tmp: string;
 
 beforeAll(async () => {
   tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'nfp-build-int-'));
-  await fs.copyFile(SAMPLE, path.join(tmp, 'slides.pdf'));
+  await fs.copyFile(SAMPLE_PDF, path.join(tmp, 'slides.pdf'));
   await fs.writeFile(
     path.join(tmp, '.note-first-presenter.json'),
     JSON.stringify({ version: 1, title: 'Deck', outline: { type: 'doc', content: [] } }),

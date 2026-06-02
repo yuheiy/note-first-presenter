@@ -2,11 +2,9 @@ import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import type { InlineConfig } from 'vite';
-import type { SlidesStatus } from '../slides';
 import { ViteNfpPlugin } from './plugin';
 
 export interface CreateViteConfigInput {
-  slidesStatus: SlidesStatus;
   clientRoot: string;
   isStatic: boolean;
   outDir?: string;
@@ -15,7 +13,6 @@ export interface CreateViteConfigInput {
 export function createViteConfig({
   isStatic,
   outDir,
-  slidesStatus,
   clientRoot,
 }: CreateViteConfigInput): InlineConfig {
   return {
@@ -37,7 +34,7 @@ export function createViteConfig({
         outdir: path.join(clientRoot, 'src/lib/paraglide'),
         strategy: ['preferredLanguage', 'baseLocale'],
       }),
-      ViteNfpPlugin(slidesStatus),
+      ViteNfpPlugin(),
     ],
     build: outDir ? { outDir, emptyOutDir: true } : undefined,
   };

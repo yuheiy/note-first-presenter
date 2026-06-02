@@ -1,10 +1,84 @@
 import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { Readable } from 'node:stream';
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { emptyDb } from '../../db';
-import { openSlides, type SlidesStatus } from '../../slides';
+import { type SlidesStatus } from '../../slides';
+import { SAMPLE_PDF } from '../../../test/_helpers/fixtures';
 import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
-import { handleApiRequest } from '../plugin';
+import { createApiMiddleware, createSlidesContext } from '../plugin';
+
+useTempCwd('nfp-plugin-');
+
+// ─── createSlidesContext ───────────────────────────────────────────────────
+
+describe('createSlidesContext', () => {
+  it('resolves to no-config-no-file when nothing exists', async () => {
+    const ctx = await createSlidesContext();
+    try {
+      expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('resolves a single PDF in cwd', async () => {
+    await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+    const ctx = await createSlidesContext();
+    try {
+      expect(ctx.getSlidesStatus()).toEqual({
+        kind: 'resolved',
+        path: path.resolve('slides.pdf'),
+      });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('getSlides caches Slides instances per path', async () => {
+    await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+    const ctx = await createSlidesContext();
+    try {
+      const a = ctx.getSlides(path.resolve('slides.pdf'));
+      const b = ctx.getSlides(path.resolve('slides.pdf'));
+      expect(a).toBe(b);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('calls onSettle once after initial reload', async () => {
+    const onSettle = vi.fn();
+    const ctx = await createSlidesContext({ onSettle });
+    try {
+      expect(onSettle).toHaveBeenCalledTimes(1);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('reports a failed reload via onError instead of rejecting, and degrades to no-config-no-file', async () => {
+    // A config whose default export throws on load makes loadNfpConfig reject.
+    await fs.writeFile('note-first-presenter.config.ts', 'throw new Error("boom");');
+    const onSettle = vi.fn();
+    const onError = vi.fn();
+    const ctx = await createSlidesContext({ onSettle, onError });
+    try {
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onSettle).not.toHaveBeenCalled();
+      expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('close() resolves cleanly', async () => {
+    const ctx = await createSlidesContext();
+    await expect(ctx.close()).resolves.toBeUndefined();
+  });
+});
+
+// ─── createApiMiddleware ───────────────────────────────────────────────────
 
 interface MockResponse {
   statusCode: number;
@@ -16,12 +90,9 @@ interface MockResponse {
 }
 
 function createMockReq(method: string, url: string, body?: string) {
-  const req = body == null ? new Readable({ read() {} }) : Readable.from([Buffer.from(body)]);
-  if (body == null) {
-    process.nextTick(() => req.push(null));
-  }
+  const req = Readable.from(body == null ? [] : [Buffer.from(body)]);
   return Object.assign(req, { method, url }) as unknown as Parameters<
-    ReturnType<typeof handleApiRequest>
+    ReturnType<typeof createApiMiddleware>
   >[0];
 }
 
@@ -51,28 +122,30 @@ function createMockRes(): MockResponse {
 }
 
 function asRes(res: MockResponse) {
-  return res as unknown as Parameters<ReturnType<typeof handleApiRequest>>[1];
+  return res as unknown as Parameters<ReturnType<typeof createApiMiddleware>>[1];
 }
 
 const NO_SLIDES: SlidesStatus = { kind: 'no-config-no-file' };
 
-useTempCwd('nfp-api-');
+describe('createApiMiddleware', () => {
+  const mw = createApiMiddleware({
+    getSlidesStatus: () => NO_SLIDES,
+    getSlides: () => {
+      throw new Error('getSlides should not be called when slides are unresolved');
+    },
+  });
 
-describe('handleApiRequest', () => {
   it('GET /api/db on a missing db file returns 200 with empty db', async () => {
-    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('GET', '/api/db'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
     expect(res.statusCode).toBe(200);
-    const parsed = JSON.parse(res.body!.toString());
-    expect(parsed).toEqual(emptyDb());
+    expect(JSON.parse(res.body!.toString())).toEqual(emptyDb());
   });
 
   it('PUT /api/db with a valid body returns 204 and writes the file', async () => {
-    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     const db = { version: 1, title: 'x', outline: { type: 'doc', content: [] } };
     mw(createMockReq('PUT', '/api/db', JSON.stringify(db)), asRes(res), () => {
@@ -86,7 +159,6 @@ describe('handleApiRequest', () => {
   });
 
   it('PUT /api/db with an invalid body returns 400', async () => {
-    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('PUT', '/api/db', JSON.stringify({ version: 2 })), asRes(res), () => {
       throw new Error('next should not be called');
@@ -96,7 +168,6 @@ describe('handleApiRequest', () => {
   });
 
   it('PUT /api/db with malformed JSON returns 400', async () => {
-    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('PUT', '/api/db', '{not json'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -106,7 +177,6 @@ describe('handleApiRequest', () => {
   });
 
   it('GET /api/slides/meta with unresolved slides returns 422 with the status body', async () => {
-    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     mw(createMockReq('GET', '/api/slides/meta'), asRes(res), () => {
       throw new Error('next should not be called');
@@ -117,7 +187,6 @@ describe('handleApiRequest', () => {
   });
 
   it('calls next for a non-API path', async () => {
-    const mw = handleApiRequest(() => NO_SLIDES, openSlides);
     const res = createMockRes();
     let nextCalled = false;
     mw(createMockReq('GET', '/whatever'), asRes(res), () => {

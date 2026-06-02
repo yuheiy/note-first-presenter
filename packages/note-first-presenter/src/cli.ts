@@ -25,17 +25,12 @@ const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
   args: sharedServerArgs,
   async run({ args }) {
-    const { config, filePath } = await loadNfpConfig();
-    const slidesStatus = await resolveSlides({
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
     const clientRoot = await resolveClientRoot();
 
     const { createServer } = await import('vite');
     const { createViteConfig } = await import('./vite');
     const server = await createServer({
-      ...createViteConfig({ slidesStatus, clientRoot, isStatic: false }),
+      ...createViteConfig({ clientRoot, isStatic: false }),
       server: {
         port: Number(args.port),
         host: args.host,
@@ -59,7 +54,7 @@ const build = defineCommand({
   meta: { name: 'build', description: 'Generate a static read-only site' },
   args: { 'out-dir': { type: 'string' } },
   async run({ args }) {
-    const { config, filePath } = await loadNfpConfig();
+    const { config, filePath } = await loadNfpConfig('build');
     const slidesStatus = await resolveSlides({
       configuredSlides: config?.slides,
       configFile: filePath,
@@ -81,7 +76,7 @@ const export_ = defineCommand({
     'assets-dir': { type: 'string' },
   },
   async run({ args }) {
-    const { config, filePath } = await loadNfpConfig();
+    const { config, filePath } = await loadNfpConfig('build');
     const slidesStatus = await resolveSlides({
       configuredSlides: config?.slides,
       configFile: filePath,

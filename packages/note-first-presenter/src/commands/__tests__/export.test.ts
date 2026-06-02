@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import type { NoteNode } from '../../notes';
+import { SAMPLE_PDF } from '../../../test/_helpers/fixtures';
 import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
 import { buildExportContext, exportPage, toHtml, toMarkdown } from '../export';
 
@@ -73,8 +74,6 @@ describe('buildExportContext', () => {
   });
 });
 
-const SAMPLE = path.resolve(import.meta.dirname, '../../../test/__fixtures__/sample.pdf');
-
 useTempCwd('nfp-export-');
 
 describe('exportPage', () => {
@@ -86,7 +85,7 @@ describe('exportPage', () => {
 
     const outDir = path.resolve('out');
     const outFile = await exportPage({
-      slidesStatus: { kind: 'resolved', path: SAMPLE },
+      slidesStatus: { kind: 'resolved', path: SAMPLE_PDF },
       outDir,
       assetsDir: path.join(outDir, 'assets'),
       assetsRelDir: 'assets',
@@ -108,7 +107,7 @@ describe('exportPage', () => {
 
     const outDir = path.resolve('out');
     const outFile = await exportPage({
-      slidesStatus: { kind: 'resolved', path: SAMPLE },
+      slidesStatus: { kind: 'resolved', path: SAMPLE_PDF },
       outDir,
       assetsDir: path.join(outDir, 'assets'),
       assetsRelDir: 'assets',

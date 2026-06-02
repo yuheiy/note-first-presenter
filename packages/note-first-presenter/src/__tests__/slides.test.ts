@@ -2,9 +2,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { openSlides, resolveSlides } from '../slides';
+import { SAMPLE_PDF } from '../../test/_helpers/fixtures';
 import { useTempCwd } from '../../test/_helpers/use-temp-cwd';
-
-const fixture = path.resolve(import.meta.dirname, '../../test/__fixtures__/sample.pdf');
 
 useTempCwd('nfp-slides-');
 
@@ -48,7 +47,7 @@ describe('resolveSlides', () => {
 
 describe('openSlides (PDF)', () => {
   it('renders the first page to webp and caches subsequent calls', async () => {
-    const slides = openSlides(fixture);
+    const slides = openSlides(SAMPLE_PDF);
 
     const meta = await slides.meta();
     expect(meta.pageCount).toBeGreaterThan(0);
@@ -63,7 +62,7 @@ describe('openSlides (PDF)', () => {
   });
 
   it('throws PageOutOfRangeError when the page number is out of range', async () => {
-    const slides = openSlides(fixture);
+    const slides = openSlides(SAMPLE_PDF);
     const meta = await slides.meta();
     await expect(slides.image(meta.pageCount + 1)).rejects.toThrow(/out of range/);
   });
@@ -72,7 +71,7 @@ describe('openSlides (PDF)', () => {
 describe('Slides.renderAll', () => {
   it('writes one webp per page and reports meta', async () => {
     const outDir = path.resolve('images');
-    const result = await openSlides(fixture).renderAll(outDir);
+    const result = await openSlides(SAMPLE_PDF).renderAll(outDir);
     expect(result.pageCount).toBeGreaterThanOrEqual(1);
     expect(result.hash).toMatch(/^[0-9a-f]{64}$/);
     expect(result.slides).toHaveLength(result.pageCount);
