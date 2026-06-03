@@ -16,18 +16,6 @@ export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): P
 
   await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '200.html'));
 
-  await writeBuildData({ outDir, slidesStatus });
-}
-
-interface WriteBuildDataOptions {
-  outDir: string;
-  slidesStatus: SlidesStatus;
-}
-
-export async function writeBuildData({
-  outDir,
-  slidesStatus,
-}: WriteBuildDataOptions): Promise<void> {
   const dataDir = path.join(outDir, 'nfp-data');
   await mkdir(dataDir, { recursive: true });
 

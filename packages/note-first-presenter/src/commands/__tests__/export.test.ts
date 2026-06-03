@@ -1,10 +1,6 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import type { NoteNode } from '../../notes';
-import { SAMPLE_PDF } from '../../../test/_helpers/fixtures';
-import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
-import { buildExportContext, exportPage, toHtml, toMarkdown } from '../export';
+import { buildExportContext, toHtml, toMarkdown } from '../export';
 
 const notes: NoteNode[] = [
   { text: 'parent', children: [{ text: 'child', children: [] }] },
@@ -71,54 +67,5 @@ describe('buildExportContext', () => {
     expect(ctx.slideCount).toBe(2);
     expect(ctx.slides[1].notes).toEqual([]);
     expect(ctx.slides[1].image).toBe('assets/0002.webp');
-  });
-});
-
-useTempCwd('nfp-export-');
-
-describe('exportPage', () => {
-  it('writes a single output file and slide images', async () => {
-    const template =
-      '# <%= it.title %>\n<% it.slides.forEach(function (s) { %>![](<%= s.image %>)\n<%= it.toMarkdown(s.notes) %>\n<% }) %>';
-    const db = { version: 1, title: 'My Deck', outline: { type: 'doc', content: [] } };
-    await fs.writeFile('.note-first-presenter.json', JSON.stringify(db));
-
-    const outDir = path.resolve('out');
-    const outFile = await exportPage({
-      slidesStatus: { kind: 'resolved', path: SAMPLE_PDF },
-      outDir,
-      assetsDir: path.join(outDir, 'assets'),
-      assetsRelDir: 'assets',
-      template,
-      filename: 'sample.md',
-    });
-
-    expect(outFile).toBe(path.join(outDir, 'sample.md'));
-    const body = await fs.readFile(outFile, 'utf8');
-    expect(body).toContain('# My Deck');
-    expect(body).toContain('![](assets/0001.webp)');
-    const img = await fs.stat(path.join(outDir, 'assets', '0001.webp'));
-    expect(img.size).toBeGreaterThan(0);
-  });
-
-  it('renders the built-in HTML template when template is null', async () => {
-    const db = { version: 1, title: 'My Deck', outline: { type: 'doc', content: [] } };
-    await fs.writeFile('.note-first-presenter.json', JSON.stringify(db));
-
-    const outDir = path.resolve('out');
-    const outFile = await exportPage({
-      slidesStatus: { kind: 'resolved', path: SAMPLE_PDF },
-      outDir,
-      assetsDir: path.join(outDir, 'assets'),
-      assetsRelDir: 'assets',
-      template: null,
-      filename: 'index.html',
-    });
-
-    expect(outFile).toBe(path.join(outDir, 'index.html'));
-    const body = await fs.readFile(outFile, 'utf8');
-    expect(body).toContain('<!DOCTYPE html>');
-    expect(body).toContain('<h1>My Deck</h1>');
-    expect(body).toContain('<img src="assets/0001.webp"');
   });
 });

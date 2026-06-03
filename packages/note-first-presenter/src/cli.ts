@@ -27,26 +27,13 @@ const dev = defineCommand({
   async run({ args }) {
     const clientRoot = await resolveClientRoot();
 
-    const { createServer } = await import('vite');
-    const { createViteConfig } = await import('./vite');
-    const server = await createServer({
-      ...createViteConfig({ clientRoot, isStatic: false }),
-      server: {
-        port: Number(args.port),
-        host: args.host,
-        open: args.open ? '/' : false,
-      },
+    const { dev } = await import('./commands/dev');
+    await dev({
+      clientRoot,
+      port: Number(args.port),
+      host: args.host,
+      open: args.open,
     });
-
-    await server.listen();
-    server.printUrls();
-
-    const shutdown = async () => {
-      await server.close();
-      process.exit(0);
-    };
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
   },
 });
 
