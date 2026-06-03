@@ -1,9 +1,6 @@
 {
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "note-first-presenter"
-  },
   "dependencies": {
     "note-first-presenter": "workspace:"
   }

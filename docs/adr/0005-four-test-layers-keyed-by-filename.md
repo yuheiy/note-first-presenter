@@ -4,5 +4,7 @@ vitest/Playwright の2層構成では境界が曖昧で、無規約な第3形態
 
 ## Consequences
 
-- 各パッケージの `test` スクリプトは `--project=unit[,component]` を明示する。Vitest には「登録はするがデフォルト実行から除外する project」の仕組みがないため、cli project は `pnpm test:cli`（`--project=cli` 明示）でのみ起動する。
+- 各層は各パッケージの `vite.config.ts` の `test.projects` に named project として登録する（client: `unit`/`component`、nfp: `unit`/`cli`）。層ごとに別 config ファイルを持たず、include・環境・`globalSetup` を1ファイルに集約する。
+- Vitest には「登録するがデフォルト実行から除外する project」の型安全な仕組みがない（config の `test.project` は型に無く `vp check` を通らない）ため、重い cli 層は nfp の `test` スクリプトで `--project='!cli'` を指定してデフォルトから外し、`vp run test:cli`（`--project=cli`）でのみ起動する。`--project='!cli'` は cli project の `globalSetup`（`vp pack`）ごとスキップする。
+- e2e は Playwright（Vitest 外）なので projects には含めず、`vp run test:e2e` で別途実行する。
 - `globalSetup` で `vp pack` を1回に集約し、CLI 統合テスト間の二重 pack を避ける。

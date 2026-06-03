@@ -9,7 +9,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 ## Review Checklist
 
 - [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
+- [ ] Run `vp check` and `vp run -r test` to format, lint, type check and test changes.
 - [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
@@ -31,13 +31,13 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 
 ## Testing layers
 
-Four layers, keyed by filename. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
+Four layers, keyed by filename. Vitest layers are registered as named `test.projects` in each package's `vite.config.ts`; e2e runs under Playwright. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
 
-| Pattern                                                | Layer                                     | Run with                                                                               |
-| ------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------- |
-| `**/__tests__/*.test.ts`                               | unit (Node for nfp, happy-dom for client) | `vp test`                                                                              |
-| `packages/client/src/**/__tests__/*.browser.test.ts`   | component (vitest browser, Chromium)      | `vp test -c vitest.browser.config.ts` (chained after unit by the client `test` script) |
-| `packages/note-first-presenter/test/cli/*.cli.test.ts` | CLI integration (packed bin)              | `pnpm test:cli`                                                                        |
-| `e2e/*.e2e.ts`                                         | end-to-end (Playwright, `basic` fixture)  | `pnpm test:e2e`                                                                        |
+| Pattern                                                | Layer                                     | Vitest project | Run with                                                      |
+| ------------------------------------------------------ | ----------------------------------------- | -------------- | ------------------------------------------------------------- |
+| `**/__tests__/*.test.ts`                               | unit (Node for nfp, happy-dom for client) | `unit`         | `vp run -r test`                                              |
+| `packages/client/src/**/__tests__/*.browser.test.ts`   | component (vitest browser, Chromium)      | `component`    | `vp run -r test` (client `vp test` runs `unit` + `component`) |
+| `packages/note-first-presenter/test/cli/*.cli.test.ts` | CLI integration (packed bin)              | `cli`          | `vp run test:cli` (nfp `vp test --project=cli`)               |
+| `e2e/*.e2e.ts`                                         | end-to-end (Playwright, `basic` fixture)  | —              | `vp run test:e2e`                                             |
 
-`pnpm ready` runs check → unit + component → CLI integration → e2e → builds.
+The heavy `cli` project is registered but excluded from the default run: nfp's `test` script passes `--project='!cli'` (which also skips its `vp pack` `globalSetup`), so `vp run -r test` covers unit + component only. `vp run ready` runs check → unit + component → CLI integration → e2e → builds.

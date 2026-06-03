@@ -7,8 +7,8 @@ Workflowy 風アウトライナーに書いたノートに沿って、PDF を素
 ## クイックスタート
 
 ```bash
-pnpm install
-pnpm dev
+vp install
+vp dev
 ```
 
 プロジェクト直下の PDF (`*.pdf`) を自動検出してスライドの素材として使用します。配置を明示したい場合は `note-first-presenter.config.ts` で:
@@ -137,10 +137,10 @@ vp check
 vp run -r test
 
 # E2E (Playwright)
-pnpm test:e2e
+vp run test:e2e
 
 # ready: check + test + e2e
-pnpm ready
+vp run ready
 ```
 
 技術スタック: TypeScript、Svelte 5 runes、Vite+、ProseMirror、pdfjs-dist、@napi-rs/canvas、chokidar、ofetch、valibot、@inlang/paraglide-js (en/ja)、Vitest、Playwright。

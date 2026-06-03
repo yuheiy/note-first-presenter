@@ -10,7 +10,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   // `open: 'never'` keeps the HTML report on disk without launching a blocking
-  // report server on failure (which would hang `pnpm ready` locally).
+  // report server on failure (which would hang `vp run ready` locally).
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: `http://localhost:${PORT}`,
@@ -24,7 +24,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm -F ./e2e/fixtures/basic dev --port ${PORT}`,
+    command: `vp exec -F ./e2e/fixtures/basic -- note-first-presenter --port ${PORT}`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
