@@ -12,7 +12,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@^0.1.22
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
-  svelte: ^5.55.10
+  svelte: ^5.56.1
   '@sveltejs/vite-plugin-svelte': ^7.1.2
   prosemirror-model: ^1.25.7
   prosemirror-state: ^1.4.4
@@ -25,8 +25,8 @@ catalog:
   valibot: ^1.4.1
   bowser: ^2.14.1
   esm-env: ^1.2.2
-  '@inlang/paraglide-js': ^2.18.1
-  pdfjs-dist: ^5.7.284
+  '@inlang/paraglide-js': ^2.18.2
+  pdfjs-dist: ^6.0.227
   '@napi-rs/canvas': ^1.0.0
   chokidar: ^5.0.0
   tinyglobby: ^0.2.16
@@ -40,7 +40,7 @@ catalog:
   prosemirror-schema-list: ^1.5.1
   pdf-lib: ^1.17.1
   happy-dom: ^20.9.0
-  '@typescript/native-preview': 7.0.0-dev.20260527.2
+  '@typescript/native-preview': 7.0.0-dev.20260602.1
   eta: ^4.6.0
 overrides:
   vite: 'catalog:'
