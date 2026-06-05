@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { slideUrl } from '$lib/runtime-mode';
+	import { slideUrl } from '#lib/runtime-mode';
 
 	interface Props {
 		hash: string;

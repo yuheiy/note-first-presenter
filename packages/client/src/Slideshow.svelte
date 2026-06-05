@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { BROWSER } from 'esm-env';
 	import { onMount } from 'svelte';
-	import { ActiveSlideStore } from '$lib/active-slide/active-slide-store.svelte';
-	import { m } from '$lib/paraglide/messages';
-	import SlideImage from '$lib/slide-image/SlideImage.svelte';
-	import SlideshowFallback from '$lib/slide-status/SlideshowFallback.svelte';
-	import { SlidesMetaStore } from '$lib/slides-meta/slides-meta-store.svelte';
-	import { SyncSubscriber } from '$lib/sync/sync-subscriber';
+	import { ActiveSlideStore } from '#lib/active-slide/active-slide-store.svelte';
+	import { m } from '#lib/paraglide/messages';
+	import SlideImage from '#lib/slide-image/SlideImage.svelte';
+	import SlideshowFallback from '#lib/slide-status/SlideshowFallback.svelte';
+	import { SlidesMetaStore } from '#lib/slides-meta/slides-meta-store.svelte';
+	import { SyncSubscriber } from '#lib/sync/sync-subscriber';
 
 	const CURSOR_HIDE_MS = 5000;
 

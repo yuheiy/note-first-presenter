@@ -6,7 +6,7 @@ beforeAll(() => {
 
 const fetchMock = vi.fn();
 
-vi.mock('$lib/server-client', () => ({
+vi.mock('#lib/server-client', () => ({
   api: (...args: unknown[]) => fetchMock(...args),
 }));
 

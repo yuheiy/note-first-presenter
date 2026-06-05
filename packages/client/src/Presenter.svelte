@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { BROWSER } from 'esm-env';
 	import { onMount } from 'svelte';
-	import { ActiveSlideStore } from '$lib/active-slide/active-slide-store.svelte';
-	import { DbStore } from '$lib/db/client.svelte';
-	import { defaultDb, type DbV1 } from '$lib/db/schema';
-	import { countNoteGroups } from '$lib/outliner/count-groups';
-	import Outliner from '$lib/outliner/Outliner.svelte';
-	import { m } from '$lib/paraglide/messages';
-	import { dbUrl, isStatic } from '$lib/runtime-mode';
-	import { api } from '$lib/server-client';
-	import SlideList from '$lib/slide-list/SlideList.svelte';
-	import SlideListErrorOverlay from '$lib/slide-status/SlideListErrorOverlay.svelte';
-	import SlideListHint from '$lib/slide-status/SlideListHint.svelte';
-	import { SlidesMetaStore } from '$lib/slides-meta/slides-meta-store.svelte';
-	import { SyncPublisher } from '$lib/sync/sync-publisher';
-	import { ThemeStore } from '$lib/theme/theme-store.svelte';
+	import { ActiveSlideStore } from '#lib/active-slide/active-slide-store.svelte';
+	import { DbStore } from '#lib/db/client.svelte';
+	import { defaultDb, type DbV1 } from '#lib/db/schema';
+	import { countNoteGroups } from '#lib/outliner/count-groups';
+	import Outliner from '#lib/outliner/Outliner.svelte';
+	import { m } from '#lib/paraglide/messages';
+	import { dbUrl, isStatic } from '#lib/runtime-mode';
+	import { api } from '#lib/server-client';
+	import SlideList from '#lib/slide-list/SlideList.svelte';
+	import SlideListErrorOverlay from '#lib/slide-status/SlideListErrorOverlay.svelte';
+	import SlideListHint from '#lib/slide-status/SlideListHint.svelte';
+	import { SlidesMetaStore } from '#lib/slides-meta/slides-meta-store.svelte';
+	import { SyncPublisher } from '#lib/sync/sync-publisher';
+	import { ThemeStore } from '#lib/theme/theme-store.svelte';
 
 	const LIST_OPEN_KEY = 'nfp:listOpen';
 

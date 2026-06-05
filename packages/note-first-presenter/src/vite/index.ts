@@ -19,11 +19,6 @@ export function createViteConfig({
     root: clientRoot,
     configFile: false,
     appType: 'spa',
-    resolve: {
-      alias: {
-        $lib: path.join(clientRoot, 'src/lib'),
-      },
-    },
     define: {
       __NFP_STATIC__: JSON.stringify(isStatic),
     },

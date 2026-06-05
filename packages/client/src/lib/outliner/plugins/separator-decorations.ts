@@ -1,7 +1,7 @@
 import type { Node } from 'prosemirror-model';
 import { Plugin } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 import { isTopLevelSeparator } from '../separator';
 
 function compute(doc: Node): DecorationSet {

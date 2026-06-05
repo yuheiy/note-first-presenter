@@ -21,6 +21,13 @@
     "tsconfig.json"
   ],
   "type": "module",
+  "imports": {
+    "#lib/*": [
+      "./src/lib/*",
+      "./src/lib/*.ts",
+      "./src/lib/*.js"
+    ]
+  },
   "exports": {
     "./package.json": "./package.json"
   },

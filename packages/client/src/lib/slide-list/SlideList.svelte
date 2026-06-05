@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages';
-	import SlideImage from '$lib/slide-image/SlideImage.svelte';
+	import { m } from '#lib/paraglide/messages';
+	import SlideImage from '#lib/slide-image/SlideImage.svelte';
 
 	interface Props {
 		hash: string;

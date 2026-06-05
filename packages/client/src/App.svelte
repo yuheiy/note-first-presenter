@@ -1,6 +1,6 @@
 <script lang="ts">
 	import './app.css';
-	import { getLocale, getTextDirection } from '$lib/paraglide/runtime';
+	import { getLocale, getTextDirection } from '#lib/paraglide/runtime';
 	import Presenter from './Presenter.svelte';
 	import Slideshow from './Slideshow.svelte';
 
