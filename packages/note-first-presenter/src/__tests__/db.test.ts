@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { describe, expect, it } from 'vite-plus/test';
 import { emptyDb, readDb, writeDb } from '../db';
-import { useTempCwd } from '../../test/_helpers/use-temp-cwd';
+import { useTempCwd } from './helpers';
 
 useTempCwd('nfp-db-');
 

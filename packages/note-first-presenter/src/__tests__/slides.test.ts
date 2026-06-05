@@ -2,8 +2,9 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { openSlides, resolveSlides } from '../slides';
-import { SAMPLE_PDF } from '../../test/_helpers/fixtures';
-import { useTempCwd } from '../../test/_helpers/use-temp-cwd';
+import { useTempCwd } from './helpers';
+
+const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../test/fixtures/sample.pdf');
 
 useTempCwd('nfp-slides-');
 

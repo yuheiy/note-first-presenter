@@ -4,9 +4,10 @@ import { Readable } from 'node:stream';
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { emptyDb } from '../../db';
 import { type SlidesStatus } from '../../slides';
-import { SAMPLE_PDF } from '../../../test/_helpers/fixtures';
-import { useTempCwd } from '../../../test/_helpers/use-temp-cwd';
+import { useTempCwd } from '../../__tests__/helpers';
 import { createApiMiddleware, createSlidesContext } from '../plugin';
+
+const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../../test/fixtures/sample.pdf');
 
 useTempCwd('nfp-plugin-');
 

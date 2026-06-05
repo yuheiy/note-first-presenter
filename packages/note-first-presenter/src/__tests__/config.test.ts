@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { loadNfpConfig } from '../config';
-import { useTempCwd } from '../../test/_helpers/use-temp-cwd';
+import { useTempCwd } from './helpers';
 
 useTempCwd('nfp-config-');
 
