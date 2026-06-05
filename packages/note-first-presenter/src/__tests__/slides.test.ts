@@ -72,9 +72,8 @@ describe('Slides.renderAll', () => {
   it('writes one webp per page and reports meta', async () => {
     const outDir = path.resolve('images');
     const result = await openSlides(SAMPLE_PDF).renderAll(outDir);
-    expect(result.pageCount).toBeGreaterThanOrEqual(1);
+    expect(result.slides.length).toBeGreaterThanOrEqual(1);
     expect(result.hash).toMatch(/^[0-9a-f]{64}$/);
-    expect(result.slides).toHaveLength(result.pageCount);
     const stat = await fs.stat(path.join(outDir, '0001.webp'));
     expect(stat.size).toBeGreaterThan(0);
     expect(result.slides[0].width).toBeGreaterThan(0);

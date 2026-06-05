@@ -51,8 +51,6 @@ const build = defineCommand({
 
     const { build } = await import('./commands/build');
     await build({ slidesStatus, outDir, clientRoot });
-
-    console.log(`Built static site to ${outDir}`);
   },
 });
 
@@ -78,8 +76,8 @@ const export_ = defineCommand({
     const assetsDir = path.resolve(outDir, args['assets-dir'] ?? exportCfg?.assetsDir ?? 'assets');
     const assetsRelDir = path.relative(outDir, assetsDir).split(path.sep).join('/') || '.';
 
-    const { exportPage } = await import('./commands/export');
-    const outFile = await exportPage({
+    const { exportAsPage } = await import('./commands/export');
+    await exportAsPage({
       slidesStatus,
       outDir,
       assetsDir,
@@ -87,7 +85,6 @@ const export_ = defineCommand({
       template,
       filename,
     });
-    console.log(`Exported to ${outFile}`);
   },
 });
 

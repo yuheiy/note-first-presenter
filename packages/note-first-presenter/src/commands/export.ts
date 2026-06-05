@@ -11,14 +11,13 @@ export interface ExportSlide {
   width: number;
   height: number;
   notes: NoteNode[];
+  readonly notesMarkdown: string;
+  readonly notesHtml: string;
 }
 
 export interface ExportContext {
   title: string;
-  slideCount: number;
   slides: ExportSlide[];
-  toMarkdown: (notes: NoteNode[]) => string;
-  toHtml: (notes: NoteNode[]) => string;
 }
 
 export function toMarkdown(notes: NoteNode[]): string {
@@ -58,19 +57,26 @@ export interface BuildContextOptions {
 
 export function buildExportContext(opts: BuildContextOptions): ExportContext {
   const { rendered, groups, assetsRelDir } = opts;
-  const count = Math.max(rendered.pageCount, groups.length);
+  const count = Math.max(rendered.slides.length, groups.length);
   const slides: ExportSlide[] = [];
   for (let i = 0; i < count; i++) {
     const rs = rendered.slides[i];
+    const notes = groups[i] ?? [];
     slides.push({
       number: i + 1,
       image: rs ? `${assetsRelDir}/${rs.file}` : null,
       width: rs?.width ?? 0,
       height: rs?.height ?? 0,
-      notes: groups[i] ?? [],
+      notes,
+      get notesMarkdown() {
+        return toMarkdown(notes);
+      },
+      get notesHtml() {
+        return toHtml(notes);
+      },
     });
   }
-  return { title: opts.title, slideCount: count, slides, toMarkdown, toHtml };
+  return { title: opts.title, slides };
 }
 
 // The built-in export template, inlined as a module string so it is bundled
@@ -87,13 +93,13 @@ export const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <h1><%= it.title %></h1>
 <% it.slides.forEach(function (slide) { %>
 <% if (slide.image) { %><figure><img src="<%= slide.image %>" width="<%= slide.width %>" height="<%= slide.height %>"<% if (slide.number > 1) { %> loading="lazy"<% } %> alt="" /></figure><% } %>
-<%~ it.toHtml(slide.notes) %>
+<%~ slide.notesHtml %>
 <% }) %>
 </body>
 </html>
 `;
 
-export interface ExportPageInput {
+export interface ExportAsPageInput {
   slidesStatus: SlidesStatus;
   outDir: string;
   assetsDir: string;
@@ -102,14 +108,14 @@ export interface ExportPageInput {
   filename: string;
 }
 
-export async function exportPage({
+export async function exportAsPage({
   slidesStatus,
   outDir,
   assetsDir,
   assetsRelDir,
   template,
   filename,
-}: ExportPageInput): Promise<string> {
+}: ExportAsPageInput): Promise<void> {
   if (slidesStatus.kind !== 'resolved') {
     throw new Error(`slides not available: ${slidesStatus.kind}`);
   }
@@ -128,5 +134,5 @@ export async function exportPage({
   await fs.mkdir(outDir, { recursive: true });
   const outFile = path.join(outDir, filename);
   await fs.writeFile(outFile, output, 'utf8');
-  return outFile;
+  console.log(`Exported to ${outFile}`);
 }

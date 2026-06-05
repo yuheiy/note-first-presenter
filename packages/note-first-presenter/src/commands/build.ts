@@ -34,7 +34,13 @@ export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): P
   const rendered = await slides.renderAll(slidesDir);
   await writeFile(
     path.join(dataDir, 'meta.json'),
-    JSON.stringify({ status: 'resolved', hash: rendered.hash, pageCount: rendered.pageCount }),
+    JSON.stringify({
+      status: 'resolved',
+      hash: rendered.hash,
+      pageCount: rendered.slides.length,
+    }),
     'utf8',
   );
+
+  console.log(`Built static site to ${outDir}`);
 }

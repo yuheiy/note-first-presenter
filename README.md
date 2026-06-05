@@ -69,7 +69,7 @@ export default {
 ## Slide <%= slide.number %>
 <% if (slide.image) { %>![](<%= slide.image %>)<% } %>
 
-<%~ it.toMarkdown(slide.notes) %>
+<%~ slide.notesMarkdown %>
 <% }) %>`,
   },
 };
@@ -82,13 +82,10 @@ note-first-presenter export --out-dir out --assets-dir imgs
 
 テンプレートは `it` オブジェクトで以下のコンテキストを受け取ります:
 
-| プロパティ             | 型       | 説明                                                                                  |
-| ---------------------- | -------- | ------------------------------------------------------------------------------------- |
-| `it.title`             | `string` | デッキタイトル                                                                        |
-| `it.slideCount`        | `number` | スライド総数（PDF ページ数とノートグループ数の最大値）                                |
-| `it.slides`            | 配列     | 各スライドの情報（後述）                                                              |
-| `it.toMarkdown(notes)` | 関数     | `notes` 配列をネストした Markdown 箇条書きとして返す                                  |
-| `it.toHtml(notes)`     | 関数     | `notes` 配列をネストした `<ul><li>` HTML として返す（テキストは HTML エスケープ済み） |
+| プロパティ  | 型       | 説明                     |
+| ----------- | -------- | ------------------------ |
+| `it.title`  | `string` | デッキタイトル           |
+| `it.slides` | 配列     | 各スライドの情報（後述） |
 
 `it.slides` の各要素:
 
@@ -98,6 +95,8 @@ note-first-presenter export --out-dir out --assets-dir imgs
 | `image`            | `string \| null` | スライド画像への相対パス（例: `assets/0001.webp`）。PDF ページを持たないダミースライドは `null`                                    |
 | `width` / `height` | `number`         | 画像のピクセルサイズ（ダミースライドは `0`）                                                                                       |
 | `notes`            | 配列             | このスライドのノートツリー（`{ text, children }` ノードの配列）。アウトライン内のトップレベル `---` セパレータでスライドごとに分割 |
+| `notesMarkdown`    | `string`         | `notes` をネストした Markdown 箇条書きとして返す                                                                                   |
+| `notesHtml`        | `string`         | `notes` をネストした `<ul><li>` HTML として返す（テキストは HTML エスケープ済み）                                                  |
 
 テンプレート例:
 
@@ -108,11 +107,11 @@ note-first-presenter export --out-dir out --assets-dir imgs
 ## Slide <%= slide.number %>
 <% if (slide.image) { %>![](<%= slide.image %>)<% } %>
 
-<%~ it.toMarkdown(slide.notes) %>
+<%~ slide.notesMarkdown %>
 <% }) %>
 ```
 
-> **Eta のエスケープ動作について**: Eta は既定の `autoEscape`（有効）で動作します。`<%= ... %>` は HTML エスケープされ（HTML 出力で安全）、`<%~ ... %>` はエスケープせずそのまま出力します。ノートツリーは `<%~ it.toHtml(slide.notes) %>` で出力してください（`toHtml` はテキストを既にエスケープ済みです）。Markdown 出力では `<%~ it.toMarkdown(slide.notes) %>` のように `<%~` を使い、箇条書きが HTML エスケープされないようにします。
+> **Eta のエスケープ動作について**: Eta は既定の `autoEscape`（有効）で動作します。`<%= ... %>` は HTML エスケープされ（HTML 出力で安全）、`<%~ ... %>` はエスケープせずそのまま出力します。ノートツリーは `<%~ slide.notesHtml %>` で出力してください（`notesHtml` はテキストを既にエスケープ済みです）。Markdown 出力では `<%~ slide.notesMarkdown %>` のように `<%~` を使い、箇条書きが HTML エスケープされないようにします。
 
 ## アーキテクチャ
 

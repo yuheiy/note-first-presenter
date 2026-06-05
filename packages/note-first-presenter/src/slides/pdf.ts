@@ -126,7 +126,7 @@ export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string })
         await fs.writeFile(path.join(outDir, name), data);
         slides.push({ number: n, width, height, file: name });
       }
-      return { hash, pageCount, slides } satisfies RenderAllResult;
+      return { hash, slides } satisfies RenderAllResult;
     },
     invalidate() {
       pdfP = null;

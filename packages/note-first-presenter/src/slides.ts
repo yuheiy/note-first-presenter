@@ -45,7 +45,6 @@ export interface RenderedSlide {
 
 export interface RenderAllResult {
   hash: string;
-  pageCount: number;
   slides: RenderedSlide[];
 }
 
