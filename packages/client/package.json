@@ -13,6 +13,7 @@
     "url": "git+https://github.com/author/library.git"
   },
   "files": [
+    "index.html",
     "src",
     "!src/**/__tests__",
     "messages",
