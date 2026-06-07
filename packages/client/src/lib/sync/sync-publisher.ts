@@ -8,6 +8,10 @@ export class SyncPublisher {
     this.#channel?.postMessage({ type: 'active-slide', slide } satisfies SyncMessage);
   }
 
+  publishPageCount(count: number) {
+    this.#channel?.postMessage({ type: 'page-count', count } satisfies SyncMessage);
+  }
+
   destroy() {
     this.#channel?.close();
     this.#channel = null;

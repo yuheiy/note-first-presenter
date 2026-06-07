@@ -1,4 +1,4 @@
-# Note-First Presenter
+# Note-first Presenter
 
 A presentation tool where the user writes notes first in an outliner, then pairs them with slide images.
 

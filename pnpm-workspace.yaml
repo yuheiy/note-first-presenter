@@ -9,7 +9,7 @@ cleanupUnusedCatalogs: true
 catalog:
   '@types/node': ^22.19.19
   typescript: ^6.0.3
-  vite: npm:@voidzero-dev/vite-plus-core@^0.1.22
+  vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
   svelte: ^5.56.1
@@ -54,6 +54,9 @@ peerDependencyRules:
   allowedVersions:
     vite: '*'
     vitest: '*'
+
+allowBuilds:
+  esbuild: true
 
 engineStrict: true
 trustPolicy: no-downgrade

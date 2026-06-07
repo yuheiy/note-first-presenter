@@ -35,7 +35,7 @@ export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): P
   await writeFile(
     path.join(dataDir, 'meta.json'),
     JSON.stringify({
-      status: 'resolved',
+      kind: 'resolved',
       hash: rendered.hash,
       pageCount: rendered.slides.length,
     }),

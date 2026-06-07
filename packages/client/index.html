@@ -1,12 +1,23 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>note-first-presenter</title>
+    <title>Note-first Presenter</title>
+    <style>
+      @layer {
+        body {
+          margin: 0;
+        }
+
+        #app {
+          display: contents;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app" style="display: contents"></div>
+    <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

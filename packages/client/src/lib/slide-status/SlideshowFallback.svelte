@@ -1,18 +1,25 @@
 <script lang="ts">
-	interface Props {
-		message: string;
-	}
+    interface Props {
+        message: string;
+    }
 
-	const { message }: Props = $props();
+    const { message }: Props = $props();
 </script>
 
-<p>{message}</p>
+<div class="fallback">
+    {message}
+</div>
 
 <style>
-	p {
-		color: #fff;
-		font-size: 1.25rem;
-		text-align: center;
-		padding: 2rem;
-	}
+    .fallback {
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+        height: 100%;
+        padding: 2rem;
+        font-family: sans-serif;
+        font-size: 1.25rem;
+        text-align: center;
+        color: white;
+    }
 </style>

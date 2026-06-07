@@ -33,7 +33,7 @@
   },
   "scripts": {
     "test": "vp test",
-    "check": "vp check"
+    "check": "vp check && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@inlang/paraglide-js": "catalog:",
@@ -65,6 +65,7 @@
     "playwright": "catalog:",
     "svelte-check": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest-browser-svelte": "catalog:"
   }
 }

@@ -2,7 +2,7 @@ import { api } from '#lib/server-client';
 import { metaUrl } from '#lib/runtime-mode';
 
 export type SlidesMeta =
-  | { status: 'resolved'; hash: string; pageCount: number }
+  | { kind: 'resolved'; hash: string; pageCount: number }
   | { kind: 'configured-but-missing'; configuredPath: string }
   | { kind: 'no-config-no-file' }
   | { kind: 'no-config-multiple-files'; candidates: string[] };

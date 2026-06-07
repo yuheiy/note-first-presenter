@@ -4,7 +4,7 @@
     "lib": ["esnext", "DOM", "DOM.Iterable"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": ["node"],
+    "types": ["vite/client"],
     "allowJs": true,
     "checkJs": true,
     "esModuleInterop": true,

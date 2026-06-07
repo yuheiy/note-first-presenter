@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import type { InlineConfig } from 'vite';
+import type { InlineConfig, PluginOption } from 'vite';
 import { ViteNfpPlugin } from './plugin';
 
 export interface CreateViteConfigInput {
@@ -28,7 +28,7 @@ export function createViteConfig({
         project: path.join(clientRoot, 'project.inlang'),
         outdir: path.join(clientRoot, 'src/lib/paraglide'),
         strategy: ['preferredLanguage', 'baseLocale'],
-      }),
+      }) as PluginOption,
       ViteNfpPlugin(),
     ],
     build: outDir ? { outDir, emptyOutDir: true } : undefined,

@@ -215,7 +215,7 @@ export function createApiMiddleware(opts: {
             return;
           }
           const meta = await getSlides(slidesStatus.path).meta();
-          json(200, { status: 'resolved', ...meta });
+          json(200, { kind: 'resolved', ...meta });
           return;
         }
 

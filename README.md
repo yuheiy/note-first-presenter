@@ -1,4 +1,4 @@
-# note-first-presenter
+# Note-first Presenter
 
 Workflowy 風アウトライナーに書いたノートに沿って、PDF を素材に手元のプレゼンを進行できる開発サーバー型のツール。プロジェクト直下に PDF を置いて `note-first-presenter` を起動すると、CLI が dev サーバーを立ち上げ、ノートを書きながらスライド一覧と発表者ビューが連動して動きます。
 

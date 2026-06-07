@@ -25,6 +25,22 @@ describe('SyncPublisher', () => {
     pub.destroy();
   });
 
+  it('publishPageCount posts { type, count } on the channel', async () => {
+    const received: SyncMessage[] = [];
+    const listener = new BroadcastChannel('nfp:active-slide');
+    listener.addEventListener('message', (e) => received.push(e.data));
+
+    const pub = new SyncPublisher();
+    pub.publishPageCount(12);
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(received).toEqual([{ type: 'page-count', count: 12 }]);
+
+    listener.close();
+    pub.destroy();
+  });
+
   it('destroy() prevents further publishes', async () => {
     const received: SyncMessage[] = [];
     const listener = new BroadcastChannel('nfp:active-slide');

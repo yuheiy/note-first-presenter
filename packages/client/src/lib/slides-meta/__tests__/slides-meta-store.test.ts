@@ -16,11 +16,11 @@ describe('SlidesMetaStore', () => {
   });
 
   it('load() stores resolved meta on 200', async () => {
-    fetchMock.mockResolvedValueOnce({ status: 'resolved', hash: 'h', pageCount: 4 });
+    fetchMock.mockResolvedValueOnce({ kind: 'resolved', hash: 'h', pageCount: 4 });
     const { SlidesMetaStore } = await import('../slides-meta-store.svelte');
     const s = new SlidesMetaStore();
     await s.load();
-    expect(s.data).toEqual({ status: 'resolved', hash: 'h', pageCount: 4 });
+    expect(s.data).toEqual({ kind: 'resolved', hash: 'h', pageCount: 4 });
     expect(s.error).toBeNull();
   });
 

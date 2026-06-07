@@ -144,18 +144,9 @@
 		.ProseMirror:has(li[data-range-selected='true']) {
 			caret-color: transparent;
 		}
-		.ProseMirror:has(li[data-range-selected='true']) ::selection,
 		.ProseMirror:has(li[data-range-selected='true'])::selection,
 		.ProseMirror:has(li[data-range-selected='true']) *::selection {
 			background: transparent;
-			background-color: transparent;
-			color: inherit;
-		}
-		.ProseMirror:has(li[data-range-selected='true']) ::-moz-selection,
-		.ProseMirror:has(li[data-range-selected='true'])::-moz-selection,
-		.ProseMirror:has(li[data-range-selected='true']) *::-moz-selection {
-			background: transparent;
-			background-color: transparent;
 			color: inherit;
 		}
 

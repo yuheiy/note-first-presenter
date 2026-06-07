@@ -38,7 +38,7 @@ describe('note-first-presenter build (bin integration)', () => {
     const meta = JSON.parse(
       await fs.readFile(path.join(tmp, 'dist', 'nfp-data', 'meta.json'), 'utf8'),
     );
-    expect(meta.status).toBe('resolved');
+    expect(meta.kind).toBe('resolved');
     expect(meta.pageCount).toBeGreaterThanOrEqual(1);
     await fs.access(path.join(tmp, 'dist', 'nfp-data', 'db.json'));
     await fs.access(path.join(tmp, 'dist', 'nfp-data', 'slides', meta.hash, '0001.webp'));
