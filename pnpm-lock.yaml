@@ -124,6 +124,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
+      note-first-presenter:
+        specifier: workspace:*
+        version: link:packages/note-first-presenter
       playwright:
         specifier: 'catalog:'
         version: 1.60.0

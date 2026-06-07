@@ -1,11 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-
-vi.mock('esm-env', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('esm-env')>()),
-  BROWSER: true,
-}));
-
-const { ThemeStore } = await import('../theme-store.svelte');
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ThemeStore } from '../theme-store.svelte';
 
 describe('ThemeStore', () => {
   let listeners: Array<(e: MediaQueryListEvent) => void> = [];

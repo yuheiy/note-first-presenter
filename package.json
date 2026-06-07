@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run -r test && vp run test:cli && vp run test:e2e && vp run -r build",
-    "test:cli": "vp run -F note-first-presenter test:cli",
-    "test:e2e": "playwright test",
+    "test": "vp run test:unit && vp run test:integration && vp run test:e2e",
+    "test:unit": "vp run --filter './packages/*' test",
+    "test:integration": "vp run note-first-presenter#build && vp test",
+    "test:e2e": "vp run note-first-presenter#build && playwright test",
     "prepare": "vp config",
     "dev": "vp run demo#dev"
   },
@@ -15,6 +16,7 @@
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "happy-dom": "catalog:",
+    "note-first-presenter": "workspace:*",
     "playwright": "catalog:",
     "vite-plus": "catalog:"
   },

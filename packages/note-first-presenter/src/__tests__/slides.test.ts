@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { openSlides, resolveSlides } from '../slides';
 import { useTempCwd } from './helpers';
 
-const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../test/fixtures/sample.pdf');
+const SAMPLE_PDF = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
 
 useTempCwd('nfp-slides-');
 

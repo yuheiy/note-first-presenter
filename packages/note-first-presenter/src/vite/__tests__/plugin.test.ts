@@ -7,7 +7,7 @@ import { type SlidesStatus } from '../../slides';
 import { useTempCwd } from '../../__tests__/helpers';
 import { createApiMiddleware, createSlidesContext } from '../plugin';
 
-const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../../test/fixtures/sample.pdf');
+const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
 
 useTempCwd('nfp-plugin-');
 

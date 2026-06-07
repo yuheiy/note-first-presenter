@@ -3,10 +3,8 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test';
-const SAMPLE_PDF = path.resolve(import.meta.dirname, '../fixtures/sample.pdf');
 
-const pkgDir = path.resolve(import.meta.dirname, '../..');
-const binPath = path.join(pkgDir, 'bin', 'note-first-presenter.mjs');
+const SAMPLE_PDF = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
 
 let tmp: string;
 
@@ -21,7 +19,7 @@ beforeAll(async () => {
     path.join(tmp, 'note-first-presenter.config.ts'),
     `export default { slides: 'slides.pdf' };\n`,
   );
-  execFileSync(process.execPath, [binPath, 'build'], { cwd: tmp, stdio: 'pipe' });
+  execFileSync('note-first-presenter', ['build'], { cwd: tmp, stdio: 'pipe' });
 });
 
 afterAll(async () => {

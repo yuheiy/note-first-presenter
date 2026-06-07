@@ -31,13 +31,13 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 
 ## Testing layers
 
-Four layers, keyed by filename. Vitest layers are registered as named `test.projects` in each package's `vite.config.ts`; e2e runs under Playwright. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
+Four layers, keyed by filename. Client uses `test.projects` to split into `server` (Node) and `client` (browser/Chromium); nfp defines `test` directly; root defines integration via `test.include`. e2e runs under Playwright. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
 
-| Pattern                                                | Layer                                     | Vitest project | Run with                                                      |
-| ------------------------------------------------------ | ----------------------------------------- | -------------- | ------------------------------------------------------------- |
-| `**/__tests__/*.test.ts`                               | unit (Node for nfp, happy-dom for client) | `unit`         | `vp run -r test`                                              |
-| `packages/client/src/**/__tests__/*.browser.test.ts`   | component (vitest browser, Chromium)      | `component`    | `vp run -r test` (client `vp test` runs `unit` + `component`) |
-| `packages/note-first-presenter/test/cli/*.cli.test.ts` | CLI integration (packed bin)              | `cli`          | `vp run test:cli` (nfp `vp test --project=cli`)               |
-| `e2e/*.e2e.ts`                                         | end-to-end (Playwright, `basic` fixture)  | —              | `vp run test:e2e`                                             |
+| Pattern                                       | Layer                             | Vitest project  | Run with                  |
+| --------------------------------------------- | --------------------------------- | --------------- | ------------------------- |
+| `**/*.test.ts` (excluding `*.svelte.test.ts`) | server/unit (Node)                | `server`/`unit` | `vp run test:unit`        |
+| `packages/client/src/**/*.svelte.test.ts`     | client (vitest browser, Chromium) | `client`        | `vp run test:unit`        |
+| `test/*.test.ts`                              | CLI integration (packed bin)      | —               | `vp run test:integration` |
+| `e2e/*.e2e.ts`                                | end-to-end (Playwright)           | —               | `vp run test:e2e`         |
 
-The heavy `cli` project is registered but excluded from the default run: nfp's `test` script passes `--project='!cli'` (which also skips its `vp pack` `globalSetup`), so `vp run -r test` covers unit + component only. `vp run ready` runs check → unit + component → CLI integration → e2e → builds.
+`vp run test` runs all layers: `test:unit` → `test:integration` → `test:e2e`.

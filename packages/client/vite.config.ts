@@ -5,27 +5,28 @@ import { defineConfig } from 'vite-plus';
 export default defineConfig({
   plugins: [svelte()],
   test: {
+    expect: { requireAssertions: true },
     projects: [
       {
         extends: true,
         test: {
-          name: 'unit',
-          environment: 'happy-dom',
-          include: ['src/**/__tests__/*.test.ts'],
-          exclude: ['src/**/__tests__/*.browser.test.ts'],
+          name: 'client',
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            instances: [{ browser: 'chromium', headless: true }],
+          },
+          include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+          exclude: ['src/lib/server/**'],
         },
       },
       {
         extends: true,
         test: {
-          name: 'component',
-          include: ['src/**/__tests__/*.browser.test.ts'],
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            instances: [{ browser: 'chromium' }],
-            headless: true,
-          },
+          name: 'server',
+          environment: 'node',
+          include: ['src/**/*.{test,spec}.{js,ts}'],
+          exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
         },
       },
     ],

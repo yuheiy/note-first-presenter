@@ -1,11 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-
-vi.mock('esm-env', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('esm-env')>()),
-  BROWSER: true,
-}));
-
-const { ActiveSlideStore } = await import('../active-slide-store.svelte');
+import { beforeEach, describe, expect, it } from 'vitest';
+import { ActiveSlideStore } from '../active-slide-store.svelte';
 
 describe('ActiveSlideStore', () => {
   beforeEach(() => {

@@ -22,10 +22,13 @@ export default defineConfig({
         // 'vitest') is picked up by the type checker. The vitest specifier is
         // catalog-aliased to @voidzero-dev/vite-plus-test, so behavior is
         // identical at runtime.
-        files: ['packages/client/src/**/__tests__/*.browser.test.ts'],
+        files: ['packages/client/src/**/*.svelte.test.ts'],
         rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
       },
     ],
+  },
+  test: {
+    include: ['test/**/*.{test,spec}.{js,ts}'],
   },
   run: {
     cache: true,

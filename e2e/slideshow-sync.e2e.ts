@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { resetDb } from './_helpers.ts';
+import { resetDb } from './helpers.ts';
 
 test('slideshow image src follows presenter active slide via BroadcastChannel', async ({
   browser,
@@ -8,9 +8,8 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
   const presenter = await context.newPage();
   const slideshow = await context.newPage();
 
-  await presenter.goto('/');
   await resetDb(presenter);
-  await presenter.reload();
+  await presenter.goto('/');
   await slideshow.goto('/slideshow');
   await slideshow.waitForLoadState('networkidle');
 
@@ -48,8 +47,18 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
 
 test('slide image endpoint serves a webp image', async ({ page }) => {
   await page.goto('/');
-  const meta = await (await page.request.get('/api/slides/meta')).json();
-  expect(meta.status).toBe('resolved');
+  let meta: any;
+  await expect
+    .poll(
+      async () => {
+        const res = await page.request.get('/api/slides/meta');
+        if (!res.ok()) return null;
+        meta = await res.json();
+        return meta.kind;
+      },
+      { timeout: 10_000 },
+    )
+    .toBe('resolved');
   const res = await page.request.get(`/api/slide/${meta.hash}/1`);
   expect(res.status()).toBe(200);
   expect(res.headers()['content-type']).toBe('image/webp');

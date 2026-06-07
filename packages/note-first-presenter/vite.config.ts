@@ -12,25 +12,7 @@ export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
   fmt: { ignorePatterns: ['dist/**'] },
   test: {
-    projects: [
-      {
-        extends: true,
-        test: {
-          name: 'unit',
-          environment: 'node',
-          include: ['src/**/__tests__/*.test.ts'],
-        },
-      },
-      {
-        extends: true,
-        test: {
-          name: 'cli',
-          environment: 'node',
-          include: ['test/cli/*.cli.test.ts'],
-          hookTimeout: 180_000,
-          globalSetup: ['./test/cli/setup-pack.ts'],
-        },
-      },
-    ],
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,ts}'],
   },
 });

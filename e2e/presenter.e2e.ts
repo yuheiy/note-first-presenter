@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { focusEditor, resetDb } from './_helpers.ts';
+import { focusEditor, resetDb } from './helpers.ts';
 
 function waitForDbSave(page: import('@playwright/test').Page) {
   return page.waitForResponse(
@@ -9,14 +9,14 @@ function waitForDbSave(page: import('@playwright/test').Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
   await resetDb(page);
-  await page.reload();
+  const dbSaved = waitForDbSave(page);
+  await page.goto('/');
   // The presenter auto-fills an empty title with "Untitled" and persists it on
   // load. Wait for that save to settle before each test so it cannot race with
   // the test's own waitForDbSave (which would otherwise resolve on the
   // auto-fill PUT and let the test reload before its own edit is saved).
-  await waitForDbSave(page);
+  await dbSaved;
 });
 
 test('renders presenter shell with slide list', async ({ page }) => {
