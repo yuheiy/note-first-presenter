@@ -41,7 +41,7 @@
     "pdfjs-dist": "catalog:",
     "tinyglobby": "catalog:",
     "valibot": "catalog:",
-    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.22",
+    "vite": "catalog:",
     "vitefu": "catalog:"
   },
   "devDependencies": {
