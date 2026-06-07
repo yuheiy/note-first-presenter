@@ -5,7 +5,7 @@ export interface JsonNode {
 }
 
 /** Text of a list_item's first child, only if that child is a paragraph. */
-export function paragraphText(item: JsonNode): string {
+function paragraphText(item: JsonNode): string {
   const first = (item.content ?? [])[0];
   if (!first || first.type !== 'paragraph') return '';
   return (first.content ?? []).map((n) => n.text ?? '').join('');

@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "rules": {
+    "catalog": "off"
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["vite.config.ts", "test/**/*.test.ts"],
+      "ignoreDependencies": ["@typescript/native-preview"]
+    },
+    "packages/note-first-presenter": {
+      "entry": ["src/cli.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/client": {
+      "entry": ["src/**/*.svelte"],
+      "project": ["src/**/*.{ts,js,svelte}"],
+      "ignoreDependencies": ["@vitest/browser-playwright", "playwright"]
+    },
+    "demo": {
+      "entry": []
+    },
+    "e2e/fixtures/*": {
+      "entry": [],
+      "ignoreDependencies": ["note-first-presenter"]
+    }
+  }
+}

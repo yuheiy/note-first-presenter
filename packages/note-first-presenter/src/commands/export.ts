@@ -5,7 +5,7 @@ import { readDb } from '../db';
 import { splitNoteGroups, type NoteNode } from '../notes';
 import { openSlides, type RenderAllResult, type SlidesStatus } from '../slides';
 
-export interface ExportSlide {
+interface ExportSlide {
   number: number;
   image: string | null;
   width: number;
@@ -82,7 +82,7 @@ export function buildExportContext(opts: BuildContextOptions): ExportContext {
 // The built-in export template, inlined as a module string so it is bundled
 // into the packed CLI. A standalone .eta asset would not be tracked by the
 // bundler and would be missing from dist/ at runtime.
-export const DEFAULT_TEMPLATE = `<!DOCTYPE html>
+const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html lang="en-US">
 <head>
 <meta charset="UTF-8" />

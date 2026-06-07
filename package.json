@@ -9,13 +9,14 @@
     "test:integration": "vp run note-first-presenter#build && vp test",
     "test:e2e": "vp run note-first-presenter#build && playwright test",
     "prepare": "vp config",
-    "dev": "vp run demo#dev"
+    "dev": "vp run demo#dev",
+    "check": "vp check && knip"
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
-    "happy-dom": "catalog:",
+    "knip": "catalog:",
     "note-first-presenter": "workspace:*",
     "playwright": "catalog:",
     "vite-plus": "catalog:"

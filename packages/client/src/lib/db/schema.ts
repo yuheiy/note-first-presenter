@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const dbSchema = v.object({
+const dbSchema = v.object({
   version: v.literal(1),
   title: v.string(),
   outline: v.unknown(),

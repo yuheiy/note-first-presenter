@@ -15,9 +15,7 @@ describe('SyncSubscriber', () => {
 
     const other = new BroadcastChannel('nfp:active-slide');
     other.postMessage({ type: 'active-slide', slide: 4 } satisfies SyncMessage);
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(received).toEqual([{ type: 'active-slide', slide: 4 }]);
+    await vi.waitFor(() => expect(received).toEqual([{ type: 'active-slide', slide: 4 }]));
 
     unsubscribe();
     other.close();
@@ -32,7 +30,7 @@ describe('SyncSubscriber', () => {
 
     const other = new BroadcastChannel('nfp:active-slide');
     other.postMessage({ type: 'active-slide', slide: 1 } satisfies SyncMessage);
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 50));
 
     expect(received).toEqual([]);
 

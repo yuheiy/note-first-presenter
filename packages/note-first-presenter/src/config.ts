@@ -3,7 +3,7 @@ import path from 'node:path';
 import * as v from 'valibot';
 import { loadConfigFromFile } from 'vite';
 
-export const configSchema = v.strictObject({
+const configSchema = v.strictObject({
   slides: v.optional(v.string()),
   build: v.optional(
     v.strictObject({
