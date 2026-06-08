@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { parseHtmlList, parsePlainTextOutline } from '../plugins/paste';
 
 function topLevelTexts(slice: ReturnType<typeof parseHtmlList>) {

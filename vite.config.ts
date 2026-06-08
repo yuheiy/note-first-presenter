@@ -17,15 +17,6 @@ export default defineConfig({
         files: ['packages/note-first-presenter/**'],
         rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
       },
-      {
-        // Browser-mode component tests import `expect` from `vitest` so that
-        // @vitest/browser-playwright's matchers augmentation (declare module
-        // 'vitest') is picked up by the type checker. The vitest specifier is
-        // catalog-aliased to @voidzero-dev/vite-plus-test, so behavior is
-        // identical at runtime.
-        files: ['packages/client/src/**/*.svelte.test.ts'],
-        rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
-      },
     ],
   },
   test: {
