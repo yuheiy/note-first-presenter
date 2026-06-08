@@ -9,8 +9,7 @@
     "test:integration": "vp run note-first-presenter#build && vp test",
     "test:e2e": "vp run note-first-presenter#build && playwright install && playwright test",
     "prepare": "vp config",
-    "dev": "vp run demo#dev",
-    "check": "vp check && knip"
+    "dev": "vp run demo#dev"
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
@@ -21,6 +20,7 @@
     "knip": "catalog:",
     "note-first-presenter": "workspace:*",
     "playwright": "catalog:",
+    "svelte-check": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

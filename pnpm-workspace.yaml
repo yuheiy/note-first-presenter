@@ -28,7 +28,7 @@ catalog:
   '@napi-rs/canvas': ^1.0.0
   chokidar: ^5.0.0
   tinyglobby: ^0.2.16
-  svelte-check: ^4.4.8
+  svelte-check: ^4.5.0
   '@vitest/browser-playwright': ^4.1.7
   vitest-browser-svelte: ^2.1.1
   playwright: ^1.60.0
