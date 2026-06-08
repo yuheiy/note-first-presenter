@@ -1,9 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-
-beforeAll(() => {
-  vi.stubGlobal('__NFP_STATIC__', false);
-});
 
 describe('SlideImage (dev mode)', () => {
   it('uses /api/slide/{hash}/{n} as src', async () => {

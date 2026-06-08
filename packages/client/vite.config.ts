@@ -1,9 +1,9 @@
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { sveltekit } from '@sveltejs/kit/vite';
 import { playwright } from 'vite-plus/test/browser-playwright';
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [sveltekit({})],
   test: {
     expect: { requireAssertions: true },
     projects: [

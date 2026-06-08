@@ -1,5 +1,5 @@
-import { api } from '#lib/server-client';
-import { metaUrl } from '#lib/runtime-mode';
+import { api } from '$lib/server-client';
+import { metaUrl } from '$lib/runtime-mode';
 
 export type SlidesMeta =
   | { kind: 'resolved'; hash: string; pageCount: number }

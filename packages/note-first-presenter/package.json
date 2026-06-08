@@ -34,7 +34,8 @@
   "dependencies": {
     "@inlang/paraglide-js": "catalog:",
     "@napi-rs/canvas": "catalog:",
-    "@sveltejs/vite-plugin-svelte": "catalog:",
+    "@sveltejs/adapter-static": "catalog:",
+    "@sveltejs/kit": "catalog:",
     "chokidar": "^5.0.0",
     "citty": "catalog:",
     "eta": "catalog:",

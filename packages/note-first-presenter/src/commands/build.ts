@@ -1,4 +1,4 @@
-import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { build as viteBuild } from 'vite';
 import { readDb } from '../db';
@@ -12,14 +12,18 @@ export interface BuildInput {
 }
 
 export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): Promise<void> {
-  await viteBuild(createViteConfig({ clientRoot, isStatic: true, outDir }));
+  const previousCwd = process.cwd();
+  process.chdir(clientRoot);
+  try {
+    await viteBuild(await createViteConfig({ clientRoot, outDir }));
+  } finally {
+    process.chdir(previousCwd);
+  }
 
-  await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '200.html'));
+  const db = await readDb();
 
   const dataDir = path.join(outDir, 'nfp-data');
   await mkdir(dataDir, { recursive: true });
-
-  const db = await readDb();
   await writeFile(path.join(dataDir, 'db.json'), JSON.stringify(db), 'utf8');
 
   if (slidesStatus.kind !== 'resolved') {

@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 
 const fetchMock = vi.fn();
 
-vi.mock('#lib/server-client', () => ({
+vi.mock('$lib/server-client', () => ({
   api: (...args: unknown[]) => fetchMock(...args),
 }));
 
-vi.mock('#lib/runtime-mode', () => ({
+vi.mock('$lib/runtime-mode', () => ({
   metaUrl: () => '/api/slides/meta',
 }));
 

@@ -13,33 +13,23 @@
     "url": "git+https://github.com/author/library.git"
   },
   "files": [
-    "index.html",
     "src",
     "!src/**/__tests__",
     "messages",
     "project.inlang",
-    "svelte.config.js",
     "tsconfig.json"
   ],
   "type": "module",
-  "imports": {
-    "#lib/*": [
-      "./src/lib/*",
-      "./src/lib/*.ts",
-      "./src/lib/*.js"
-    ]
-  },
   "exports": {
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "vp test",
-    "check": "vp check && svelte-check --tsconfig ./tsconfig.json"
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vp test"
   },
   "dependencies": {
-    "@sveltejs/vite-plugin-svelte": "catalog:",
     "bowser": "catalog:",
-    "esm-env": "catalog:",
     "ofetch": "catalog:",
     "prosemirror-commands": "catalog:",
     "prosemirror-history": "catalog:",
@@ -53,6 +43,7 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@sveltejs/kit": "catalog:",
     "@types/node": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",

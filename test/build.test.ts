@@ -28,7 +28,6 @@ afterAll(async () => {
 
 describe('note-first-presenter build (bin integration)', () => {
   it('emits spa shell with 200.html fallback', async () => {
-    await fs.access(path.join(tmp, 'dist', 'index.html'));
     await fs.access(path.join(tmp, 'dist', '200.html'));
   });
 

@@ -1,36 +1,44 @@
 import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
 import type { InlineConfig, PluginOption } from 'vite';
 import { ViteNfpPlugin } from './plugin';
 
 export interface CreateViteConfigInput {
   clientRoot: string;
-  isStatic: boolean;
   outDir?: string;
+  projectCwd?: string;
 }
 
-export function createViteConfig({
-  isStatic,
+export async function createViteConfig({
   outDir,
   clientRoot,
-}: CreateViteConfigInput): InlineConfig {
+  projectCwd,
+}: CreateViteConfigInput): Promise<InlineConfig> {
+  const [{ sveltekit }, { default: adapter }] = await Promise.all([
+    import('@sveltejs/kit/vite'),
+    import('@sveltejs/adapter-static'),
+  ]);
+
+  const outputDir = outDir ?? 'build';
+  const kitPlugins = (await sveltekit({
+    adapter: adapter({
+      pages: outputDir,
+      assets: outputDir,
+      fallback: '200.html',
+    }),
+  })) as PluginOption[];
+
   return {
     root: clientRoot,
     configFile: false,
-    appType: 'spa',
-    define: {
-      __NFP_STATIC__: JSON.stringify(isStatic),
-    },
     plugins: [
-      svelte(),
+      kitPlugins,
       paraglideVitePlugin({
         project: path.join(clientRoot, 'project.inlang'),
         outdir: path.join(clientRoot, 'src/lib/paraglide'),
         strategy: ['preferredLanguage', 'baseLocale'],
       }) as PluginOption,
-      ViteNfpPlugin(),
+      ViteNfpPlugin({ cwd: projectCwd }),
     ],
-    build: outDir ? { outDir, emptyOutDir: true } : undefined,
   };
 }

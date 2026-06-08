@@ -1,14 +1,17 @@
 <script lang="ts">
-    import { BROWSER } from "esm-env";
     import { onMount } from "svelte";
-    import { ActiveSlideStore } from "#lib/active-slide/active-slide-store.svelte";
-    import { m } from "#lib/paraglide/messages";
-    import SlideImage from "#lib/slide-image/SlideImage.svelte";
-    import SlideshowFallback from "#lib/slide-status/SlideshowFallback.svelte";
-    import { SlidesMetaStore } from "#lib/slides-meta/slides-meta-store.svelte";
-    import { SyncSubscriber } from "#lib/sync/sync-subscriber";
+    import { ActiveSlideStore } from "$lib/active-slide/active-slide-store.svelte";
+    import { m } from "$lib/paraglide/messages";
+    import SlideImage from "$lib/slide-image/SlideImage.svelte";
+    import SlideshowFallback from "$lib/slide-status/SlideshowFallback.svelte";
+    import type { DbV1 } from "$lib/db/schema";
+    import { dbUrl } from "$lib/runtime-mode";
+    import { api } from "$lib/server-client";
+    import { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
+    import { SyncSubscriber } from "$lib/sync/sync-subscriber";
 
     const meta = new SlidesMetaStore();
+    let title: string = $state("");
     const active = new ActiveSlideStore();
     const sub = new SyncSubscriber();
 
@@ -87,6 +90,9 @@
     onMount(() => {
         active.hydrate();
         void meta.load();
+        void api(dbUrl()).then((db) => {
+            title = (db as DbV1).title;
+        });
         const stop = sub.subscribe((msg) => {
             switch (msg.type) {
                 case "active-slide":
@@ -104,9 +110,13 @@
     });
 
     $effect(() => {
-        if (BROWSER) active.syncToUrl();
+        active.syncToUrl();
     });
 </script>
+
+<svelte:head>
+    <title>{m.view_slideshow()} - {title}</title>
+</svelte:head>
 
 <svelte:window onkeydown={onKey} />
 <svelte:body onclick={onAdvanceClick} />

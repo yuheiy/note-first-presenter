@@ -1,29 +1,28 @@
 <script lang="ts">
-    import { BROWSER } from "esm-env";
     import { onMount } from "svelte";
-    import { ActiveSlideStore } from "#lib/active-slide/active-slide-store.svelte";
-    import { DbStore } from "#lib/db/client.svelte";
-    import { defaultDb, type DbV1 } from "#lib/db/schema";
-    import { countNoteGroups } from "#lib/outliner/count-groups";
-    import Outliner from "#lib/outliner/Outliner.svelte";
-    import { m } from "#lib/paraglide/messages";
-    import { dbUrl, isStatic } from "#lib/runtime-mode";
-    import { api } from "#lib/server-client";
-    import SlideList from "#lib/slide-list/SlideList.svelte";
-    import SlideListErrorOverlay from "#lib/slide-status/SlideListErrorOverlay.svelte";
-    import SlideListHint from "#lib/slide-status/SlideListHint.svelte";
-    import { SlidesMetaStore } from "#lib/slides-meta/slides-meta-store.svelte";
-    import { SyncPublisher } from "#lib/sync/sync-publisher";
-    import { ThemeStore } from "#lib/theme/theme-store.svelte";
+    import { ActiveSlideStore } from "$lib/active-slide/active-slide-store.svelte";
+    import { DbStore } from "$lib/db/client.svelte";
+    import { defaultDb, type DbV1 } from "$lib/db/schema";
+    import { countNoteGroups } from "$lib/outliner/count-groups";
+    import Outliner from "$lib/outliner/Outliner.svelte";
+    import { m } from "$lib/paraglide/messages";
+    import { dbUrl } from "$lib/runtime-mode";
+    import { api } from "$lib/server-client";
+    import SlideList from "$lib/slide-list/SlideList.svelte";
+    import SlideListErrorOverlay from "$lib/slide-status/SlideListErrorOverlay.svelte";
+    import SlideListHint from "$lib/slide-status/SlideListHint.svelte";
+    import { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
+    import { SyncPublisher } from "$lib/sync/sync-publisher";
+    import { ThemeStore } from "$lib/theme/theme-store.svelte";
 
     const LIST_OPEN_KEY = "nfp:listOpen";
 
     const db = new DbStore({
         initial: defaultDb(),
         save: (state) =>
-            isStatic
-                ? Promise.resolve()
-                : api("/api/db", { method: "PUT", body: state }),
+            import.meta.env.DEV
+                ? api("/api/db", { method: "PUT", body: state })
+                : Promise.resolve(),
     });
     const meta = new SlidesMetaStore();
     const active = new ActiveSlideStore();
@@ -47,7 +46,7 @@
         void (async () => {
             const initial = (await api(dbUrl())) as DbV1;
             db.replace(initial);
-            if (!isStatic && db.state.title === "")
+            if (import.meta.env.DEV && db.state.title === "")
                 db.setTitle(m.title_default());
             await meta.load();
             ready = true;
@@ -67,7 +66,7 @@
     });
 
     $effect(() => {
-        if (BROWSER) localStorage.setItem(LIST_OPEN_KEY, String(listOpen));
+        localStorage.setItem(LIST_OPEN_KEY, String(listOpen));
     });
 
     $effect(() => {
@@ -103,16 +102,20 @@
     }
 </script>
 
+<svelte:head>
+    <title>{db.state.title}</title>
+</svelte:head>
+
 <header>
     <input
         type="text"
-        value={isStatic && db.state.title === ""
+        value={!import.meta.env.DEV && db.state.title === ""
             ? m.title_default()
             : db.state.title}
         oninput={onTitleInput}
         onblur={onTitleBlur}
         aria-label={m.title_label()}
-        readonly={isStatic}
+        readonly={!import.meta.env.DEV}
     />
     {#if db.saveStatus === "error"}
         <span role="alert" aria-live="polite" class="error"
@@ -156,7 +159,7 @@
                 outline={db.state.outline}
                 onChange={onOutlineChange}
                 onActiveSlideChange={onActiveSlideFromEditor}
-                editable={!isStatic}
+                editable={import.meta.env.DEV}
             />
         {/if}
     </section>

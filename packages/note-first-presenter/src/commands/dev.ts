@@ -9,8 +9,11 @@ export interface DevInput {
 }
 
 export async function dev({ clientRoot, port, host, open }: DevInput): Promise<void> {
+  const projectCwd = process.cwd();
+  process.chdir(clientRoot);
+
   const server = await createServer({
-    ...createViteConfig({ clientRoot, isStatic: false }),
+    ...(await createViteConfig({ clientRoot, projectCwd })),
     server: {
       port,
       host,

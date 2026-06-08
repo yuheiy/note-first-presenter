@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "view_slideshow": "スライドショー",
   "title_label": "タイトル",
   "title_default": "名称未設定",
   "theme_label": "テーマ",

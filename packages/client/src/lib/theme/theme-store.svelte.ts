@@ -1,11 +1,8 @@
-import { BROWSER } from 'esm-env';
-
 export type ThemeMode = 'system' | 'light' | 'dark';
 
 const STORAGE_KEY = 'nfp:theme';
 
 function readInitialMode(): ThemeMode {
-  if (!BROWSER) return 'system';
   const raw = localStorage.getItem(STORAGE_KEY);
   return raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system';
 }
@@ -26,13 +23,10 @@ export class ThemeStore {
 
   hydrate() {
     this.mode = readInitialMode();
-    if (BROWSER) {
-      this.systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
+    this.systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
   listenSystem(): () => void {
-    if (!BROWSER) return () => {};
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = (e: MediaQueryListEvent) => {
       this.systemPrefersDark = e.matches;
@@ -42,10 +36,10 @@ export class ThemeStore {
   }
 
   persist() {
-    if (BROWSER) localStorage.setItem(STORAGE_KEY, this.mode);
+    localStorage.setItem(STORAGE_KEY, this.mode);
   }
 
   applyToDocument() {
-    if (BROWSER) document.documentElement.dataset.theme = this.resolved;
+    document.documentElement.dataset.theme = this.resolved;
   }
 }

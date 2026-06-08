@@ -7,13 +7,15 @@
     "test": "vp run test:unit && vp run test:integration && vp run test:e2e",
     "test:unit": "vp run --filter './packages/*' test",
     "test:integration": "vp run note-first-presenter#build && vp test",
-    "test:e2e": "vp run note-first-presenter#build && playwright test",
+    "test:e2e": "vp run note-first-presenter#build && playwright install && playwright test",
     "prepare": "vp config",
     "dev": "vp run demo#dev",
     "check": "vp check && knip"
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
+    "@sveltejs/adapter-static": "catalog:",
+    "@sveltejs/kit": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "knip": "catalog:",

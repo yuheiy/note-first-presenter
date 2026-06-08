@@ -1,8 +1,7 @@
-import { BROWSER } from 'esm-env';
 import { SYNC_CHANNEL_NAME, type SyncMessage } from './messages';
 
 export class SyncSubscriber {
-  #channel: BroadcastChannel | null = BROWSER ? new BroadcastChannel(SYNC_CHANNEL_NAME) : null;
+  #channel: BroadcastChannel | null = new BroadcastChannel(SYNC_CHANNEL_NAME);
 
   subscribe(handler: (msg: SyncMessage) => void): () => void {
     const channel = this.#channel;

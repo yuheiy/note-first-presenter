@@ -2,11 +2,6 @@ import { describe, expect, it, vi } from 'vite-plus/test';
 import type { SyncMessage } from '../messages';
 import { SyncSubscriber } from '../sync-subscriber';
 
-vi.mock('esm-env', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('esm-env')>()),
-  BROWSER: true,
-}));
-
 describe('SyncSubscriber', () => {
   it('subscribe receives messages broadcast on the channel', async () => {
     const received: SyncMessage[] = [];

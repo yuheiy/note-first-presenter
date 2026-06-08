@@ -265,10 +265,11 @@ export function createApiMiddleware(opts: {
 
 // ─── Plugin ────────────────────────────────────────────────────────────────
 
-export const ViteNfpPlugin = (): Plugin => ({
+export const ViteNfpPlugin = (opts?: { cwd?: string }): Plugin => ({
   name: 'note-first-presenter',
   apply: 'serve',
   async configureServer(server: ViteDevServer) {
+    if (opts?.cwd) process.chdir(opts.cwd);
     const { getSlidesStatus, getSlides, close } = await createSlidesContext({
       onSettle: () => server.ws.send({ type: 'full-reload' }),
       onError: (err) => {

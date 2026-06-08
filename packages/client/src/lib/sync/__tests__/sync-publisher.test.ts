@@ -2,11 +2,6 @@ import { describe, expect, it, vi } from 'vite-plus/test';
 import type { SyncMessage } from '../messages';
 import { SyncPublisher } from '../sync-publisher';
 
-vi.mock('esm-env', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('esm-env')>()),
-  BROWSER: true,
-}));
-
 describe('SyncPublisher', () => {
   it('publishActiveSlide posts { type, slide } on the channel', async () => {
     const received: SyncMessage[] = [];
@@ -16,10 +11,7 @@ describe('SyncPublisher', () => {
     const pub = new SyncPublisher();
     pub.publishActiveSlide(7);
 
-    // BroadcastChannel delivers async; yield to the event loop.
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(received).toEqual([{ type: 'active-slide', slide: 7 }]);
+    await vi.waitFor(() => expect(received).toEqual([{ type: 'active-slide', slide: 7 }]));
 
     listener.close();
     pub.destroy();
@@ -33,9 +25,7 @@ describe('SyncPublisher', () => {
     const pub = new SyncPublisher();
     pub.publishPageCount(12);
 
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(received).toEqual([{ type: 'page-count', count: 12 }]);
+    await vi.waitFor(() => expect(received).toEqual([{ type: 'page-count', count: 12 }]));
 
     listener.close();
     pub.destroy();
@@ -48,8 +38,8 @@ describe('SyncPublisher', () => {
 
     const pub = new SyncPublisher();
     pub.destroy();
-    pub.publishActiveSlide(1); // no-op
-    await new Promise((r) => setTimeout(r, 0));
+    pub.publishActiveSlide(1);
+    await new Promise((r) => setTimeout(r, 50));
 
     expect(received).toEqual([]);
     listener.close();
