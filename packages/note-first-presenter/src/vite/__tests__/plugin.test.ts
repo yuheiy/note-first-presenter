@@ -77,6 +77,65 @@ describe('createSlidesContext', () => {
     const ctx = await createSlidesContext();
     await expect(ctx.close()).resolves.toBeUndefined();
   });
+
+  it('detects a PDF added to cwd after startup', { timeout: 10_000 }, async () => {
+    const ctx = await createSlidesContext();
+    try {
+      expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+      await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+      await vi.waitFor(
+        () => {
+          expect(ctx.getSlidesStatus()).toEqual({
+            kind: 'resolved',
+            path: path.resolve('slides.pdf'),
+          });
+        },
+        { timeout: 5000 },
+      );
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('reloads when the resolved PDF changes right after settle', { timeout: 10_000 }, async () => {
+    await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+    const onSettle = vi.fn();
+    const ctx = await createSlidesContext({ onSettle });
+    try {
+      expect(onSettle).toHaveBeenCalledTimes(1);
+      // Written immediately after settle, inside the window where the dynamic
+      // watcher's initial scan may still be running.
+      await fs.appendFile(path.resolve('slides.pdf'), ' ');
+      await vi.waitFor(
+        () => {
+          expect(onSettle.mock.calls.length).toBeGreaterThanOrEqual(2);
+        },
+        { timeout: 5000 },
+      );
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('detects a PDF removed from cwd', { timeout: 10_000 }, async () => {
+    await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+    const ctx = await createSlidesContext();
+    try {
+      expect(ctx.getSlidesStatus()).toEqual({
+        kind: 'resolved',
+        path: path.resolve('slides.pdf'),
+      });
+      await fs.rm(path.resolve('slides.pdf'));
+      await vi.waitFor(
+        () => {
+          expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+        },
+        { timeout: 5000 },
+      );
+    } finally {
+      await ctx.close();
+    }
+  });
 });
 
 // ─── createApiMiddleware ───────────────────────────────────────────────────

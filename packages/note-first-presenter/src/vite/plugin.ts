@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
@@ -8,6 +9,7 @@ import {
   openSlides,
   PageOutOfRangeError,
   resolveSlides,
+  SLIDES_EXTENSIONS,
   type Slides,
   type SlidesStatus,
 } from '../slides';
@@ -69,6 +71,12 @@ export async function createSlidesContext(opts?: {
   let dynamicWatcher: FSWatcher | null = null;
   let currentPaths: string[] = [];
   let closed = false;
+  // Lets setTargets stop waiting for 'ready' if the context is closed
+  // mid-setup; a closed watcher may never emit it.
+  let resolveClosed!: () => void;
+  const closedPromise = new Promise<void>((resolve) => {
+    resolveClosed = resolve;
+  });
 
   let running = false;
   let rerunPending = false;
@@ -88,12 +96,16 @@ export async function createSlidesContext(opts?: {
     dynamicWatcher = null;
     await previous?.close();
     if (next.length === 0 || closed) return;
-    dynamicWatcher = chokidar
+    const watcher = chokidar
       .watch(next, {
         awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
         ignoreInitial: true,
       })
       .on('all', trigger);
+    dynamicWatcher = watcher;
+    // Same pre-ready suppression as the static watchers below: wait for the
+    // initial scan so a change right after this reload isn't missed.
+    await Promise.race([once(watcher, 'ready'), closedPromise]);
   }
 
   async function runOnChange(): Promise<void> {
@@ -117,11 +129,17 @@ export async function createSlidesContext(opts?: {
 
   // Auto-detect PDFs added/removed in cwd (only meaningful when config doesn't
   // pin a specific path). 'change' events go through the dynamic watcher
-  // instead, which has awaitWriteFinish.
+  // instead, which has awaitWriteFinish. chokidar v4 dropped glob support, so
+  // watch the cwd itself and filter by extension; the filter also keeps
+  // unrelated files (editor temp files, the db file) from triggering reloads.
+  const onRootEvent = (eventPath: string): void => {
+    if (!SLIDES_EXTENSIONS.some((ext) => eventPath.endsWith(`.${ext}`))) return;
+    trigger();
+  };
   const rootWatcher = chokidar
-    .watch('*.pdf', { depth: 0, ignoreInitial: true })
-    .on('add', trigger)
-    .on('unlink', trigger);
+    .watch('.', { depth: 0, ignoreInitial: true })
+    .on('add', onRootEvent)
+    .on('unlink', onRootEvent);
 
   const configWatcher = chokidar
     .watch([...CONFIG_FILENAMES], {
@@ -130,6 +148,11 @@ export async function createSlidesContext(opts?: {
     })
     .on('all', trigger);
 
+  // With ignoreInitial, events before the initial scan completes are
+  // swallowed; wait for 'ready' so files appearing right after startup are
+  // never silently missed.
+  await Promise.all([once(rootWatcher, 'ready'), once(configWatcher, 'ready')]);
+
   await runOnChange();
 
   return {
@@ -137,6 +160,7 @@ export async function createSlidesContext(opts?: {
     getSlides,
     close: async () => {
       closed = true;
+      resolveClosed();
       const dynamic = dynamicWatcher;
       dynamicWatcher = null;
       await Promise.all([rootWatcher.close(), configWatcher.close(), dynamic?.close()]);

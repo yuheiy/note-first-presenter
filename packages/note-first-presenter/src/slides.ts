@@ -13,7 +13,7 @@ export interface ResolveSlidesArgs {
   configFile: string | null;
 }
 
-const SLIDES_EXTENSIONS = ['pdf'] as const;
+export const SLIDES_EXTENSIONS = ['pdf'] as const;
 
 export async function resolveSlides({
   configuredSlides,
