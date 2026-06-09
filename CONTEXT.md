@@ -21,3 +21,11 @@ A top-level outline item whose text is exactly `---`, marking a boundary between
 **Slide**:
 A single screen in a presentation. Composed of a slide image (a rendered PDF page) and its corresponding note group.
 _Avoid_: page (refers to the PDF page, not the presentation unit)
+
+**Editor**:
+The read-write mode of the app, where the author writes the outline and pairs it with slides. Exists only while the tool runs locally.
+_Avoid_: Presenter (the product name, not a mode)
+
+**Viewer**:
+The read-only mode of the app, produced by the static build for sharing a finished presentation. Content changes to the outline are impossible in the Viewer; view-state operations (folding notes, selecting slides, running the slideshow) remain available.
+_Avoid_: static build (refers to the artifact, not the mode), readonly mode
