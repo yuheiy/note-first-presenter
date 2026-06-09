@@ -28,7 +28,7 @@ createServer({
 ビルド時は adapter をインラインで指定し、出力先を動的に制御する:
 
 ```ts
-sveltekit({ kit: { adapter: adapterStatic({ pages: outDir, fallback: '200.html' }) } })
+sveltekit({ kit: { adapter: adapterStatic({ pages: outDir, fallback: '200.html' }) } });
 ```
 
 ### SSR 無効化

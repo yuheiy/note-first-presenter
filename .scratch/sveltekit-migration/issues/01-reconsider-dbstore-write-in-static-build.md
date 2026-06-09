@@ -9,10 +9,7 @@ Status: needs-triage
 ```ts
 const db = new DbStore({
   initial: defaultDb(),
-  save: (state) =>
-    isStatic
-      ? Promise.resolve()
-      : api("/api/db", { method: "PUT", body: state }),
+  save: (state) => (isStatic ? Promise.resolve() : api('/api/db', { method: 'PUT', body: state })),
 });
 ```
 
