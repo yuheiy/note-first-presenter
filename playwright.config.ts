@@ -1,6 +1,18 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  webServer: { command: 'vp exec -F ./e2e/fixtures/basic -- note-first-presenter', port: 5173 },
+  // Tests share one server-side DB instance, so concurrent workers cause
+  // cross-worker DB state races (e.g. beforeEach waitForResponse never fires
+  // because another worker's title-save reached the server between our resetDb
+  // and page.goto). Serialise execution to keep each test's DB state clean.
+  workers: 1,
+  webServer: {
+    command: 'vp exec -F ./e2e/fixtures/basic -- note-first-presenter',
+    port: 5173,
+    // Never reuse a pre-existing server: e2e requires the server to run with
+    // the fixture cwd. Reusing a dev server started in a different cwd would
+    // silently corrupt all tests.
+    reuseExistingServer: false,
+  },
   testMatch: '**/*.e2e.{ts,js}',
 });
