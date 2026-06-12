@@ -28,12 +28,19 @@ export function emptyDb(): DbInput {
 }
 
 export async function readDb(): Promise<DbInput> {
+  let text: string;
   try {
-    const text = await fs.readFile(DB_FILENAME, 'utf8');
-    return JSON.parse(text) as DbInput;
+    text = await fs.readFile(DB_FILENAME, 'utf8');
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyDb();
     throw err;
+  }
+  try {
+    return v.parse(dbInputSchema, JSON.parse(text));
+  } catch (err) {
+    throw new Error(`Invalid ${DB_FILENAME}: ${err instanceof Error ? err.message : String(err)}`, {
+      cause: err,
+    });
   }
 }
 

@@ -51,4 +51,18 @@ describe('readDb / writeDb', () => {
     const loaded = await readDb();
     expect(loaded).toEqual(original);
   });
+
+  it('rejects when the file contains schema-invalid JSON', async () => {
+    await fs.writeFile(
+      '.note-first-presenter.json',
+      JSON.stringify({ version: 2, name: 'x' }),
+      'utf8',
+    );
+    await expect(readDb()).rejects.toThrow('.note-first-presenter.json');
+  });
+
+  it('rejects when the file contains malformed JSON', async () => {
+    await fs.writeFile('.note-first-presenter.json', '{ not json', 'utf8');
+    await expect(readDb()).rejects.toThrow('.note-first-presenter.json');
+  });
 });
