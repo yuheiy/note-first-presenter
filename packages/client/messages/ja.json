@@ -8,6 +8,7 @@
   "theme_light": "ライト",
   "theme_dark": "ダーク",
   "save_error": "保存に失敗しました",
+  "load_error": "読み込みに失敗しました。ページを再読み込みしてください。",
   "next_slide_label": "スライド {n} →",
   "open_slideshow": "▶ スライドショー",
   "toggle_slide_list": "スライド一覧を開閉",

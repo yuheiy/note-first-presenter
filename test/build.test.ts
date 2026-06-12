@@ -31,6 +31,24 @@ describe('note-first-presenter build (bin integration)', () => {
     await fs.access(path.join(tmp, 'dist', '200.html'));
   });
 
+  it('ships no live API path in the static bundle (Editor is dead-code-eliminated)', async () => {
+    const appDir = path.join(tmp, 'dist', '_app');
+    const jsFiles: string[] = [];
+    const walk = async (dir: string) => {
+      for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+        const p = path.join(dir, entry.name);
+        if (entry.isDirectory()) await walk(p);
+        else if (entry.name.endsWith('.js')) jsFiles.push(p);
+      }
+    };
+    await walk(appDir);
+    expect(jsFiles.length).toBeGreaterThan(0);
+    for (const file of jsFiles) {
+      const src = await fs.readFile(file, 'utf8');
+      expect(src, `${path.relative(tmp, file)} references the live API`).not.toContain('/api/');
+    }
+  });
+
   it('writes static nfp-data with resolved meta and slide images', async () => {
     const meta = JSON.parse(
       await fs.readFile(path.join(tmp, 'dist', 'nfp-data', 'meta.json'), 'utf8'),

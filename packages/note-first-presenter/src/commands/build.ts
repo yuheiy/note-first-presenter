@@ -13,11 +13,18 @@ export interface BuildInput {
 
 export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): Promise<void> {
   const previousCwd = process.cwd();
+  const previousNodeEnv = process.env.NODE_ENV;
+  // Vite derives import.meta.env.DEV (and Svelte dev compilation) from an
+  // inherited NODE_ENV, so a caller environment like NODE_ENV=test would
+  // silently produce a dev-mode artifact that talks to the live /api/*.
+  process.env.NODE_ENV = 'production';
   process.chdir(clientRoot);
   try {
     await viteBuild(await createViteConfig({ clientRoot, outDir }));
   } finally {
     process.chdir(previousCwd);
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
   }
 
   const db = await readDb();

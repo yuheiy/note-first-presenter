@@ -30,7 +30,7 @@
 
 	interface Props {
 		outline: unknown;
-		onChange: (outline: unknown) => void;
+		onChange?: (outline: unknown) => void;
 		onActiveSlideChange: (n: number) => void;
 		editable?: boolean;
 	}
@@ -99,7 +99,7 @@
 			dispatchTransaction(tr) {
 				const next = editor.state.apply(tr);
 				editor.updateState(next);
-				if (tr.docChanged) props.onChange(next.doc.toJSON());
+				if (tr.docChanged) props.onChange?.(next.doc.toJSON());
 				if (tr.docChanged || tr.selectionSet) {
 					props.onActiveSlideChange(computeActiveSlide(next.doc, next.selection));
 				}
