@@ -7,6 +7,7 @@ import type { RenderAllResult, RenderedSlide, Slides } from '../slides';
 
 const TARGET_SCALE = 2.0;
 const WEBP_QUALITY = 85;
+const RENDER_CONCURRENCY = 4;
 
 export class PageOutOfRangeError extends Error {
   constructor(
@@ -118,14 +119,22 @@ export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string })
     async renderAll(outDir) {
       const { hash, pageCount } = await getPdf();
       await fs.mkdir(outDir, { recursive: true });
-      const slides: RenderedSlide[] = [];
-      for (let n = 1; n <= pageCount; n++) {
-        const { data } = await this.image(n);
-        const { width, height } = await this.size(n);
-        const name = slideFilename(n);
-        await fs.writeFile(path.join(outDir, name), data);
-        slides.push({ number: n, width, height, file: name });
-      }
+      const slides: RenderedSlide[] = Array.from<RenderedSlide>({ length: pageCount });
+      let nextPage = 1;
+      const worker = async (): Promise<void> => {
+        while (true) {
+          const n = nextPage++;
+          if (n > pageCount) return;
+          const { data } = await this.image(n);
+          const { width, height } = await this.size(n);
+          const name = slideFilename(n);
+          await fs.writeFile(path.join(outDir, name), data);
+          slides[n - 1] = { number: n, width, height, file: name };
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(RENDER_CONCURRENCY, pageCount) }, () => worker()),
+      );
       return { hash, slides } satisfies RenderAllResult;
     },
     invalidate() {

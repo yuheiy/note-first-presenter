@@ -81,4 +81,22 @@ describe('Slides.renderAll', () => {
     expect(result.slides[0].height).toBeGreaterThan(0);
     expect(result.slides[0].file).toBe('0001.webp');
   });
+
+  it('returns slides in ascending page-number order', async () => {
+    const outDir = path.resolve('images-order');
+    const result = await openSlides(SAMPLE_PDF).renderAll(outDir);
+    for (let i = 0; i < result.slides.length; i++) {
+      const slide = result.slides[i];
+      expect(slide.number).toBe(i + 1);
+      expect(slide.file).toBe(`${String(i + 1).padStart(4, '0')}.webp`);
+    }
+  });
+
+  it('returns identical result on second call (cache hit)', async () => {
+    const outDir = path.resolve('images-cache');
+    const slides = openSlides(SAMPLE_PDF);
+    const first = await slides.renderAll(outDir);
+    const second = await slides.renderAll(outDir);
+    expect(second).toEqual(first);
+  });
 });
