@@ -16,7 +16,7 @@ _Avoid_: item, bullet
 A set of notes between `---` separators in the outline, corresponding to one slide. Each note group maps 1:1 to a slide.
 
 **Separator**:
-A top-level outline item whose text is exactly `---`, marking a boundary between note groups. Not a dedicated node type — it is an ordinary bullet recognized by a runtime predicate, so it edits and moves like any other note.
+A top-level outline item whose text is three or more consecutive hyphens (`---`, `----`, …), marking a boundary between note groups. Not a dedicated node type — it is an ordinary bullet recognized by a runtime predicate, so it edits and moves like any other note.
 
 **Slide**:
 A single screen in a presentation. Composed of a slide image (a rendered PDF page) and its corresponding note group.

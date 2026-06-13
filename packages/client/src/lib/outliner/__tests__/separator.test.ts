@@ -9,13 +9,18 @@ function liWithText(text: string) {
 }
 
 describe('isTopLevelSeparator', () => {
-  it('returns true for an item containing exactly "---"', () => {
+  it('returns true for three or more consecutive hyphens', () => {
     expect(isTopLevelSeparator(liWithText('---'))).toBe(true);
+    expect(isTopLevelSeparator(liWithText('----'))).toBe(true);
+    expect(isTopLevelSeparator(liWithText('-----'))).toBe(true);
   });
 
   it('returns false when text differs', () => {
     expect(isTopLevelSeparator(liWithText('---x'))).toBe(false);
     expect(isTopLevelSeparator(liWithText('--'))).toBe(false);
+    expect(isTopLevelSeparator(liWithText('--- foo'))).toBe(false);
+    expect(isTopLevelSeparator(liWithText('  ---'))).toBe(false);
+    expect(isTopLevelSeparator(liWithText('- - -'))).toBe(false);
   });
 
   it('returns false when item has nested children', () => {

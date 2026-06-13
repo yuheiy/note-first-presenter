@@ -33,6 +33,11 @@ describe('deriveNoteGroups', () => {
     const doc = docOf([{ text: 'a' }, { text: '---' }, { text: '---' }, { text: 'b' }]);
     expect(deriveNoteGroups(doc)).toHaveLength(3);
   });
+
+  it('four or more hyphens also split', () => {
+    const doc = docOf([{ text: 'a' }, { text: '----' }, { text: 'b' }, { text: '-----' }]);
+    expect(deriveNoteGroups(doc)).toHaveLength(3);
+  });
 });
 
 describe('computeActiveSlide', () => {

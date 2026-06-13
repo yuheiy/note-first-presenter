@@ -11,11 +11,14 @@ function paragraphText(item: JsonNode): string {
   return (first.content ?? []).map((n) => n.text ?? '').join('');
 }
 
-/** True for a top-level `---` separator list_item (single paragraph child whose text is exactly "---"). */
+/** A separator's text is three or more consecutive hyphens, nothing else. */
+const SEPARATOR_PATTERN = /^-{3,}$/;
+
+/** True for a top-level separator list_item (single paragraph child whose text is three or more consecutive hyphens). */
 export function isSeparatorItem(item: JsonNode): boolean {
   if (item.type !== 'list_item') return false;
   if ((item.content ?? []).length !== 1) return false;
-  return paragraphText(item) === '---';
+  return SEPARATOR_PATTERN.test(paragraphText(item));
 }
 
 /** Extract the top-level bullet_list items from an outline doc, or [] if absent. */

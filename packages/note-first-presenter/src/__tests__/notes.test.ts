@@ -39,6 +39,27 @@ describe('splitNoteGroups', () => {
     ]);
   });
 
+  it('splits on three or more consecutive hyphens', () => {
+    const groups = splitNoteGroups(doc([li('a'), li('----'), li('b'), li('-----'), li('c')]));
+    expect(groups).toEqual([
+      [{ text: 'a', children: [] }],
+      [{ text: 'b', children: [] }],
+      [{ text: 'c', children: [] }],
+    ]);
+  });
+
+  it('does not split on fewer than three hyphens or hyphens with other text', () => {
+    const groups = splitNoteGroups(doc([li('a'), li('--'), li('--- foo'), li('b')]));
+    expect(groups).toEqual([
+      [
+        { text: 'a', children: [] },
+        { text: '--', children: [] },
+        { text: '--- foo', children: [] },
+        { text: 'b', children: [] },
+      ],
+    ]);
+  });
+
   it('yields an empty group between consecutive separators', () => {
     const groups = splitNoteGroups(doc([li('a'), SEP, SEP, li('b')]));
     expect(groups).toEqual([[{ text: 'a', children: [] }], [], [{ text: 'b', children: [] }]]);
