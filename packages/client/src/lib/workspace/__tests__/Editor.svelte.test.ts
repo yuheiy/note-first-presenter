@@ -7,6 +7,25 @@ vi.mock('$lib/server-client', () => ({
   api: (...args: unknown[]) => apiMock(...args),
 }));
 
+// Capture the live-reload handler so tests can simulate the CLI's
+// `nfp:slides-changed` push without a real HMR WebSocket.
+const liveReload = vi.hoisted(() => {
+  let handler: (() => void) | null = null;
+  return {
+    fire: () => handler?.(),
+    onSlidesChanged: (h: () => void) => {
+      handler = h;
+      return () => {
+        handler = null;
+      };
+    },
+  };
+});
+vi.mock('$lib/slides-meta/live-reload', () => ({
+  SLIDES_CHANGED_EVENT: 'nfp:slides-changed',
+  onSlidesChanged: liveReload.onSlidesChanged,
+}));
+
 function outlineWith(texts: string[]) {
   return {
     type: 'doc',
@@ -82,5 +101,40 @@ describe('Editor', () => {
       },
       { timeout: 3000 },
     );
+  });
+
+  it('refreshes slides in place on a slides-changed push, preserving the outline', async () => {
+    let metaResponse: unknown = { kind: 'resolved', hash: 'h1', pageCount: 1 };
+    apiMock.mockImplementation((url: string, opts?: { method?: string }) => {
+      if (url === '/api/db' && opts?.method === 'PUT') return Promise.resolve();
+      if (url === '/api/db')
+        return Promise.resolve({ version: 1, title: 'Deck', outline: outlineWith(['hello note']) });
+      return Promise.resolve(metaResponse);
+    });
+    const { default: Editor } = await import('../Editor.svelte');
+    const screen = render(Editor);
+
+    // Initial slide rendered from the first hash, outline editing context present.
+    await expect
+      .element(screen.getByRole('img', { name: 'Slide 1' }))
+      .toHaveAttribute('src', expect.stringContaining('h1'));
+    const outliner = screen.getByRole('textbox', { name: 'Outliner' });
+    await expect.element(outliner).toHaveTextContent('hello note');
+
+    // PDF changes on disk: the CLI pushes, and the meta endpoint now reports a
+    // new hash and an extra page.
+    metaResponse = { kind: 'resolved', hash: 'h2', pageCount: 2 };
+    liveReload.fire();
+
+    // Slides update in place (new hash, grown count) without a full reload.
+    await expect
+      .element(screen.getByRole('img', { name: 'Slide 1' }))
+      .toHaveAttribute('src', expect.stringContaining('h2'));
+    await expect
+      .element(screen.getByRole('img', { name: 'Slide 2' }))
+      .toHaveAttribute('src', expect.stringContaining('h2'));
+
+    // The outline editing context survives the partial update.
+    await expect.element(outliner).toHaveTextContent('hello note');
   });
 });
