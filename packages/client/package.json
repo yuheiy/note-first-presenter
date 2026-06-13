@@ -51,8 +51,8 @@
     "playwright": "catalog:",
     "svelte-check": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:",
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest",
     "vitest-browser-svelte": "catalog:"
   }
 }
