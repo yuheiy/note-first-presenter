@@ -1,5 +1,5 @@
 import { createServer } from 'vite';
-import { createViteConfig } from '../vite';
+import { createViteConfig } from '../vite/index.ts';
 
 export interface DevInput {
   clientRoot: string;

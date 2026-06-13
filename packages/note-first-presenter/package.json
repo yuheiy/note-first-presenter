@@ -17,19 +17,17 @@
   },
   "files": [
     "bin",
-    "dist"
+    "src",
+    "!src/**/__tests__"
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "vp pack",
-    "dev": "vp pack --watch",
     "test": "vp test",
-    "check": "vp check",
-    "prepublishOnly": "vp run build"
+    "check": "vp check"
   },
   "dependencies": {
     "@inlang/paraglide-js": "catalog:",
@@ -51,5 +49,8 @@
   },
   "peerDependencies": {
     "@note-first-presenter/client": "workspace:"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }

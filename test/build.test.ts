@@ -20,7 +20,7 @@ beforeAll(async () => {
     `export default { slides: 'slides.pdf' };\n`,
   );
   execFileSync('note-first-presenter', ['build'], { cwd: tmp, stdio: 'pipe' });
-});
+}, 60_000); // full production build via the source bin; well over the 10s default hook timeout
 
 afterAll(async () => {
   if (tmp) await fs.rm(tmp, { recursive: true, force: true });

@@ -1,8 +1,8 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
-import { openSlides, resolveSlides } from '../slides';
-import { useTempCwd } from './helpers';
+import { openSlides, resolveSlides } from '../slides.ts';
+import { useTempCwd } from './helpers.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
 

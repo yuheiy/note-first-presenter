@@ -1,9 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Eta } from 'eta';
-import { readDb } from '../db';
-import { splitNoteGroups, type NoteNode } from '../notes';
-import { openSlides, type RenderAllResult, type SlidesStatus } from '../slides';
+import { readDb } from '../db.ts';
+import { splitNoteGroups, type NoteNode } from '../notes.ts';
+import { openSlides, type RenderAllResult, type SlidesStatus } from '../slides.ts';
 
 interface ExportSlide {
   number: number;

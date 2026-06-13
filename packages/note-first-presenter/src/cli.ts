@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { defineCommand, runMain } from 'citty';
 import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../package.json' with { type: 'json' };
-import { loadNfpConfig } from './config';
-import { resolveSlides } from './slides';
+import { loadNfpConfig } from './config.ts';
+import { resolveSlides } from './slides.ts';
 
 async function resolveClientRoot(): Promise<string> {
   const clientPkgJsonStart = path.dirname(
@@ -27,7 +27,7 @@ const dev = defineCommand({
   async run({ args }) {
     const clientRoot = await resolveClientRoot();
 
-    const { dev } = await import('./commands/dev');
+    const { dev } = await import('./commands/dev.ts');
     await dev({
       clientRoot,
       port: Number(args.port),
@@ -49,7 +49,7 @@ const build = defineCommand({
     const outDir = path.resolve(args['out-dir'] ?? config?.build?.outDir ?? 'dist');
     const clientRoot = await resolveClientRoot();
 
-    const { build } = await import('./commands/build');
+    const { build } = await import('./commands/build.ts');
     await build({ slidesStatus, outDir, clientRoot });
   },
 });
@@ -76,7 +76,7 @@ const export_ = defineCommand({
     const assetsDir = path.resolve(outDir, args['assets-dir'] ?? exportCfg?.assetsDir ?? 'assets');
     const assetsRelDir = path.relative(outDir, assetsDir).split(path.sep).join('/') || '.';
 
-    const { exportAsPage } = await import('./commands/export');
+    const { exportAsPage } = await import('./commands/export.ts');
     await exportAsPage({
       slidesStatus,
       outDir,

@@ -3,8 +3,8 @@ import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import * as v from 'valibot';
-import { CONFIG_FILENAMES, loadNfpConfig } from '../config';
-import { dbInputSchema, readDb, writeDb } from '../db';
+import { CONFIG_FILENAMES, loadNfpConfig } from '../config.ts';
+import { dbInputSchema, readDb, writeDb } from '../db.ts';
 import {
   openSlides,
   PageOutOfRangeError,
@@ -12,7 +12,7 @@ import {
   SLIDES_EXTENSIONS,
   type Slides,
   type SlidesStatus,
-} from '../slides';
+} from '../slides.ts';
 
 // ─── Slides context ────────────────────────────────────────────────────────
 // Owns the slides domain in dev: resolves SlidesStatus from disk + config,

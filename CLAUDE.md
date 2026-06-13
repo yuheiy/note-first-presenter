@@ -37,7 +37,7 @@ Four layers, keyed by filename. Client uses `test.projects` to split into `serve
 | --------------------------------------------- | --------------------------------- | --------------- | ------------------------- |
 | `**/*.test.ts` (excluding `*.svelte.test.ts`) | server/unit (Node)                | `server`/`unit` | `vp run test:unit`        |
 | `packages/client/src/**/*.svelte.test.ts`     | client (vitest browser, Chromium) | `client`        | `vp run test:unit`        |
-| `test/*.test.ts`                              | CLI integration (packed bin)      | —               | `vp run test:integration` |
+| `test/*.test.ts`                              | CLI integration (source bin)      | —               | `vp run test:integration` |
 | `e2e/*.e2e.ts`                                | end-to-end (Playwright)           | —               | `vp run test:e2e`         |
 
 `vp run test` runs all layers: `test:unit` → `test:integration` → `test:e2e`.
@@ -46,4 +46,6 @@ Run tests only through `vp test` / `vp run test`, never a bare `vitest`. Test fi
 
 ## CLI packaging
 
-The published `note-first-presenter` CLI is bundled with `vp pack`. `vp pack` externalizes declared dependencies as bare specifiers but bakes any **undeclared** import in as a resolved absolute path, which makes the package unpublishable. Declare every runtime dependency the CLI bundle reaches (e.g. `pdfjs-dist`, `@napi-rs/canvas`, `eta`) in the CLI package's `dependencies`, and verify a built `dist/` contains no `/Users/` or `/node_modules/` absolute paths. `vitest` hides this because Vite resolves `.ts` directly — verify against the packed bin.
+The `note-first-presenter` CLI ships `.ts` source directly — no build step (Node `>=22.18` type-strips on import). Rationale and full rules: `docs/adr/0010-source-distribution-no-build-step.md`.
+
+The one trap `vp check` can't catch: **every runtime dependency must be in the package's `dependencies`** (e.g. `pdfjs-dist`, `@napi-rs/canvas`, `eta`). An undeclared import resolves from the hoisted workspace locally but breaks for published users. The other constraints are enforced at type-check time — `module: nodenext` (nodenext resolution) rejects extensionless/directory imports (TS2835), `erasableSyntaxOnly` rejects non-strippable syntax (TS1294).

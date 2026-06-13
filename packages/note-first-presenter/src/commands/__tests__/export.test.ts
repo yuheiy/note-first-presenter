@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
-import type { NoteNode } from '../../notes';
-import { buildExportContext, toHtml, toMarkdown } from '../export';
+import type { NoteNode } from '../../notes.ts';
+import { buildExportContext, toHtml, toMarkdown } from '../export.ts';
 
 const notes: NoteNode[] = [
   { text: 'parent', children: [{ text: 'child', children: [] }] },

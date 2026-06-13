@@ -3,18 +3,20 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createCanvas } from '@napi-rs/canvas';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import type { RenderAllResult, RenderedSlide, Slides } from '../slides';
+import type { RenderAllResult, RenderedSlide, Slides } from '../slides.ts';
 
 const TARGET_SCALE = 2.0;
 const WEBP_QUALITY = 85;
 const RENDER_CONCURRENCY = 4;
 
 export class PageOutOfRangeError extends Error {
-  constructor(
-    public readonly page: number,
-    public readonly pageCount: number,
-  ) {
+  readonly page: number;
+  readonly pageCount: number;
+
+  constructor(page: number, pageCount: number) {
     super(`page ${page} out of range (1..${pageCount})`);
+    this.page = page;
+    this.pageCount = pageCount;
   }
 }
 

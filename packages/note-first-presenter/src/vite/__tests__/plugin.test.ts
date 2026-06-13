@@ -2,10 +2,10 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { describe, expect, it, vi } from 'vite-plus/test';
-import { emptyDb } from '../../db';
-import { type SlidesStatus } from '../../slides';
-import { useTempCwd } from '../../__tests__/helpers';
-import { createApiMiddleware, createSlidesContext } from '../plugin';
+import { emptyDb } from '../../db.ts';
+import { type SlidesStatus } from '../../slides.ts';
+import { useTempCwd } from '../../__tests__/helpers.ts';
+import { createApiMiddleware, createSlidesContext } from '../plugin.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
 

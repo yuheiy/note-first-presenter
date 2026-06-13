@@ -1,9 +1,9 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { build as viteBuild } from 'vite';
-import { readDb } from '../db';
-import { openSlides, type SlidesStatus } from '../slides';
-import { createViteConfig } from '../vite';
+import { readDb } from '../db.ts';
+import { openSlides, type SlidesStatus } from '../slides.ts';
+import { createViteConfig } from '../vite/index.ts';
 
 export interface BuildInput {
   slidesStatus: SlidesStatus;

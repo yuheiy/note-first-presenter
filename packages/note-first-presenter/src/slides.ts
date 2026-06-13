@@ -56,4 +56,4 @@ export interface Slides {
   invalidate(): void;
 }
 
-export { openPdfSlides as openSlides, PageOutOfRangeError } from './slides/pdf';
+export { openPdfSlides as openSlides, PageOutOfRangeError } from './slides/pdf.ts';

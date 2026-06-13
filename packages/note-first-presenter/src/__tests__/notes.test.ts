@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { splitNoteGroups } from '../notes';
+import { splitNoteGroups } from '../notes.ts';
 
 function li(text: string, children: unknown[] = []) {
   const content: unknown[] = [{ type: 'paragraph', content: text ? [{ type: 'text', text }] : [] }];
