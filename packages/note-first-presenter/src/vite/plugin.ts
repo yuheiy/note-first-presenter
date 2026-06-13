@@ -295,7 +295,10 @@ export const ViteNfpPlugin = (opts?: { cwd?: string }): Plugin => ({
   async configureServer(server: ViteDevServer) {
     if (opts?.cwd) process.chdir(opts.cwd);
     const { getSlidesStatus, getSlides, close } = await createSlidesContext({
-      onSettle: () => server.ws.send({ type: 'full-reload' }),
+      // Push a partial-update signal instead of a full reload so the Editor
+      // can re-fetch slide metadata in place, preserving the outline editing
+      // state. The client re-fetches via SlidesMetaStore.load(). See ADR-0008.
+      onSettle: () => server.ws.send({ type: 'custom', event: 'nfp:slides-changed' }),
       onError: (err) => {
         const error = err instanceof Error ? err : new Error(String(err));
         server.config.logger.error(`[note-first-presenter] reload failed: ${error.message}`, {

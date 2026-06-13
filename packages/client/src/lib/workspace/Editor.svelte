@@ -6,6 +6,7 @@
 	import Outliner from '$lib/outliner/Outliner.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { api } from '$lib/server-client';
+	import { onSlidesChanged } from '$lib/slides-meta/live-reload';
 	import { SlidesMetaStore } from '$lib/slides-meta/slides-meta-store.svelte';
 	import Workspace from './Workspace.svelte';
 
@@ -30,6 +31,11 @@
 				loadFailed = true;
 			}
 		})();
+		// Refresh slides in place when the CLI reports a PDF/config change,
+		// instead of a full reload that would discard the outline editing state.
+		return onSlidesChanged(() => {
+			void meta.load();
+		});
 	});
 
 	function onTitleInput(e: Event & { currentTarget: HTMLInputElement }) {
