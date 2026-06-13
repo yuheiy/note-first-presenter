@@ -1,9 +1,10 @@
+import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { playwright } from 'vite-plus/test/browser-playwright';
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
-  plugins: [sveltekit({})],
+  plugins: [tailwindcss(), sveltekit({})],
   test: {
     expect: { requireAssertions: true },
     projects: [
@@ -20,6 +21,7 @@ export default defineConfig({
           exclude: ['src/lib/server/**'],
         },
       },
+
       {
         extends: true,
         test: {

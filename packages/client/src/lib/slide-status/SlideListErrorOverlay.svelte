@@ -6,18 +6,10 @@
 	const { message }: Props = $props();
 </script>
 
-<div role="alert" aria-live="assertive" class="overlay">
+<div
+	role="alert"
+	aria-live="assertive"
+	class="absolute inset-0 grid place-items-center bg-[color-mix(in_srgb,var(--color-bg)_85%,transparent)] p-4 text-center"
+>
 	<p>{message}</p>
 </div>
-
-<style>
-	.overlay {
-		position: absolute;
-		inset: 0;
-		background: color-mix(in srgb, var(--color-bg) 85%, transparent);
-		display: grid;
-		place-items: center;
-		padding: 1rem;
-		text-align: center;
-	}
-</style>

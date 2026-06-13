@@ -40,10 +40,12 @@
     "prosemirror-transform": "catalog:",
     "prosemirror-view": "catalog:",
     "svelte": "catalog:",
+    "tailwindcss": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {
     "@sveltejs/kit": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",

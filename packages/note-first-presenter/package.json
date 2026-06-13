@@ -36,6 +36,7 @@
     "@napi-rs/canvas": "catalog:",
     "@sveltejs/adapter-static": "catalog:",
     "@sveltejs/kit": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "chokidar": "^5.0.0",
     "citty": "catalog:",
     "eta": "catalog:",

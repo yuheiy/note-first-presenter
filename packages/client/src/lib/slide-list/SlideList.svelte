@@ -49,12 +49,19 @@
 	}
 </script>
 
-<ul role="listbox" aria-label="Slides" tabindex="0" {onkeydown}>
+<ul
+	role="listbox"
+	aria-label="Slides"
+	tabindex="0"
+	{onkeydown}
+	class="flex flex-col gap-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+>
 	{#each slides as n (n)}
 		<li
 			role="option"
 			aria-selected={n === activeSlide}
 			tabindex={n === activeSlide ? 0 : -1}
+			class="grid cursor-pointer grid-cols-[1fr] gap-1 p-1 aria-selected:outline-2 aria-selected:outline-accent"
 			onclick={() => onSelect(n)}
 			onkeydown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
@@ -66,46 +73,13 @@
 			{#if n < overflowStart}
 				<SlideImage {hash} slide={n} alt={`Slide ${n}`} />
 			{:else}
-				<div class="placeholder">{m.overflow_label({ n })}</div>
+				<div
+					class="grid aspect-video place-items-center border border-dashed border-border text-[0.85em] text-muted"
+				>
+					{m.overflow_label({ n })}
+				</div>
 			{/if}
-			<span class="label">Slide {n}</span>
+			<span class="text-[0.85em] text-muted">Slide {n}</span>
 		</li>
 	{/each}
 </ul>
-
-<style>
-	ul {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-	ul:focus-visible {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 2px;
-	}
-	li {
-		padding: 4px;
-		cursor: pointer;
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 4px;
-	}
-	li[aria-selected='true'] {
-		outline: 2px solid var(--color-accent);
-	}
-	.label {
-		font-size: 0.85em;
-		color: var(--color-muted);
-	}
-	.placeholder {
-		aspect-ratio: 16 / 9;
-		display: grid;
-		place-items: center;
-		border: 1px dashed var(--color-border);
-		color: var(--color-muted);
-		font-size: 0.85em;
-	}
-</style>

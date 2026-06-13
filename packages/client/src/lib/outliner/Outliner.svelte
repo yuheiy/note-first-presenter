@@ -98,6 +98,8 @@
 				role: 'textbox',
 				'aria-multiline': 'true',
 				'aria-label': 'Outliner',
+				// Editor root only; repeated inner nodes stay in the scoped CSS below.
+				class: 'min-h-full whitespace-pre-wrap outline-none',
 			},
 			dispatchTransaction(tr) {
 				const next = editor.state.apply(tr);
@@ -129,11 +131,6 @@
 		}
 		li::marker {
 			color: var(--color-muted);
-		}
-		.ProseMirror {
-			outline: none;
-			min-height: 100%;
-			white-space: pre-wrap;
 		}
 
 		li.ProseMirror-selectednode,

@@ -1,19 +1,28 @@
 <!doctype html>
 
-<html lang="en">
+<!-- scheme-light-dark is the system/no-JS default; theme-store swaps it. See docs/adr/0009. -->
+<html lang="en" class="h-full bg-bg text-fg scheme-light-dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Note-first Presenter</title>
-    <style>
-      body {
-        margin: 0;
-      }
-    </style>
+    <script>
+      // Apply the saved scheme before first paint (avoid theme flash). try/catch:
+      // localStorage throws in storage-blocked contexts; the default class remains.
+      try {
+        const mode = localStorage.getItem('nfp:theme');
+        const cls =
+          mode === 'light' ? 'scheme-light' : mode === 'dark' ? 'scheme-dark' : 'scheme-light-dark';
+        const de = document.documentElement;
+        de.classList.remove('scheme-light', 'scheme-dark', 'scheme-light-dark');
+        de.classList.add(cls);
+      } catch {}
+    </script>
     %sveltekit.head%
   </head>
 
-  <body data-sveltekit-preload-data="hover">
+  <body data-sveltekit-preload-data="hover" class="h-full">
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

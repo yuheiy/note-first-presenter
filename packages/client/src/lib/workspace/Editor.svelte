@@ -63,9 +63,11 @@
 			oninput={onTitleInput}
 			onblur={onTitleBlur}
 			aria-label={m.title_label()}
+			class="min-w-50 flex-1 text-[1.25rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
 		/>
 		{#if db.saveStatus === 'error'}
-			<span role="alert" aria-live="polite" class="error">{m.save_error()}</span>
+			<span role="alert" aria-live="polite" class="text-[0.85rem] text-red-600">{m.save_error()}</span
+			>
 		{/if}
 	{/snippet}
 	{#snippet outliner()}
@@ -77,23 +79,3 @@
 		/>
 	{/snippet}
 </Workspace>
-
-<style>
-	input[type='text'] {
-		flex: 1;
-		min-width: 200px;
-		font-size: 1.25rem;
-		font-weight: 600;
-		border: none;
-		background: transparent;
-		color: inherit;
-	}
-	input[type='text']:focus-visible {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 2px;
-	}
-	.error {
-		color: #dc2626;
-		font-size: 0.85rem;
-	}
-</style>

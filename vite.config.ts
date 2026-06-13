@@ -5,7 +5,11 @@ export default defineConfig({
     '*': 'vp check --fix',
     '*.svelte': 'vp exec --filter @note-first-presenter/client -- svelte-check --threshold error',
   },
-  fmt: { singleQuote: true },
+  fmt: {
+    singleQuote: true,
+    // Sort Tailwind classes; stylesheet points Oxfmt at the v4 CSS entry.
+    sortTailwindcss: { stylesheet: 'packages/client/src/routes/layout.css' },
+  },
   lint: {
     jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }],
     rules: { 'vite-plus/prefer-vite-plus-imports': 'error' },

@@ -45,20 +45,15 @@
 
 	onMount(() => {
 		theme.hydrate();
-		const stopSystem = theme.listenSystem();
 		active.hydrate();
 		listOpen = (localStorage.getItem(LIST_OPEN_KEY) ?? 'true') === 'true';
 		return () => {
-			stopSystem();
 			publisher.destroy();
 		};
 	});
 
 	$effect(() => {
 		theme.persist();
-	});
-
-	$effect(() => {
 		theme.applyToDocument();
 	});
 
@@ -87,12 +82,16 @@
 	<title>{docTitle}</title>
 </svelte:head>
 
-<header>
+<header class="flex flex-wrap items-center gap-2 border-b border-border p-2">
 	{@render titleArea()}
 	<a href={`/slideshow?slide=${active.value}`} target="nfp-slideshow">
 		{m.open_slideshow()}
 	</a>
-	<fieldset role="radiogroup" aria-label={m.theme_label()}>
+	<fieldset
+		role="radiogroup"
+		aria-label={m.theme_label()}
+		class="flex gap-2 text-[0.85rem]"
+	>
 		<label
 			><input type="radio" bind:group={theme.mode} value="system" />
 			{m.theme_system()}</label
@@ -116,8 +115,13 @@
 	</button>
 </header>
 
-<main class:list-open={listOpen}>
-	<section class="outliner-pane">
+<main
+	class={[
+		'grid h-[calc(100vh-56px)]',
+		listOpen ? 'grid-cols-[1fr_280px]' : 'grid-cols-[1fr]',
+	]}
+>
+	<section class="relative min-w-60 overflow-auto p-4">
 		{#if loadFailed}
 			<SlideListErrorOverlay message={m.load_error()} />
 		{:else if ready}
@@ -125,7 +129,7 @@
 		{/if}
 	</section>
 	{#if listOpen}
-		<aside class="list-pane">
+		<aside class="relative min-w-60 overflow-auto border-l border-border">
 			{#if !ready}
 				<SlideListHint message="…" />
 			{:else if meta.data?.kind === 'resolved'}
@@ -156,42 +160,3 @@
 		</aside>
 	{/if}
 </main>
-
-<style>
-	header {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-		padding: 0.5rem;
-		border-bottom: 1px solid var(--color-border);
-		flex-wrap: wrap;
-	}
-	header fieldset {
-		border: 0;
-		padding: 0;
-		margin: 0;
-		display: flex;
-		gap: 0.5rem;
-		font-size: 0.85rem;
-	}
-	main {
-		display: grid;
-		grid-template-columns: 1fr;
-		height: calc(100vh - 56px);
-	}
-	main.list-open {
-		grid-template-columns: 1fr 280px;
-	}
-	.outliner-pane {
-		overflow: auto;
-		padding: 1rem;
-		min-width: 240px;
-		position: relative;
-	}
-	.list-pane {
-		overflow: auto;
-		border-left: 1px solid var(--color-border);
-		min-width: 240px;
-		position: relative;
-	}
-</style>

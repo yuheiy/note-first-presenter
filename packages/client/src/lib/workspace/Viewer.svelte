@@ -36,7 +36,7 @@
 
 <Workspace docTitle={displayTitle} outline={db.outline} {ready} {loadFailed} {meta} {active}>
 	{#snippet titleArea()}
-		<h1>{displayTitle}</h1>
+		<h1 class="min-w-50 flex-1 text-[1.25rem] font-semibold">{displayTitle}</h1>
 	{/snippet}
 	{#snippet outliner()}
 		<Outliner
@@ -46,13 +46,3 @@
 		/>
 	{/snippet}
 </Workspace>
-
-<style>
-	h1 {
-		flex: 1;
-		min-width: 200px;
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-	}
-</style>

@@ -1,25 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 import { ThemeStore } from '../theme-store.svelte';
 
 describe('ThemeStore', () => {
-  let listeners: Array<(e: MediaQueryListEvent) => void> = [];
-  let mqlMatches = false;
-
   beforeEach(() => {
-    listeners = [];
-    mqlMatches = false;
     localStorage.clear();
-    vi.stubGlobal('matchMedia', (_q: string) => ({
-      matches: mqlMatches,
-      addEventListener: (_t: string, l: (e: MediaQueryListEvent) => void) => listeners.push(l),
-      removeEventListener: (_t: string, l: (e: MediaQueryListEvent) => void) => {
-        listeners = listeners.filter((x) => x !== l);
-      },
-    }));
+    document.documentElement.classList.remove('scheme-light', 'scheme-dark', 'scheme-light-dark');
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    document.documentElement.classList.remove('scheme-light', 'scheme-dark', 'scheme-light-dark');
   });
 
   it('hydrate() defaults to system mode when localStorage is empty', () => {
@@ -35,23 +24,34 @@ describe('ThemeStore', () => {
     expect(s.mode).toBe('dark');
   });
 
-  it('resolved derives from mode and systemPrefersDark', () => {
+  it('persist() writes the current mode to localStorage', () => {
     const s = new ThemeStore();
-    s.mode = 'system';
-    s.systemPrefersDark = true;
-    expect(s.resolved).toBe('dark');
     s.mode = 'light';
-    expect(s.resolved).toBe('light');
+    s.persist();
+    expect(localStorage.getItem('nfp:theme')).toBe('light');
   });
 
-  it('listenSystem() updates systemPrefersDark on media change', () => {
-    mqlMatches = false;
+  it('applyToDocument() uses scheme-light-dark in system mode', () => {
     const s = new ThemeStore();
-    s.hydrate();
-    const stop = s.listenSystem();
-    listeners[0]?.({ matches: true } as MediaQueryListEvent);
-    expect(s.systemPrefersDark).toBe(true);
-    stop();
-    expect(listeners).toHaveLength(0);
+    s.mode = 'system';
+    s.applyToDocument();
+    const cl = document.documentElement.classList;
+    expect(cl.contains('scheme-light-dark')).toBe(true);
+    expect(cl.contains('scheme-light')).toBe(false);
+    expect(cl.contains('scheme-dark')).toBe(false);
+  });
+
+  it('applyToDocument() pins the scheme class to the chosen mode', () => {
+    const s = new ThemeStore();
+    const cl = document.documentElement.classList;
+    s.mode = 'dark';
+    s.applyToDocument();
+    expect(cl.contains('scheme-dark')).toBe(true);
+    expect(cl.contains('scheme-light')).toBe(false);
+    s.mode = 'light';
+    s.applyToDocument();
+    expect(cl.contains('scheme-light')).toBe(true);
+    expect(cl.contains('scheme-dark')).toBe(false);
+    expect(cl.contains('scheme-light-dark')).toBe(false);
   });
 });

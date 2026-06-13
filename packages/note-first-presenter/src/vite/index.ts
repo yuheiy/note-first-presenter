@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig, PluginOption } from 'vite';
 import { ViteNfpPlugin } from './plugin';
 
@@ -32,6 +33,7 @@ export async function createViteConfig({
     root: clientRoot,
     configFile: false,
     plugins: [
+      tailwindcss(),
       kitPlugins,
       paraglideVitePlugin({
         project: path.join(clientRoot, 'project.inlang'),

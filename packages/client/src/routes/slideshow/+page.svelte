@@ -121,17 +121,10 @@
 <svelte:window onkeydown={onKey} />
 <svelte:body onclick={onAdvanceClick} />
 
-<div class="slideshow">
+<div class="h-svh bg-black">
     {#if hash && active.value <= pageCount}
         <SlideImage {hash} slide={active.value} alt={`Slide ${active.value}`} />
     {:else if fallbackMessage}
         <SlideshowFallback message={fallbackMessage} />
     {/if}
 </div>
-
-<style>
-    .slideshow {
-        height: 100svh;
-        background-color: black;
-    }
-</style>

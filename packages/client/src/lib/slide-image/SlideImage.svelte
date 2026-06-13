@@ -11,13 +11,4 @@
     const src = $derived(slideUrl(hash, slide));
 </script>
 
-<img {src} {alt} loading="lazy" />
-
-<style>
-    img {
-        width: 100%;
-        height: 100%;
-        vertical-align: middle;
-        object-fit: contain;
-    }
-</style>
+<img {src} {alt} loading="lazy" class="h-full w-full object-contain" />

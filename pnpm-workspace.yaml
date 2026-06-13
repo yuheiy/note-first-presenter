@@ -41,6 +41,8 @@ catalog:
   knip: ^6.16.1
   '@sveltejs/kit': ^2.63.0
   '@sveltejs/adapter-static': ^3.0.10
+  '@tailwindcss/vite': ^4.3.0
+  tailwindcss: ^4.3.0
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'
@@ -56,6 +58,7 @@ peerDependencyRules:
 
 allowBuilds:
   esbuild: true
+  '@tailwindcss/oxide': true
 
 engineStrict: true
 trustPolicy: no-downgrade

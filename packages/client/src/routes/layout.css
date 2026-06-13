@@ -1,0 +1,13 @@
+/* source('..') pins content detection to src/: the published CLI roots Vite
+   inside node_modules, which default detection skips. See docs/adr/0009. */
+@import 'tailwindcss' source('..');
+
+/* Theme tokens. Switching is driven by scheme-* utilities on <html>; see
+   theme-store and docs/adr/0009 for the light-dark()/scheme mechanism. */
+@theme {
+  --color-bg: light-dark(var(--color-white), var(--color-neutral-950));
+  --color-fg: light-dark(var(--color-neutral-900), var(--color-neutral-100));
+  --color-muted: light-dark(var(--color-neutral-500), var(--color-neutral-400));
+  --color-border: light-dark(var(--color-neutral-200), var(--color-neutral-800));
+  --color-accent: light-dark(var(--color-blue-600), var(--color-blue-400));
+}
