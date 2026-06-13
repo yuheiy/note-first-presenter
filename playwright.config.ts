@@ -7,6 +7,9 @@ export default defineConfig({
   // and page.goto). Serialise execution to keep each test's DB state clean.
   workers: 1,
   webServer: {
+    // Launch via `vp exec`, not `vp run`: under Playwright's piped stdio the
+    // Rust `vp run` fails to spawn the child server with "os error 22 (Invalid
+    // argument)" when reached through `vp run test:e2e`. `vp exec` spawns fine.
     command: 'vp exec -F ./e2e/fixtures/basic -- note-first-presenter',
     port: 5173,
     // Never reuse a pre-existing server: e2e requires the server to run with

@@ -45,6 +45,9 @@
 		const isMac =
 			typeof navigator !== 'undefined' &&
 			Bowser.getParser(navigator.userAgent).getOSName() === 'macOS';
+		// Build the initial EditorState untracked: if this read of `props.outline`
+		// were reactive, every outline edit would recreate the editor and drop
+		// focus mid-typing.
 		const initialState = untrack(() =>
 			EditorState.create({
 				schema: outlinerSchema,

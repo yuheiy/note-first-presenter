@@ -41,3 +41,9 @@ Four layers, keyed by filename. Client uses `test.projects` to split into `serve
 | `e2e/*.e2e.ts`                                | end-to-end (Playwright)           | —               | `vp run test:e2e`         |
 
 `vp run test` runs all layers: `test:unit` → `test:integration` → `test:e2e`.
+
+Run tests only through `vp test` / `vp run test`, never a bare `vitest`. Test files import `vite-plus/test`; launching the stock `vitest` (e.g. `vp exec vitest run`) loads a second `@vitest/runner` and breaks — unit tests die with `Cannot read properties of undefined (reading 'config')`, and **browser-mode tests hang silently** with no error. To run one layer, scope `vp test` (e.g. `vp test --project client <path>`).
+
+## CLI packaging
+
+The published `note-first-presenter` CLI is bundled with `vp pack`. `vp pack` externalizes declared dependencies as bare specifiers but bakes any **undeclared** import in as a resolved absolute path, which makes the package unpublishable. Declare every runtime dependency the CLI bundle reaches (e.g. `pdfjs-dist`, `@napi-rs/canvas`, `eta`) in the CLI package's `dependencies`, and verify a built `dist/` contains no `/Users/` or `/node_modules/` absolute paths. `vitest` hides this because Vite resolves `.ts` directly — verify against the packed bin.
