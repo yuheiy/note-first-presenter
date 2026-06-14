@@ -19,7 +19,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 
 ### Issue tracker
 
-Issues are tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+Issues are tracked as GitHub Issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
