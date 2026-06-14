@@ -31,6 +31,7 @@
   "dependencies": {
     "bowser": "catalog:",
     "ofetch": "catalog:",
+    "phosphor-svelte": "catalog:",
     "prosemirror-commands": "catalog:",
     "prosemirror-history": "catalog:",
     "prosemirror-keymap": "catalog:",

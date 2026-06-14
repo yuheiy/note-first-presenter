@@ -10,10 +10,14 @@ export interface NoteGroup {
   precedingSeparatorPos: number | null;
 }
 
+const noteGroupsCache = new WeakMap<Node, NoteGroup[]>();
+
 export function deriveNoteGroups(doc: Node): NoteGroup[] {
+  const cached = noteGroupsCache.get(doc);
+  if (cached) return cached;
   const list = doc.firstChild;
   if (!list || list.type.name !== 'bullet_list') {
-    return [
+    const fallback = [
       {
         slideIndex: 1,
         itemPositions: [],
@@ -22,6 +26,8 @@ export function deriveNoteGroups(doc: Node): NoteGroup[] {
         precedingSeparatorPos: null,
       },
     ];
+    noteGroupsCache.set(doc, fallback);
+    return fallback;
   }
 
   const groups: NoteGroup[] = [];
@@ -53,14 +59,23 @@ export function deriveNoteGroups(doc: Node): NoteGroup[] {
     offset = itemEnd;
   });
   groups.push(current);
+  noteGroupsCache.set(doc, groups);
   return groups;
 }
 
-export function computeActiveSlide(doc: Node, selection: Selection): number {
+/**
+ * The note group whose range contains the caret. `deriveNoteGroups` always
+ * returns at least one group, so this never returns undefined.
+ */
+export function findActiveGroup(doc: Node, selection: Selection): NoteGroup {
   const groups = deriveNoteGroups(doc);
   const caret = selection.from;
   for (const g of groups) {
-    if (caret >= g.rangeStart && caret <= g.rangeEnd) return g.slideIndex;
+    if (caret >= g.rangeStart && caret <= g.rangeEnd) return g;
   }
-  return groups.at(-1)?.slideIndex ?? 1;
+  return groups.at(-1) ?? groups[0]!;
+}
+
+export function computeActiveSlide(doc: Node, selection: Selection): number {
+  return findActiveGroup(doc, selection).slideIndex;
 }

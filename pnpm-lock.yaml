@@ -51,6 +51,9 @@ catalogs:
     pdfjs-dist:
       specifier: ^6.0.227
       version: 6.0.227
+    phosphor-svelte:
+      specifier: ^3.1.0
+      version: 3.1.0
     playwright:
       specifier: ^1.60.0
       version: 1.60.0
@@ -157,6 +160,9 @@ importers:
       ofetch:
         specifier: 'catalog:'
         version: 1.5.1
+      phosphor-svelte:
+        specifier: 'catalog:'
+        version: 3.1.0(@voidzero-dev/vite-plus-core@0.1.24(@types/node@22.19.21)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0))(svelte@5.56.3)
       prosemirror-commands:
         specifier: 'catalog:'
         version: 1.7.1
@@ -1735,6 +1741,15 @@ packages:
     resolution: {integrity: sha512-/P6M4SXw+70waMVLUM7rdRtvo+dEzqE1t6W/zQNvBETo2MaRa5rrvCcAYdfWGiUzadTgM0lJmRApUrW0d9zgKg==}
     engines: {node: '>=22.13.0 || >=24'}
 
+  phosphor-svelte@3.1.0:
+    resolution: {integrity: sha512-nldtxx+XCgNREvrb7O5xgDsefytXpSkPTx8Rnu3f2qQCUZLDV1rLxYSd2Jcwckuo9lZB1qKMqGR17P4UDC0PrA==}
+    peerDependencies:
+      svelte: ^5.0.0 || ^5.0.0-next.96
+      vite: '>=5'
+    peerDependenciesMeta:
+      vite:
+        optional: true
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -3062,6 +3077,14 @@ snapshots:
   pdfjs-dist@6.0.227:
     optionalDependencies:
       '@napi-rs/canvas': 1.0.0
+
+  phosphor-svelte@3.1.0(@voidzero-dev/vite-plus-core@0.1.24(@types/node@22.19.21)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0))(svelte@5.56.3):
+    dependencies:
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+      svelte: 5.56.3
+    optionalDependencies:
+      vite: '@voidzero-dev/vite-plus-core@0.1.24(@types/node@22.19.21)(jiti@2.7.0)(typescript@6.0.3)(yaml@2.9.0)'
 
   picocolors@1.1.1: {}
 

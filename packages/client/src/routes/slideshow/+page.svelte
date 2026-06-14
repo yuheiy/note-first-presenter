@@ -115,7 +115,7 @@
 </script>
 
 <svelte:head>
-    <title>{m.view_slideshow()} - {title}</title>
+    <title>{title}</title>
 </svelte:head>
 
 <svelte:window onkeydown={onKey} />

@@ -54,14 +54,14 @@
 	aria-label="Slides"
 	tabindex="0"
 	{onkeydown}
-	class="flex flex-col gap-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+	class="group flex flex-col scroll-p-1 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
 >
 	{#each slides as n (n)}
 		<li
 			role="option"
 			aria-selected={n === activeSlide}
 			tabindex={n === activeSlide ? 0 : -1}
-			class="grid cursor-pointer grid-cols-[1fr] gap-1 p-1 aria-selected:outline-2 aria-selected:outline-accent"
+			class="flex shrink-0 items-start gap-2 rounded-lg p-3 aria-selected:bg-blue-200"
 			onclick={() => onSelect(n)}
 			onkeydown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
@@ -71,15 +71,24 @@
 			}}
 		>
 			{#if n < overflowStart}
-				<SlideImage {hash} slide={n} alt={`Slide ${n}`} />
+				<div class="min-w-0 flex-1 shadow-sm">
+					<SlideImage {hash} slide={n} alt={`Slide ${n}`} />
+				</div>
 			{:else}
 				<div
-					class="grid aspect-video place-items-center border border-dashed border-border text-[0.85em] text-muted"
+					class="min-w-0 flex-1 grid aspect-video place-items-center border border-dashed border-gray-200 text-[0.85em] text-gray-500"
 				>
 					{m.overflow_label({ n })}
 				</div>
 			{/if}
-			<span class="text-[0.85em] text-muted">Slide {n}</span>
+			<span
+				class={[
+					'min-w-6 text-right text-sm leading-none',
+					n === activeSlide ? 'font-semibold text-blue-700' : 'text-gray-400',
+				]}
+			>
+				{n}
+			</span>
 		</li>
 	{/each}
 </ul>
