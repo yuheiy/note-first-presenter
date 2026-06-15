@@ -1,4 +1,4 @@
-import type { Node, ResolvedPos } from 'prosemirror-model';
+import type { Node } from 'prosemirror-model';
 import { liftListItem } from 'prosemirror-schema-list';
 import { type Command, type EditorState, TextSelection } from 'prosemirror-state';
 import {
@@ -6,16 +6,11 @@ import {
   isNodeRangeSelection,
 } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { findItemDepth } from '../tree';
 import { cleanupEmptyBulletLists } from './_cleanup';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
-
-function findListItemDepth($pos: ResolvedPos): number | null {
-  let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
-  return depth === 0 ? null : depth;
-}
 
 function isItemEmpty(item: Node): boolean {
   return (
@@ -64,7 +59,7 @@ export const smartBackspace: Command = (state, dispatch) => {
 
   const { $from, empty } = state.selection;
   if (!empty) return false;
-  const itemDepth = findListItemDepth($from);
+  const itemDepth = findItemDepth($from);
   if (itemDepth === null) return false;
   const item = $from.node(itemDepth);
 
@@ -119,7 +114,7 @@ export const smartDelete: Command = (state, dispatch) => {
 
   const { $from, empty } = state.selection;
   if (!empty) return false;
-  const itemDepth = findListItemDepth($from);
+  const itemDepth = findItemDepth($from);
   if (itemDepth === null) return false;
   const item = $from.node(itemDepth);
 

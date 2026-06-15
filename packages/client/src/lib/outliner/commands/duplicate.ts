@@ -1,4 +1,4 @@
-import { Fragment, type Node, type ResolvedPos } from 'prosemirror-model';
+import { Fragment, type Node } from 'prosemirror-model';
 import { type Command, type EditorState } from 'prosemirror-state';
 import {
   collectAllSelectedItemPositions,
@@ -6,14 +6,9 @@ import {
   isNodeRangeSelection,
 } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { findItemDepth } from '../tree';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
-
-function findListItemDepth($pos: ResolvedPos): number | null {
-  let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
-  return depth === 0 ? null : depth;
-}
 
 // Duplicate every selected list_item (primary range + additionalItems) and
 // insert the copies right after the rearmost selected item, all sharing the
@@ -53,7 +48,7 @@ export const duplicateItem: Command = (state, dispatch) => {
   if (isNodeRangeSelection(state.selection)) return duplicateNodeRange(state, dispatch);
 
   const { $from } = state.selection;
-  const depth = findListItemDepth($from);
+  const depth = findItemDepth($from);
   if (depth === null) return false;
   const item = $from.node(depth);
   const after = $from.after(depth);

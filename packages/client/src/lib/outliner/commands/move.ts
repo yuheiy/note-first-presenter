@@ -1,4 +1,4 @@
-import { Fragment, type Node, type ResolvedPos } from 'prosemirror-model';
+import { Fragment, type Node } from 'prosemirror-model';
 import { type Command, TextSelection } from 'prosemirror-state';
 import {
   collectAllSelectedItemPositions,
@@ -6,36 +6,11 @@ import {
   isNodeRangeSelection,
 } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { adjacentItemPos, findItemDepth } from '../tree';
 import { cleanupEmptyBulletLists } from './_cleanup';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
-
-function findListItemDepth($pos: ResolvedPos): number | null {
-  let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
-  return depth === 0 ? null : depth;
-}
-
-// Find an adjacent sibling list_item of the given position in the doc, at the
-// same level (same parent bullet_list). Returns the absolute position of that
-// sibling, or null if no sibling exists in the asked direction.
-function adjacentSiblingPos(doc: Node, itemPos: number, direction: -1 | 1): number | null {
-  try {
-    const $pos = doc.resolve(itemPos);
-    const parent = $pos.parent;
-    if (parent.type !== BULLET_LIST) return null;
-    const index = $pos.index();
-    const target = index + direction;
-    if (target < 0 || target >= parent.childCount) return null;
-    const parentStart = $pos.start();
-    let pos = parentStart;
-    for (let i = 0; i < target; i++) pos += parent.child(i).nodeSize;
-    return pos;
-  } catch {
-    return null;
-  }
-}
 
 // Move every selected list_item (primary + additionalItems) by one slot at
 // the rearmost (direction=1) / frontmost (direction=-1) item's level. Moved
@@ -49,7 +24,7 @@ function moveNodeRange(direction: -1 | 1): Command {
     if (positions.length === 0) return false;
 
     const anchorPos = direction === 1 ? positions[positions.length - 1] : positions[0];
-    const siblingPos = adjacentSiblingPos(state.doc, anchorPos, direction);
+    const siblingPos = adjacentItemPos(state.doc, anchorPos, direction);
     if (siblingPos === null) return false;
     const siblingNode = state.doc.nodeAt(siblingPos);
     if (!siblingNode || siblingNode.type !== LIST_ITEM) return false;
@@ -108,7 +83,7 @@ function moveNodeRange(direction: -1 | 1): Command {
 function moveSingle(direction: -1 | 1): Command {
   return (state, dispatch) => {
     const { $from } = state.selection;
-    const depth = findListItemDepth($from);
+    const depth = findItemDepth($from);
     if (depth === null) return false;
     const item = $from.node(depth);
     const parentList = $from.node(depth - 1);

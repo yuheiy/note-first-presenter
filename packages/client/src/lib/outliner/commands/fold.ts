@@ -4,6 +4,7 @@ import {
   isNodeRangeSelection,
 } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { findItemDepth } from '../tree';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;
@@ -28,9 +29,8 @@ function setCollapsed(value: boolean): Command {
     }
 
     const { $from } = sel;
-    let depth = $from.depth;
-    while (depth > 0 && $from.node(depth).type !== LIST_ITEM) depth--;
-    if (depth === 0) return false;
+    const depth = findItemDepth($from);
+    if (depth === null) return false;
     const pos = $from.before(depth);
     const node = $from.node(depth);
     const hasChildList = node.lastChild?.type === BULLET_LIST;

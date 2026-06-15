@@ -21,6 +21,7 @@ import {
 } from 'prosemirror-state';
 import { createNodeRangeSelection, isNodeRangeSelection } from '../selections/node-range-selection';
 import { outlinerSchema } from '../schema';
+import { findItemAncestor } from '../tree';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 
@@ -59,13 +60,6 @@ function collectPreviouslySelectedExcept(sel: Selection, excludePos: number): nu
   return positions;
 }
 
-function listItemAncestorPos($pos: import('prosemirror-model').ResolvedPos): number | null {
-  for (let d = $pos.depth; d > 0; d--) {
-    if ($pos.node(d).type === LIST_ITEM) return $pos.before(d);
-  }
-  return null;
-}
-
 function shiftAnchorPos(state: EditorState): number | null {
   const current = state.selection;
   if (isNodeRangeSelection(current)) {
@@ -77,7 +71,7 @@ function shiftAnchorPos(state: EditorState): number | null {
     return current.from;
   }
   if (current instanceof TextSelection) {
-    return listItemAncestorPos(current.$head);
+    return findItemAncestor(current.$head)?.itemPos ?? null;
   }
   return null;
 }

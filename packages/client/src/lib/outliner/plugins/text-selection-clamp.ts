@@ -1,33 +1,6 @@
-import type { Node, ResolvedPos } from 'prosemirror-model';
 import { Plugin, PluginKey, TextSelection } from 'prosemirror-state';
 import { outlinerSchema } from '../schema';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
-const BULLET_LIST = outlinerSchema.nodes.bullet_list;
-
-export interface ItemAncestor {
-  itemPos: number;
-  parent: Node;
-  parentPos: number;
-  /** Index of the list_item within its parent bullet_list. */
-  index: number;
-}
-
-export function findListItemAncestor($pos: ResolvedPos): ItemAncestor | null {
-  for (let d = $pos.depth; d > 0; d--) {
-    if ($pos.node(d).type === LIST_ITEM) {
-      const parent = $pos.node(d - 1);
-      if (parent.type !== BULLET_LIST) return null;
-      return {
-        itemPos: $pos.before(d),
-        parent,
-        parentPos: $pos.before(d - 1) + 1,
-        index: $pos.index(d - 1),
-      };
-    }
-  }
-  return null;
-}
+import { findItemAncestor } from '../tree';
 
 /**
  * Transaction meta flag that callers (e.g. `rangeAwareSinkListItem`) use to
@@ -52,14 +25,14 @@ export const textSelectionClamp = new Plugin({
     if (!(newSel instanceof TextSelection)) return null;
     if (newSel.empty) return null;
 
-    const anchorItem = findListItemAncestor(newSel.$anchor);
-    const headItem = findListItemAncestor(newSel.$head);
+    const anchorItem = findItemAncestor(newSel.$anchor);
+    const headItem = findItemAncestor(newSel.$head);
     if (!anchorItem || !headItem) return null;
     if (anchorItem.itemPos === headItem.itemPos) return null;
     // Only intervene when the anchor itself stayed put (i.e., user is
     // extending an existing selection rather than starting a new one).
     if (oldSel instanceof TextSelection) {
-      const oldAnchorItem = findListItemAncestor(oldSel.$anchor);
+      const oldAnchorItem = findItemAncestor(oldSel.$anchor);
       if (oldAnchorItem && oldAnchorItem.itemPos !== anchorItem.itemPos) return null;
     }
 
