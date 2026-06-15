@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { Portal } from "@ark-ui/svelte/portal";
+    import { Tooltip } from "@ark-ui/svelte/tooltip";
     import { onMount, type Snippet } from "svelte";
     import type { ActiveSlideStore } from "$lib/active-slide/active-slide-store.svelte";
     import { countNoteGroups } from "$lib/outliner/count-groups";
@@ -116,29 +118,45 @@
         class="col-span-full py-1 flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50 px-4"
     >
         {@render titleArea()}
-        <a
-            class="text-sm text-gray-800 min-w-8 min-h-7 flex items-center justify-center hover:bg-gray-200 transition duration-100 rounded"
-            href={`/slideshow?slide=${active.value}`}
-            target="nfp-slideshow"
-            aria-label={m.open_slideshow()}
-            title={m.open_slideshow()}
-        >
-            <PlayIcon size="1.25em" weight="duotone" />
-        </a>
-        <button
-            type="button"
-            class="min-w-8 min-h-7 text-sm text-gray-800 flex items-center justify-center hover:bg-gray-200 transition duration-100 rounded"
-            onclick={() => (listOpen = !listOpen)}
-            aria-expanded={listOpen}
-            aria-label={m.toggle_slide_list()}
-            title={m.toggle_slide_list()}
-        >
-            <SidebarSimpleIcon
-                size="1.25em"
-                weight={listOpen ? "duotone" : "regular"}
-                mirrored
-            />
-        </button>
+        <Tooltip.Root interactive>
+            <Tooltip.Trigger>
+                {#snippet asChild(props)}
+                    <a
+                        {...props({
+                            class: "text-sm text-gray-800 min-w-8 min-h-7 flex items-center justify-center hover:bg-gray-200 transition duration-100 rounded",
+                            "aria-label": m.open_slideshow(),
+                        })}
+                        href={`/slideshow?slide=${active.value}`}
+                        target="nfp-slideshow"
+                    >
+                        <PlayIcon size="1.25em" weight="duotone" />
+                    </a>
+                {/snippet}
+            </Tooltip.Trigger>
+            {@render tip(m.open_slideshow())}
+        </Tooltip.Root>
+        <Tooltip.Root interactive>
+            <Tooltip.Trigger>
+                {#snippet asChild(props)}
+                    <button
+                        {...props({
+                            type: "button",
+                            class: "min-w-8 min-h-7 text-sm text-gray-800 flex items-center justify-center hover:bg-gray-200 transition duration-100 rounded",
+                            onclick: () => (listOpen = !listOpen),
+                            "aria-expanded": listOpen,
+                            "aria-label": m.toggle_slide_list(),
+                        })}
+                    >
+                        <SidebarSimpleIcon
+                            size="1.25em"
+                            weight={listOpen ? "duotone" : "regular"}
+                            mirrored
+                        />
+                    </button>
+                {/snippet}
+            </Tooltip.Trigger>
+            {@render tip(m.toggle_slide_list())}
+        </Tooltip.Root>
     </div>
 
     <div
@@ -226,3 +244,18 @@
         </fieldset>
     </div>
 </div>
+
+{#snippet tip(text: string)}
+    <Portal>
+        <Tooltip.Positioner>
+            <Tooltip.Content
+                class="rounded bg-gray-900 px-2 py-1 text-xs text-gray-50 shadow [--arrow-background:var(--color-gray-900)] [--arrow-size:8px]"
+            >
+                <Tooltip.Arrow>
+                    <Tooltip.ArrowTip />
+                </Tooltip.Arrow>
+                {text}
+            </Tooltip.Content>
+        </Tooltip.Positioner>
+    </Portal>
+{/snippet}
