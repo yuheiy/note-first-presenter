@@ -8,6 +8,7 @@
     import SlideList from "$lib/slide-list/SlideList.svelte";
     import SlideListErrorOverlay from "$lib/slide-status/SlideListErrorOverlay.svelte";
     import SlideListHint from "$lib/slide-status/SlideListHint.svelte";
+    import { resolveSlideView } from "$lib/slides-meta/slide-view";
     import type { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
     import { SyncPublisher } from "$lib/sync/sync-publisher";
     import { ThemeStore } from "$lib/theme/theme-store.svelte";
@@ -43,17 +44,16 @@
 
     let listOpen: boolean = $state(true);
 
+    const view = $derived(resolveSlideView(meta.data, meta.error));
     const groupCount = $derived(countNoteGroups(outline));
-    const pdfCount = $derived(
-        meta.data?.kind === "resolved" ? meta.data.pageCount : 0,
-    );
+    const pdfCount = $derived(view.kind === "resolved" ? view.pageCount : 0);
     const effectivePageCount = $derived(Math.max(pdfCount, groupCount));
     // Slide aspect ratio (width / height) from the actual PDF, falling back to 16:9
     // until the resolved meta provides real page dimensions. Drives --scroll-tail and
     // the overflow placeholders.
     const slideAspect = $derived(
-        meta.data?.kind === "resolved" && meta.data.width && meta.data.height
-            ? meta.data.width / meta.data.height
+        view.kind === "resolved" && view.width && view.height
+            ? view.width / view.height
             : 16 / 9,
     );
 
@@ -175,30 +175,18 @@
         >
             {#if !ready}
                 <SlideListHint message="…" />
-            {:else if meta.data?.kind === "resolved"}
+            {:else if view.kind === "resolved"}
                 <SlideList
-                    hash={meta.data.hash}
+                    hash={view.hash}
                     pageCount={effectivePageCount}
                     overflowStart={pdfCount + 1}
                     activeSlide={active.value}
                     onSelect={onSelectFromList}
                 />
-            {:else if meta.data?.kind === "no-config-no-file"}
-                <SlideListHint message={m.info_no_slides()} />
-            {:else if meta.data?.kind === "configured-but-missing"}
-                <SlideListErrorOverlay
-                    message={m.error_slides_not_found({
-                        path: meta.data.configuredPath,
-                    })}
-                />
-            {:else if meta.data?.kind === "no-config-multiple-files"}
-                <SlideListErrorOverlay
-                    message={m.error_multiple_pdfs({
-                        files: meta.data.candidates.join(", "),
-                    })}
-                />
-            {:else if meta.error}
-                <SlideListErrorOverlay message={meta.error} />
+            {:else if view.kind === "hint"}
+                <SlideListHint message={view.message} />
+            {:else if view.kind === "error"}
+                <SlideListErrorOverlay message={view.message} />
             {/if}
         </div>
     {/if}

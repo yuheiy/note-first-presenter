@@ -7,6 +7,7 @@
     import type { DbV1 } from "$lib/db/schema";
     import { dbUrl } from "$lib/runtime-mode";
     import { api } from "$lib/server-client";
+    import { resolveSlideView } from "$lib/slides-meta/slide-view";
     import { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
     import { SyncSubscriber } from "$lib/sync/sync-subscriber";
 
@@ -17,34 +18,21 @@
 
     let syncedPageCount: number = $state(0);
 
-    const pageCount = $derived(
-        meta.data?.kind === "resolved" ? meta.data.pageCount : 0,
-    );
-    const hash = $derived(
-        meta.data?.kind === "resolved" ? meta.data.hash : null,
-    );
+    const view = $derived(resolveSlideView(meta.data, meta.error));
+    const pageCount = $derived(view.kind === "resolved" ? view.pageCount : 0);
+    const hash = $derived(view.kind === "resolved" ? view.hash : null);
     const navigablePageCount = $derived(Math.max(pageCount, syncedPageCount));
 
     const fallbackMessage = $derived.by(() => {
-        const d = meta.data;
-        switch (true) {
-            case !!hash && active.value > pageCount:
-                return m.overflow_label({ n: active.value });
-            case d?.kind === "no-config-no-file":
-                return m.info_no_slides();
-            case d?.kind === "configured-but-missing":
-                return m.error_slides_not_found({
-                    path: d.configuredPath,
-                });
-            case d?.kind === "no-config-multiple-files":
-                return m.error_multiple_pdfs({
-                    files: d.candidates.join(", "),
-                });
-            case !!meta.error:
-                return meta.error;
-            default:
-                return null;
+        // Overflow is slideshow-specific: the deck resolved, but the active
+        // slide points past the last PDF page.
+        if (hash && active.value > pageCount) {
+            return m.overflow_label({ n: active.value });
         }
+        if (view.kind === "hint" || view.kind === "error") {
+            return view.message;
+        }
+        return null;
     });
 
     function step(delta: number) {
