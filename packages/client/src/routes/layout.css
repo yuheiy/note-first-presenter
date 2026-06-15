@@ -1,3 +1,7 @@
 /* source('..') pins content detection to src/: the published CLI roots Vite
    inside node_modules, which default detection skips. See docs/adr/0009. */
 @import 'tailwindcss' source('..');
+
+@theme {
+  --font-sans: sans-serif;
+}

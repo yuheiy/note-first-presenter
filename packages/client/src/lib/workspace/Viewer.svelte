@@ -35,7 +35,7 @@
     });
 
     function onActiveSlideFromOutline(n: number) {
-        active.setFromEditor(n);
+        active.set(n);
     }
 </script>
 
@@ -56,6 +56,7 @@
         <Outliner
             outline={db.outline}
             onActiveSlideChange={onActiveSlideFromOutline}
+            activeSlide={active.value}
             editable={false}
         />
     {/snippet}

@@ -86,7 +86,8 @@ export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string })
   return {
     async meta() {
       const { hash, pageCount } = await getPdf();
-      return { hash, pageCount };
+      const { width, height } = await this.size(1);
+      return { hash, pageCount, width, height };
     },
     async image(pageNumber) {
       const { hash, pdf, pageCount } = await getPdf();

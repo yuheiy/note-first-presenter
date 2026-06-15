@@ -19,12 +19,4 @@ export class ActiveSlideStore {
   set(n: number) {
     this.value = n;
   }
-
-  setFromEditor(n: number) {
-    this.value = n;
-  }
-
-  setFromList(n: number) {
-    this.value = n;
-  }
 }

@@ -29,6 +29,7 @@
     "test": "vp test"
   },
   "dependencies": {
+    "@ark-ui/svelte": "catalog:",
     "bowser": "catalog:",
     "ofetch": "catalog:",
     "phosphor-svelte": "catalog:",

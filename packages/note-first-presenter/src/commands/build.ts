@@ -49,6 +49,8 @@ export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): P
       kind: 'resolved',
       hash: rendered.hash,
       pageCount: rendered.slides.length,
+      width: rendered.slides[0]?.width,
+      height: rendered.slides[0]?.height,
     }),
     'utf8',
   );

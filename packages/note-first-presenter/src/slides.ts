@@ -49,7 +49,7 @@ export interface RenderAllResult {
 }
 
 export interface Slides {
-  meta(): Promise<{ hash: string; pageCount: number }>;
+  meta(): Promise<{ hash: string; pageCount: number; width: number; height: number }>;
   image(pageNumber: number): Promise<{ data: Buffer; hash: string; pageCount: number }>;
   size(pageNumber: number): Promise<{ width: number; height: number }>;
   renderAll(outDir: string): Promise<RenderAllResult>;

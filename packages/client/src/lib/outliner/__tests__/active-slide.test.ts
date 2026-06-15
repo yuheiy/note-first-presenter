@@ -1,7 +1,7 @@
 import type { Node } from 'prosemirror-model';
-import { TextSelection } from 'prosemirror-state';
+import { Selection, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
-import { computeActiveSlide, deriveNoteGroups } from '../active-slide';
+import { computeActiveSlide, deriveNoteGroups, findGroupPosition } from '../active-slide';
 import { outlinerSchema } from '../schema';
 
 function docOf(items: Array<{ text: string }>): Node {
@@ -59,5 +59,28 @@ describe('computeActiveSlide', () => {
     const separatorGroup = groups[1];
     const sel = TextSelection.create(doc, separatorGroup.rangeStart + 2);
     expect(computeActiveSlide(doc, sel)).toBe(2);
+  });
+});
+
+describe('findGroupPosition', () => {
+  it('returns a position whose group matches each slide (round-trip)', () => {
+    const doc = docOf([
+      { text: 'a' },
+      { text: '---' },
+      { text: 'b' },
+      { text: '---' },
+      { text: 'c' },
+    ]);
+    for (const slide of [1, 2, 3]) {
+      const pos = findGroupPosition(doc, slide);
+      expect(pos).not.toBeNull();
+      const sel = Selection.near(doc.resolve(pos!), 1);
+      expect(computeActiveSlide(doc, sel)).toBe(slide);
+    }
+  });
+
+  it('returns null for an out-of-range slide', () => {
+    const doc = docOf([{ text: 'a' }]);
+    expect(findGroupPosition(doc, 2)).toBeNull();
   });
 });

@@ -79,3 +79,16 @@ export function findActiveGroup(doc: Node, selection: Selection): NoteGroup {
 export function computeActiveSlide(doc: Node, selection: Selection): number {
   return findActiveGroup(doc, selection).slideIndex;
 }
+
+/**
+ * A document position near the start of the note group for `slideIndex`, used to
+ * move the caret when the active slide changes from outside the editor. Returns
+ * the first content item's position, or the group's range start for an empty
+ * group (e.g. between consecutive separators). Returns null when no group has
+ * that slide index. Resolve and snap with `Selection.near` before use.
+ */
+export function findGroupPosition(doc: Node, slideIndex: number): number | null {
+  const group = deriveNoteGroups(doc).find((g) => g.slideIndex === slideIndex);
+  if (!group) return null;
+  return group.itemPositions[0] ?? group.rangeStart;
+}

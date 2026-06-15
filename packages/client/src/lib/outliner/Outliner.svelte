@@ -3,11 +3,11 @@
     import { history, redo, undo } from "prosemirror-history";
     import { keymap } from "prosemirror-keymap";
     import { splitListItem } from "prosemirror-schema-list";
-    import { EditorState } from "prosemirror-state";
+    import { EditorState, Selection } from "prosemirror-state";
     import { EditorView } from "prosemirror-view";
     import { untrack } from "svelte";
     import Bowser from "bowser";
-    import { computeActiveSlide } from "./active-slide";
+    import { computeActiveSlide, findGroupPosition } from "./active-slide";
     import { smartBackspace, smartDelete } from "./commands/backspace";
     import { duplicateItem } from "./commands/duplicate";
     import { collapseItem, expandItem } from "./commands/fold";
@@ -36,13 +36,18 @@
         outline: unknown;
         onChange?: (outline: unknown) => void;
         onActiveSlideChange: (n: number) => void;
+        activeSlide: number;
         editable?: boolean;
     }
 
     const props: Props = $props();
 
     let mountEl: HTMLDivElement | undefined = $state();
-    let view: EditorView | null = null;
+    let view: EditorView | null = $state(null);
+    // Set while we move the caret in response to an external active-slide change, so
+    // dispatchTransaction skips reporting it back (which would clobber the change's
+    // origin via onActiveSlideChange -> setFromEditor).
+    let echoingActiveSlide = false;
 
     $effect(() => {
         if (!mountEl) return;
@@ -107,14 +112,12 @@
                 role: "textbox",
                 "aria-multiline": "true",
                 "aria-label": "Outliner",
-                // Editor root only; repeated inner nodes stay in the scoped CSS below.
-                class: "min-h-full whitespace-pre-wrap outline-none",
             },
             dispatchTransaction(tr) {
                 const next = editor.state.apply(tr);
                 editor.updateState(next);
                 if (tr.docChanged) props.onChange?.(next.doc.toJSON());
-                if (tr.docChanged || tr.selectionSet) {
+                if ((tr.docChanged || tr.selectionSet) && !echoingActiveSlide) {
                     props.onActiveSlideChange(
                         computeActiveSlide(next.doc, next.selection),
                     );
@@ -127,16 +130,54 @@
             view = null;
         };
     });
+
+    // Move the caret to the matching note group when the active slide changes from
+    // outside the editor (slide list, slideshow). No-op when the caret is already in
+    // that group — the case right after an edit drove the change — which keeps the
+    // editor<->slide sync from looping. Slides beyond the last note group (the slide
+    // count can exceed the group count) have no position and are ignored.
+    $effect(() => {
+        const slide = props.activeSlide;
+        const editor = view;
+        if (!editor) return;
+        const { state } = editor;
+        if (computeActiveSlide(state.doc, state.selection) === slide) return;
+        const pos = findGroupPosition(state.doc, slide);
+        if (pos === null) return;
+        const selection = Selection.near(state.doc.resolve(pos), 1);
+        echoingActiveSlide = true;
+        try {
+            editor.dispatch(state.tr.setSelection(selection));
+        } finally {
+            echoingActiveSlide = false;
+        }
+        // Smooth-scroll the group's first top-level item flush to the top of the outliner
+        // panel. `pos` is that item's position, so resolve its DOM directly via nodeDOM (no
+        // dependency on the active-slide decoration or its apply timing). We scroll
+        // ourselves because ProseMirror's `tr.scrollIntoView()` does not work here — the
+        // editor sits inside a `display: contents` wrapper.
+        const groupEl = editor.nodeDOM(pos);
+        if (groupEl instanceof Element) groupEl.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
 </script>
 
-<div bind:this={mountEl} class="outliner-root text-gray-900 contents"></div>
+<div bind:this={mountEl} class="outliner-root contents"></div>
 
 <style>
     .outliner-root :global .ProseMirror {
         padding: 1rem;
+        /* Trailing space so the last note group can scroll to the top — the same
+           --scroll-tail the slide list uses, so the two panels' bottom spacing matches
+           (set on the Workspace wrapper). */
+        padding-bottom: var(--scroll-tail);
         min-height: 100%;
         font-size: 1.25rem;
         line-break: strict;
+        text-autospace: normal;
+        white-space: pre-wrap;
+        text-spacing-trim: trim-start;
+        outline: none;
+        color: var(--color-gray-900);
 
         ul {
             padding-left: 1.5em;

@@ -53,6 +53,8 @@ describe('openSlides (PDF)', () => {
     const meta = await slides.meta();
     expect(meta.pageCount).toBeGreaterThan(0);
     expect(meta.hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(meta.width).toBeGreaterThan(0);
+    expect(meta.height).toBeGreaterThan(0);
 
     const first = await slides.image(1);
     expect(first.data.byteLength).toBeGreaterThan(0);

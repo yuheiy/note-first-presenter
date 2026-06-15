@@ -43,4 +43,10 @@ describe('ActiveSlideStore', () => {
     s.syncToUrl();
     expect(location.href).toBe(before);
   });
+
+  it('set() updates the active slide value', () => {
+    const s = new ActiveSlideStore();
+    s.set(4);
+    expect(s.value).toBe(4);
+  });
 });

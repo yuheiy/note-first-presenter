@@ -10,6 +10,7 @@
   "load_error": "読み込みに失敗しました。ページを再読み込みしてください。",
   "open_slideshow": "スライドショーを再生",
   "toggle_slide_list": "スライド一覧を開閉",
+  "slide_list_label": "スライド",
   "error_slides_not_found": "設定された PDF が見つかりません: {path}",
   "error_multiple_pdfs": "PDF が複数見つかりました: {files}。note-first-presenter.config.ts で 1 つに指定してください。",
   "info_no_slides": "プロジェクト直下に PDF を追加するか、note-first-presenter.config.ts で slides を設定してください。",
