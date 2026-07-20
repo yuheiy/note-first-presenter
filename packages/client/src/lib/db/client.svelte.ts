@@ -1,6 +1,7 @@
 import { defaultDb, type DbV1 } from './schema';
 
 export const SAVE_DEBOUNCE_MS = 500;
+export const SAVE_RETRY_MS = 5000;
 
 export interface DbStoreOptions {
   initial: DbV1;
@@ -14,6 +15,8 @@ export class DbStore {
 
   #save: (db: DbV1) => Promise<void>;
   #timer: ReturnType<typeof setTimeout> | null = null;
+  #dirty = false;
+  #inflight = false;
 
   constructor(opts: DbStoreOptions) {
     this.state = opts.initial;
@@ -26,29 +29,44 @@ export class DbStore {
 
   setTitle(title: string) {
     this.state.title = title;
+    this.#dirty = true;
     this.#scheduleSave();
   }
 
   setOutline(outline: unknown) {
     this.state.outline = outline;
+    this.#dirty = true;
     this.#scheduleSave();
   }
 
-  #scheduleSave() {
+  #scheduleSave(delay = SAVE_DEBOUNCE_MS) {
     if (this.#timer) clearTimeout(this.#timer);
-    this.#timer = setTimeout(() => void this.flush(), SAVE_DEBOUNCE_MS);
+    this.#timer = setTimeout(() => void this.flush(), delay);
   }
 
   async flush() {
-    this.#timer = null;
-    this.saveStatus = 'saving';
+    if (this.#timer) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+    }
+    if (this.#inflight || !this.#dirty) return;
+    this.#inflight = true;
     try {
-      await this.#save({ ...this.state });
+      // Loop so edits made during an in-flight save are sent before settling.
+      while (this.#dirty) {
+        this.#dirty = false;
+        this.saveStatus = 'saving';
+        await this.#save({ ...this.state });
+      }
       this.saveStatus = 'idle';
       this.lastError = null;
     } catch (err) {
+      this.#dirty = true;
       this.saveStatus = 'error';
       this.lastError = err instanceof Error ? err.message : String(err);
+      this.#scheduleSave(SAVE_RETRY_MS); // bounded retry; next edit also reschedules
+    } finally {
+      this.#inflight = false;
     }
   }
 }

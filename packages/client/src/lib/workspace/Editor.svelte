@@ -12,7 +12,8 @@
 
     const db = new DbStore({
         initial: defaultDb(),
-        save: (state) => api("/api/db", { method: "PUT", body: state }),
+        save: (state) =>
+            api("/api/db", { method: "PUT", body: state, keepalive: true }),
     });
     const meta = new SlidesMetaStore();
     const active = new ActiveSlideStore();
@@ -36,9 +37,27 @@
         })();
         // Refresh slides in place when the CLI reports a PDF/config change,
         // instead of a full reload that would discard the outline editing state.
-        return onSlidesChanged(() => {
+        const offSlidesChanged = onSlidesChanged(() => {
             void meta.load();
         });
+
+        // Flush any pending debounced save before the page is torn down,
+        // so edits made within the debounce window aren't lost.
+        const flushNow = () => void db.flush();
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "hidden") flushNow();
+        };
+        window.addEventListener("pagehide", flushNow);
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
+        return () => {
+            offSlidesChanged();
+            window.removeEventListener("pagehide", flushNow);
+            document.removeEventListener(
+                "visibilitychange",
+                onVisibilityChange,
+            );
+        };
     });
 
     function onTitleInput(e: Event & { currentTarget: HTMLInputElement }) {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import { DbStore, SAVE_DEBOUNCE_MS } from '../client.svelte';
+import { DbStore, SAVE_DEBOUNCE_MS, SAVE_RETRY_MS } from '../client.svelte';
 import { defaultDb } from '../schema';
 
 describe('DbStore', () => {
@@ -53,5 +53,70 @@ describe('DbStore', () => {
     await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
     expect(s.saveStatus).toBe('error');
     expect(s.lastError).toBe('boom');
+  });
+
+  it('retries automatically after a failed save', async () => {
+    const save = vi.fn().mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined);
+    const s = new DbStore({ initial: defaultDb(), save });
+    s.setTitle('x');
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
+    expect(s.saveStatus).toBe('error');
+    expect(save).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(SAVE_RETRY_MS);
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(s.saveStatus).toBe('idle');
+  });
+
+  it('does not drop edits made while a save is in flight', async () => {
+    let resolveFirst: () => void = () => {};
+    const firstCall = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const save = vi
+      .fn()
+      .mockImplementationOnce(() => firstCall)
+      .mockResolvedValueOnce(undefined);
+    const s = new DbStore({ initial: defaultDb(), save });
+
+    s.setTitle('a');
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
+    expect(save).toHaveBeenCalledTimes(1);
+
+    // Edit arrives while the first save is still in flight.
+    s.setTitle('b');
+    expect(save).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'b' }));
+    expect(s.saveStatus).toBe('idle');
+  });
+
+  it('does not overlap concurrent flush() calls', async () => {
+    let resolveFirst: () => void = () => {};
+    const firstCall = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const save = vi.fn().mockImplementationOnce(() => firstCall);
+    const s = new DbStore({ initial: defaultDb(), save });
+
+    s.setTitle('a');
+    const flushPromise1 = s.flush();
+    const flushPromise2 = s.flush();
+    expect(save).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+    await Promise.all([flushPromise1, flushPromise2]);
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it('flush() is a no-op when there is nothing dirty', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const s = new DbStore({ initial: defaultDb(), save });
+    s.replace({ ...defaultDb(), title: 'r' });
+    await s.flush();
+    expect(save).not.toHaveBeenCalled();
   });
 });
