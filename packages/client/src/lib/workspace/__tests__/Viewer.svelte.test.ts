@@ -38,7 +38,7 @@ describe('Viewer', () => {
   it('loads the published db.json and renders the outline read-only', async () => {
     mockPublishedDb({ title: 'My Deck', outline: outlineWith(['hello note']) });
     const { default: Viewer } = await import('../Viewer.svelte');
-    const screen = render(Viewer);
+    const screen = await render(Viewer);
 
     await expect.element(screen.getByRole('heading', { level: 1 })).toHaveTextContent('My Deck');
     const outliner = screen.getByRole('textbox', { name: 'Outliner' });
@@ -50,7 +50,7 @@ describe('Viewer', () => {
   it('falls back to the default title when the published title is empty', async () => {
     mockPublishedDb({ title: '', outline: outlineWith(['a']) });
     const { default: Viewer } = await import('../Viewer.svelte');
-    const screen = render(Viewer);
+    const screen = await render(Viewer);
 
     await expect
       .element(screen.getByRole('heading', { level: 1 }))
@@ -63,7 +63,7 @@ describe('Viewer', () => {
       return Promise.resolve({ kind: 'no-config-no-file' });
     });
     const { default: Viewer } = await import('../Viewer.svelte');
-    const screen = render(Viewer);
+    const screen = await render(Viewer);
 
     await expect.element(screen.getByRole('alert')).toHaveTextContent(m.load_error());
   });
@@ -71,7 +71,7 @@ describe('Viewer', () => {
   it('never writes to the db', async () => {
     mockPublishedDb({ title: 'My Deck', outline: outlineWith(['a']) });
     const { default: Viewer } = await import('../Viewer.svelte');
-    const screen = render(Viewer);
+    const screen = await render(Viewer);
 
     await expect.element(screen.getByRole('textbox', { name: 'Outliner' })).toBeInTheDocument();
     for (const call of apiMock.mock.calls) {

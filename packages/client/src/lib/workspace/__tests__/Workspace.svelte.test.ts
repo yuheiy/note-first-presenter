@@ -47,7 +47,7 @@ describe('Workspace', () => {
   it('shows info_no_slides in role="status" when no-config-no-file', async () => {
     mockApi({ kind: 'no-config-no-file' });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     await expect.element(screen.getByRole('status')).toHaveTextContent(m.info_no_slides());
   });
@@ -56,7 +56,7 @@ describe('Workspace', () => {
   it('shows the listbox with one option per page when resolved', async () => {
     mockApi({ kind: 'resolved', hash: 'h1', pageCount: 3 });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     const listbox = screen.getByRole('listbox', { name: 'Slides' });
     await expect.element(listbox).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('Workspace', () => {
       return Promise.resolve({ kind: 'resolved', hash: 'h1', pageCount: 3 });
     });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     // initially group 1 ("one") is active
     await expect.element(screen.getByRole('textbox', { name: 'Outliner' })).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe('Workspace', () => {
   it('shows error_slides_not_found in role="alert" when configured-but-missing', async () => {
     mockApi({ kind: 'configured-but-missing', configuredPath: '/decks/missing.pdf' });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     await expect
       .element(screen.getByRole('alert'))
@@ -106,7 +106,7 @@ describe('Workspace', () => {
   it('shows error_multiple_pdfs in role="alert" when no-config-multiple-files', async () => {
     mockApi({ kind: 'no-config-multiple-files', candidates: ['a.pdf', 'b.pdf'] });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     await expect
       .element(screen.getByRole('alert'))
@@ -116,7 +116,7 @@ describe('Workspace', () => {
   it('shows the error message in role="alert" on a network error', async () => {
     mockApi(new Error('meta down'));
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     // the Outliner stays rendered
     await expect.element(screen.getByRole('textbox', { name: 'Outliner' })).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('Workspace', () => {
   it('clicking the toggle closes the list and writes false to localStorage', async () => {
     mockApi({ kind: 'no-config-no-file' });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     const toggleBtn = screen.getByRole('button', { name: m.toggle_slide_list() });
 
@@ -154,7 +154,7 @@ describe('Workspace', () => {
     localStorage.setItem('nfp:listOpen', 'false');
     mockApi({ kind: 'no-config-no-file' });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     const toggleBtn = screen.getByRole('button', { name: m.toggle_slide_list() });
     await expect.element(toggleBtn).toHaveAttribute('aria-expanded', 'false');
@@ -163,7 +163,7 @@ describe('Workspace', () => {
   it('checking the "Dark" radio writes nfp:theme=dark to localStorage', async () => {
     mockApi({ kind: 'no-config-no-file' });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     const darkRadio = screen.getByRole('radio', { name: m.theme_dark() });
     await darkRadio.click();

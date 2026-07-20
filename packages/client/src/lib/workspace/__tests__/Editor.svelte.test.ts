@@ -58,7 +58,7 @@ describe('Editor', () => {
   it('loads the db from the live API and renders an editable outline', async () => {
     mockLiveDb({ title: 'Deck', outline: outlineWith(['hello note']) });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     const title = screen.getByRole('textbox', { name: m.title_label() });
     await expect.element(title).toHaveValue('Deck');
@@ -75,7 +75,7 @@ describe('Editor', () => {
       return Promise.resolve({ kind: 'no-config-no-file' });
     });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     await expect.element(screen.getByRole('alert')).toHaveTextContent(m.load_error());
   });
@@ -83,7 +83,7 @@ describe('Editor', () => {
   it('persists title edits through the live API after the debounce window', async () => {
     mockLiveDb({ title: 'Deck', outline: outlineWith(['a']) });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     const title = screen.getByRole('textbox', { name: m.title_label() });
     await expect.element(title).toHaveValue('Deck');
@@ -112,7 +112,7 @@ describe('Editor', () => {
       return Promise.resolve(metaResponse);
     });
     const { default: Editor } = await import('../Editor.svelte');
-    const screen = render(Editor);
+    const screen = await render(Editor);
 
     // Initial slide rendered from the first hash, outline editing context present.
     await expect

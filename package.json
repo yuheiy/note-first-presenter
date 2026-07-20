@@ -14,14 +14,20 @@
   "devDependencies": {
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
-    "@typescript/native-preview": "catalog:",
     "knip": "catalog:",
     "note-first-presenter": "workspace:*",
     "playwright": "catalog:",
+    "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.15.1",
+      "onFail": "download"
+    }
   },
   "engines": {
     "node": ">=22.18.0"
-  },
-  "packageManager": "pnpm@11.6.0"
+  }
 }

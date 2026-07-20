@@ -42,7 +42,7 @@ Four layers, keyed by filename. Client uses `test.projects` to split into `serve
 
 `vp run test` runs all layers: `test:unit` → `test:integration` → `test:e2e`.
 
-Run tests only through `vp test` / `vp run test`, never a bare `vitest`. Test files import `vite-plus/test`; launching the stock `vitest` (e.g. `vp exec vitest run`) loads a second `@vitest/runner` and breaks — unit tests die with `Cannot read properties of undefined (reading 'config')`, and **browser-mode tests hang silently** with no error. To run one layer, scope `vp test` (e.g. `vp test --project client <path>`).
+Run tests through `vp test` / `vp run test`. To run one layer, scope `vp test` (e.g. `vp test --project client <path>`). Since vite-plus 0.2.x the old bare-`vitest` breakage (second `@vitest/runner`: unit tests died, browser-mode tests hung silently) is gone — the catalog now pins stock `vitest` exactly at vp's bundled version. That exact pin is what keeps it safe: don't bump the `vitest` catalog entry independently of `vite-plus`; let `vp migrate` move them in lockstep.
 
 ## CLI packaging
 
