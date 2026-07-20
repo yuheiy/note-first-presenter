@@ -20,6 +20,7 @@
 - **Depends on**: none（Plan 001 と独立。ただし同時に着手しないこと — 保存経路の両端を同時に変えるとバグの切り分けが難しくなる）
 - **Category**: bug
 - **Planned at**: commit `c4a6e81`, 2026-07-19
+- **Executed**: 2026-07-21、executor（sonnet）が worktree `.claude/worktrees/agent-a6417f30e11f83969`（branch `advisor/002-flush-pending-saves`）で実施。レビュー verdict: **APPROVE**（スコープクリーン、`vp check` exit 0、クライアント 33 ファイル / 177 テスト pass、新規 4 テスト含む）。pre-commit フックの svelte-check クラッシュ（既存欠陥 DX-02）のためユーザーの直接指示で `--no-verify` コミットし、`9d7d17c` として main に取り込み済み（取り込み後にメインツリーで 33 ファイル / 177 テスト pass を確認）。
 
 ## Why this matters
 
@@ -95,7 +96,7 @@ const db = new DbStore({
 | client パッケージのテスト | `vp run --filter @note-first-presenter/client test`                               | all pass            |
 | 全ユニットテスト          | `vp run test:unit`                                                                | all pass            |
 
-**警告**: 素の `vitest` は絶対に起動しないこと。ブラウザモードのテストは無音でハングする。必ず `vp test` / `vp run` 経由。
+**注意**: テストは `vp test` / `vp run` 経由で走らせること（vite-plus 0.2.x で素の `vitest` の破損は解消済みだが、リポジトリの標準経路は `vp`）。
 
 ## Scope
 
@@ -115,7 +116,7 @@ const db = new DbStore({
 ## Git workflow
 
 - Branch: `advisor/002-flush-pending-saves`
-- Commit style: conventional commits（例: `fix(client): flush pending saves on unload and retry failed saves`）
+- Commit style: conventional commit は使わない（例: `Flush pending saves on unload and retry failed saves`）
 - push / PR 作成はオペレーターの指示がない限り行わない。
 
 ## Steps

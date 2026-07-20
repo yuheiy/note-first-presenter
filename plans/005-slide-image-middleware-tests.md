@@ -54,7 +54,7 @@
 | Format+lint+typecheck          | `vp check`                                  | exit 0              |
 | CLI パッケージのユニットテスト | `vp run --filter note-first-presenter test` | all pass            |
 
-**警告**: 素の `vitest` は起動しない。必ず `vp test` / `vp run` 経由。
+**注意**: テストは `vp test` / `vp run` 経由で走らせること（vite-plus 0.2.x で素の `vitest` の破損は解消済みだが、リポジトリの標準経路は `vp`）。
 
 ## Scope
 
@@ -70,7 +70,7 @@
 ## Git workflow
 
 - Branch: `advisor/005-slide-image-middleware-tests`
-- Commit style: conventional commits（例: `test: cover the slide-image branch of the api middleware`）
+- Commit style: conventional commit は使わない（例: `Cover the slide-image branch of the api middleware`）
 - push / PR 作成はオペレーターの指示がない限り行わない。
 
 ## Steps

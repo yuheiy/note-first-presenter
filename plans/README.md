@@ -9,15 +9,24 @@ before starting, honor its STOP conditions, and update your row when done.
 
 ## Execution order & status
 
-| Plan | Title                                                       | Priority | Effort | Depends on | Status |
-| ---- | ----------------------------------------------------------- | -------- | ------ | ---------- | ------ |
-| 001  | アウトライン db の書き込みをアトミック化し並行 PUT を直列化 | P1       | S      | —          | DONE   |
-| 002  | デバウンス中の未保存編集を unload 時に flush、失敗リトライ  | P1       | S      | —          | TODO   |
-| 003  | pdfjs ドキュメントの destroy と失敗ロードの再試行           | P2       | S      | —          | TODO   |
-| 004  | 公開前ハイジーン（メタデータ・LICENSE・依存ピン）           | P2       | S      | —          | TODO   |
-| 005  | スライド画像エンドポイントの middleware テスト              | P2       | S      | —          | TODO   |
+| Plan | Title                                                        | Priority | Effort | Depends on | Status                                                                                                                                |
+| ---- | ------------------------------------------------------------ | -------- | ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 001  | アウトライン db の書き込みをアトミック化し並行 PUT を直列化  | P1       | S      | —          | DONE（2026-07-21 reconcile で HEAD `9d7d17c` 上の done criteria 再検証済み）                                                          |
+| 002  | デバウンス中の未保存編集を unload 時に flush、失敗リトライ   | P1       | S      | —          | DONE（2026-07-21 実行・レビュー APPROVE、`9d7d17c` として main に取り込み済み。同日 reconcile で HEAD 上の done criteria 再検証済み） |
+| 003  | pdfjs ドキュメントの destroy と失敗ロードの再試行            | P2       | S      | —          | TODO                                                                                                                                  |
+| 004  | 公開前ハイジーン（メタデータ・LICENSE・chokidar カタログ化） | P2       | S      | —          | TODO（2026-07-21 refresh: 旧 Step 4 の `@latest` ピンは `34b727b` で独立解消済み）                                                    |
+| 005  | スライド画像エンドポイントの middleware テスト               | P2       | S      | —          | TODO                                                                                                                                  |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
+
+## Execute log
+
+- **2026-07-21 — Plan 002 実行、verdict APPROVE**。worktree: `.claude/worktrees/agent-a6417f30e11f83969`、branch: `advisor/002-flush-pending-saves`（3 ファイル staged、未コミット）。レビューで独立検証済み: スコープは in-scope 3 ファイルのみ、diff 全ハンクがプランのステップに対応、`vp check` exit 0、クライアント 33 ファイル / 177 テスト pass（新規 4 テスト含む、同梱 vitest バイナリで実行）。コミットが未作成なのは pre-commit フックの svelte-check クラッシュ（DX-02、この実行とは無関係の既存欠陥）のため — executor はユーザー本人の直接指示なしの `--no-verify` を方針として辞退。ユーザーの直接指示により `--no-verify` でコミット（`9d7d17c`）し main へ fast-forward 取り込み、取り込み後にメインツリーで 33 ファイル / 177 テスト pass を確認。worktree と advisor ブランチは削除済み。ほか、worktree 環境では `vp run` が親リポジトリのルートを誤検出して server プロジェクトのテスト収集に失敗する現象を確認（メインツリーでは正常 — リポジトリの欠陥ではなく vite-plus のネスト worktree 問題。upstream 報告候補）。
+
+## Reconcile log
+
+- **2026-07-21 (2 回目)**（HEAD `9d7d17c`）: 001・002 を DONE のまま検証（001: `db.ts` に直接 `writeFile(DB_FILENAME` の grep ゼロ。002: `Editor.svelte` に `pagehide`/`keepalive`、`client.svelte.ts` に `SAVE_RETRY_MS` を確認）。`9d7d17c` の変更は 002 の in-scope 3 ファイルのみで、003（`slides/pdf.ts`・`slides.ts`・`plugin.ts`）・004（package.json 2 件・`pnpm-workspace.yaml`）・005（`plugin.ts`・`plugin.test.ts`）のドリフトチェックはすべて差分ゼロ。003・004・005 は refresh 不要、即実行可。BLOCKED / IN PROGRESS / REJECTED 化はなし。
+- **2026-07-21**（HEAD `34b727b`）: 001 を検証済み DONE（`db.ts` が temp+rename+直列化、db.test.ts 8 件 pass、直接 `writeFile(DB_FILENAME` の grep ゼロ）。002・003・005 はドリフトなし・即実行可。004 をリフレッシュ — `34b727b`（vite-plus 0.2.x アップグレード）で catalog の `@latest` が全てピン済みになったため旧 Step 4 を削除、残りはメタデータ・LICENSE・chokidar のカタログ化。全プランのコミットスタイル指示を非 conventional に修正（ユーザーのグローバル方針）、素の vitest 警告を 0.2.x の実態に合わせて更新。
 
 ## Dependency notes
 
@@ -28,14 +37,15 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 監査で確認済みだが、既定の上位 5 件に入らなかったもの。プラン化を希望するものを指定してください。
 
-| ID             | 内容                                                                                                                                                         | Effort | Confidence |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ---------- |
-| DX-01          | CI がない（`.github/workflows` 不在）。`vp check` + 各テスト層を回す workflow の追加                                                                         | M      | HIGH       |
-| DOCS-02        | README がタイトル 1 行のみ。install / dev・build・export / `---` セパレータ / config 表の quickstart                                                         | M      | HIGH       |
-| CORRECTNESS-C3 | client 側 `dbSchema`（valibot）が dead code。ロード時に `v.parse` されず、破損 db で `nodeFromJSON` がエラーバウンダリなしに throw                           | S      | MED        |
-| CORRECTNESS-C4 | Cmd+Click の追加選択（additionalItems）が copy/cut で無視される（`NodeRangeSelection.content()` が primary range のみ）。backspace/move/duplicate とは非対称 | M      | MED        |
-| CORRECTNESS-C2 | 後から開いた slideshow が page-count 同期を受信できず、ノートグループ数 > PDF ページ数のとき overflow スライドへキーボード到達不能                           | S–M    | MED        |
-| PERF-01        | `Outliner.svelte:119` がキーストロークごとに全ドキュメント `toJSON()`（消費は 500ms に 1 回）。大きいデッキでの入力レイテンシ                                | S      | HIGH       |
+| ID             | 内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Effort | Confidence                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------- |
+| DX-01          | CI がない（`.github/workflows` 不在）。`vp check` + 各テスト層を回す workflow の追加                                                                                                                                                                                                                                                                                                                                                                                                                                                         | M      | HIGH                                           |
+| DX-02          | `*.svelte` の pre-commit フック（`vite.config.ts` の `staged` 設定）が全面的に壊れている: svelte-check 4.7.3 が TypeScript 7.0.2 で `TypeError: Cannot read properties of undefined (reading 'useCaseSensitiveFileNames')` でクラッシュ（34b727b の TS7 化以降。当該コミットは `.svelte` を触らなかったため未発覚）。**メンテナ方針（2026-07-21）: TypeScript を v6 にダウングレードして解消する**（svelte-check 4.7.3 は TS 5/6 対応。`pnpm-workspace.yaml` の override コメントにある @sveltejs/kit の peer 制約 `^5\|\|^6` とも整合する） | S–M    | HIGH（メインツリー未変更コードで再現確認済み） |
+| DOCS-02        | README がタイトル 1 行のみ。install / dev・build・export / `---` セパレータ / config 表の quickstart                                                                                                                                                                                                                                                                                                                                                                                                                                         | M      | HIGH                                           |
+| CORRECTNESS-C3 | client 側 `dbSchema`（valibot）が dead code。ロード時に `v.parse` されず、破損 db で `nodeFromJSON` がエラーバウンダリなしに throw                                                                                                                                                                                                                                                                                                                                                                                                           | S      | MED                                            |
+| CORRECTNESS-C4 | Cmd+Click の追加選択（additionalItems）が copy/cut で無視される（`NodeRangeSelection.content()` が primary range のみ）。backspace/move/duplicate とは非対称                                                                                                                                                                                                                                                                                                                                                                                 | M      | MED                                            |
+| CORRECTNESS-C2 | 後から開いた slideshow が page-count 同期を受信できず、ノートグループ数 > PDF ページ数のとき overflow スライドへキーボード到達不能                                                                                                                                                                                                                                                                                                                                                                                                           | S–M    | MED                                            |
+| PERF-01        | `Outliner.svelte:119` がキーストロークごとに全ドキュメント `toJSON()`（消費は 500ms に 1 回）。大きいデッキでの入力レイテンシ                                                                                                                                                                                                                                                                                                                                                                                                                | S      | HIGH                                           |
 
 ## Direction findings
 
