@@ -65,4 +65,30 @@ describe('readDb / writeDb', () => {
     await fs.writeFile('.note-first-presenter.json', '{ not json', 'utf8');
     await expect(readDb()).rejects.toThrow('.note-first-presenter.json');
   });
+
+  it('does not leave a temp file behind after writing', async () => {
+    await writeDb({
+      version: 1,
+      title: 'tmp-cleanup',
+      outline: { type: 'doc', content: [] },
+    });
+    const files = await fs.readdir('.');
+    expect(files).not.toContain('.note-first-presenter.json.tmp');
+  });
+
+  it('serializes concurrent writes and ends with the last value', async () => {
+    const dbA = {
+      version: 1 as const,
+      title: 'a',
+      outline: { type: 'doc', content: [] },
+    };
+    const dbB = {
+      version: 1 as const,
+      title: 'b',
+      outline: { type: 'doc', content: [] },
+    };
+    await Promise.all([writeDb(dbA), writeDb(dbB)]);
+    const loaded = await readDb();
+    expect(loaded).toEqual(dbB);
+  });
 });
