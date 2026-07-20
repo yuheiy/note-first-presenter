@@ -44,6 +44,15 @@ export async function readDb(): Promise<DbInput> {
   }
 }
 
-export async function writeDb(db: DbInput): Promise<void> {
-  await fs.writeFile(DB_FILENAME, `${JSON.stringify(db, null, 2)}\n`, 'utf8');
+let writeChain: Promise<void> = Promise.resolve();
+
+export function writeDb(db: DbInput): Promise<void> {
+  const run = writeChain.then(async () => {
+    const tmp = `${DB_FILENAME}.tmp`;
+    await fs.writeFile(tmp, `${JSON.stringify(db, null, 2)}\n`, 'utf8');
+    await fs.rename(tmp, DB_FILENAME);
+  });
+  // Keep the chain alive even when a write fails so later writes still run.
+  writeChain = run.catch(() => {});
+  return run;
 }
