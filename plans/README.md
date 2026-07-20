@@ -11,7 +11,7 @@ before starting, honor its STOP conditions, and update your row when done.
 
 | Plan | Title                                                       | Priority | Effort | Depends on | Status |
 | ---- | ----------------------------------------------------------- | -------- | ------ | ---------- | ------ |
-| 001  | アウトライン db の書き込みをアトミック化し並行 PUT を直列化 | P1       | S      | —          | TODO   |
+| 001  | アウトライン db の書き込みをアトミック化し並行 PUT を直列化 | P1       | S      | —          | DONE   |
 | 002  | デバウンス中の未保存編集を unload 時に flush、失敗リトライ  | P1       | S      | —          | TODO   |
 | 003  | pdfjs ドキュメントの destroy と失敗ロードの再試行           | P2       | S      | —          | TODO   |
 | 004  | 公開前ハイジーン（メタデータ・LICENSE・依存ピン）           | P2       | S      | —          | TODO   |
