@@ -46,6 +46,7 @@ export async function createSlidesContext(opts?: {
   let cached: { path: string; slides: Slides } | null = null;
   function getSlides(slidesPath: string): Slides {
     if (!cached || cached.path !== slidesPath) {
+      cached?.slides.invalidate();
       cached = { path: slidesPath, slides: openSlides(slidesPath) };
     }
     return cached.slides;
@@ -59,6 +60,7 @@ export async function createSlidesContext(opts?: {
     });
     // Drop cached Slides so the next request re-opens (and re-parses if the
     // PDF content changed at the same path).
+    cached?.slides.invalidate();
     cached = null;
     // The config file itself is already covered by configWatcher; only its
     // imported dependencies need the dynamic watcher.
@@ -163,6 +165,8 @@ export async function createSlidesContext(opts?: {
       resolveClosed();
       const dynamic = dynamicWatcher;
       dynamicWatcher = null;
+      cached?.slides.invalidate();
+      cached = null;
       await Promise.all([rootWatcher.close(), configWatcher.close(), dynamic?.close()]);
     },
   };
@@ -311,6 +315,8 @@ export const ViteNfpPlugin = (opts?: { cwd?: string }): Plugin => ({
       },
     });
     server.middlewares.use(createApiMiddleware({ getSlidesStatus, getSlides }));
-    server.httpServer?.on('close', () => void close());
+    server.httpServer?.on('close', () => {
+      close().catch((err) => server.config.logger.error(String(err)));
+    });
   },
 });

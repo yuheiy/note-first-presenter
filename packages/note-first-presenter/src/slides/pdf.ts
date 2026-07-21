@@ -81,7 +81,17 @@ async function encodePage(
 export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string }): Slides {
   const cacheRoot = opts?.cacheRoot ?? path.resolve('node_modules', '.note-first-presenter');
   let pdfP: Promise<LoadedPdf> | null = null;
-  const getPdf = () => (pdfP ??= loadAndHash(slidesPath, cacheRoot));
+  const getPdf = () => {
+    if (!pdfP) {
+      const p = loadAndHash(slidesPath, cacheRoot);
+      pdfP = p;
+      // A rejected load must not be sticky: clear it so the next call retries.
+      p.catch(() => {
+        if (pdfP === p) pdfP = null;
+      });
+    }
+    return pdfP;
+  };
 
   return {
     async meta() {
@@ -141,7 +151,10 @@ export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string })
       return { hash, slides } satisfies RenderAllResult;
     },
     invalidate() {
+      const p = pdfP;
       pdfP = null;
+      // Release pdfjs worker/native memory; ignore failures (already-broken loads).
+      void p?.then((loaded) => loaded.pdf.loadingTask.destroy()).catch(() => {});
     },
   };
 }

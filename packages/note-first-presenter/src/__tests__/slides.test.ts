@@ -69,6 +69,31 @@ describe('openSlides (PDF)', () => {
     const meta = await slides.meta();
     await expect(slides.image(meta.pageCount + 1)).rejects.toThrow(/out of range/);
   });
+
+  it('retries after a failed load instead of caching the rejection', async () => {
+    await fs.writeFile('broken.pdf', 'not a pdf');
+    const slides = openSlides(path.resolve('broken.pdf'));
+    await expect(slides.meta()).rejects.toThrow();
+
+    // Replace the broken file with a valid PDF; the same Slides instance
+    // must retry rather than keep returning the cached rejection.
+    await fs.copyFile(SAMPLE_PDF, 'broken.pdf');
+    const meta = await slides.meta();
+    expect(meta.pageCount).toBeGreaterThan(0);
+  });
+
+  it('invalidate() releases the loaded document and allows a fresh reload', async () => {
+    const slides = openSlides(SAMPLE_PDF);
+    const first = await slides.meta();
+
+    slides.invalidate();
+
+    // A second meta() after invalidate() must re-load successfully (not
+    // throw from touching an already-destroyed pdfjs document) and produce
+    // the same result.
+    const second = await slides.meta();
+    expect(second).toEqual(first);
+  });
 });
 
 describe('Slides.renderAll', () => {
