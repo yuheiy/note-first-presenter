@@ -1,9 +1,10 @@
-import { promises as fs } from 'node:fs';
+import { mkdtempSync, promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import { describe, expect, it, vi } from 'vite-plus/test';
+import { afterAll, describe, expect, it, vi } from 'vite-plus/test';
 import { emptyDb } from '../../db.ts';
-import { type SlidesStatus } from '../../slides.ts';
+import { openSlides, type SlidesStatus } from '../../slides.ts';
 import { useTempCwd } from '../../__tests__/helpers.ts';
 import { createApiMiddleware, createSlidesContext } from '../plugin.ts';
 
@@ -255,5 +256,87 @@ describe('createApiMiddleware', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(nextCalled).toBe(true);
     expect(res.body).toBeUndefined();
+  });
+});
+
+// ─── createApiMiddleware slide images ──────────────────────────────────────
+// Wires a real `Slides` over the sample PDF fixture to cover the branches the
+// throw-on-getSlides stub above can't reach: hash matching, page validation,
+// and the success/out-of-range response shapes.
+
+describe('createApiMiddleware slide images', () => {
+  // An explicit cacheRoot sidesteps openSlides()'s cwd-relative default so
+  // this describe doesn't need to chdir before constructing `slides`.
+  const cacheRoot = mkdtempSync(path.join(tmpdir(), 'nfp-mw-cache-'));
+  const slides = openSlides(SAMPLE_PDF, { cacheRoot });
+  const mw = createApiMiddleware({
+    getSlidesStatus: () => ({ kind: 'resolved', path: SAMPLE_PDF }),
+    getSlides: () => slides,
+  });
+
+  afterAll(async () => {
+    await fs.rm(cacheRoot, { recursive: true, force: true });
+  });
+
+  it('GET with a valid hash and page returns 200 with image headers', async () => {
+    const { hash } = await slides.meta();
+    const res = createMockRes();
+    mw(createMockReq('GET', `/api/slide/${hash}/1`), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toBe('image/webp');
+    expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+    expect(res.headers['etag']).toBe(`"${hash}-1"`);
+    expect(res.body!.length).toBeGreaterThan(0);
+  });
+
+  it('GET with a mismatched hash returns 404', async () => {
+    const res = createMockRes();
+    mw(createMockReq('GET', '/api/slide/wronghash/1'), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.body!.toString())).toEqual({ error: 'hash mismatch' });
+  });
+
+  it('GET a page past the last page returns 404', async () => {
+    const { hash } = await slides.meta();
+    const res = createMockRes();
+    mw(createMockReq('GET', `/api/slide/${hash}/999`), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.body!.toString())).toEqual({ error: 'out of range' });
+  });
+
+  it('GET page 0 returns 400', async () => {
+    const { hash } = await slides.meta();
+    const res = createMockRes();
+    mw(createMockReq('GET', `/api/slide/${hash}/0`), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body!.toString())).toEqual({ error: 'invalid page' });
+  });
+
+  it('GET a slide image when slides are unresolved returns 404', async () => {
+    const unresolvedMw = createApiMiddleware({
+      getSlidesStatus: () => NO_SLIDES,
+      getSlides: () => {
+        throw new Error('getSlides should not be called when slides are unresolved');
+      },
+    });
+    const res = createMockRes();
+    unresolvedMw(createMockReq('GET', '/api/slide/x/1'), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.body!.toString())).toEqual({ error: 'slides not available' });
   });
 });
