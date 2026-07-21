@@ -1,16 +1,17 @@
 {
   "name": "note-first-presenter",
   "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
-  "homepage": "https://github.com/author/library#readme",
+  "description": "A presentation tool where you write notes first in an outliner, then pair them with slide images rendered from a PDF.",
+  "homepage": "https://github.com/yuheiy/note-first-presenter#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/yuheiy/note-first-presenter/issues"
   },
   "license": "MIT",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "Yuhei Yasuda",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/yuheiy/note-first-presenter.git",
+    "directory": "packages/note-first-presenter"
   },
   "bin": {
     "note-first-presenter": "./bin/note-first-presenter.mjs"
@@ -35,7 +36,7 @@
     "@sveltejs/adapter-static": "catalog:",
     "@sveltejs/kit": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "chokidar": "^5.0.0",
+    "chokidar": "catalog:",
     "citty": "catalog:",
     "eta": "catalog:",
     "pdfjs-dist": "catalog:",
