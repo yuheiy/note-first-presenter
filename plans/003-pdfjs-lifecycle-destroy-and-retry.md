@@ -41,7 +41,7 @@ dev サーバは PDF や config が変わるたびに `Slides` インスタン�
       pdfP = null;
     },
     ```
-  - `LoadedPdf` は `{ hash, pdf, pageCount }` で `pdf` が `PDFDocumentProxy`。`pdf.destroy()` は Promise を返す。
+  - `LoadedPdf` は `{ hash, pdf, pageCount }` で `pdf` が `PDFDocumentProxy`。**注意（2026-07-21 実行時に判明）**: pdfjs-dist 6.x では `PDFDocumentProxy` に `destroy()` はない。代わりに `pdf.loadingTask` getter（`PDFDocumentLoadingTask` を返す）があり、`loadingTask.destroy(): Promise<void>` がワーカー破棄の正規 API（`types/src/display/api.d.ts:827,1181`）。
 - `packages/note-first-presenter/src/slides.ts:51-57` — `Slides` インターフェース。`invalidate(): void;` を含む。
 - `packages/note-first-presenter/src/vite/plugin.ts` — dev コンテキスト:
   - `plugin.ts:46-52` — インスタンスキャッシュ:
@@ -126,7 +126,7 @@ invalidate() {
   const p = pdfP;
   pdfP = null;
   // Release pdfjs worker/native memory; ignore failures (already-broken loads).
-  void p?.then((loaded) => loaded.pdf.destroy()).catch(() => {});
+  void p?.then((loaded) => loaded.pdf.loadingTask.destroy()).catch(() => {});
 },
 ```
 
@@ -192,7 +192,7 @@ Machine-checkable. ALL must hold:
 Stop and report back (do not improvise) if:
 
 - 引用箇所の現状コードが抜粋と一致しない。
-- `pdf.destroy()` の呼び出しで pdfjs-dist（legacy build）が例外や警告ループを起こす場合 — バージョン固有の問題なので報告。
+- `pdf.loadingTask.destroy()` の呼び出しで pdfjs-dist（legacy build）が例外や警告ループを起こす場合 — バージョン固有の問題なので報告。
 - `plugin.test.ts` の既存テストが invalidate 追加で落ち、原因が「同一パスの再取得でインスタンスが破棄される」だった場合 — Step 3-1 の条件分岐が間違っているので、修正 2 回で直らなければ報告。
 
 ## Maintenance notes
