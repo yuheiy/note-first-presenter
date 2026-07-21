@@ -1,16 +1,17 @@
 {
   "name": "@note-first-presenter/client",
   "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
-  "homepage": "https://github.com/author/library#readme",
+  "description": "UI client for note-first-presenter.",
+  "homepage": "https://github.com/yuheiy/note-first-presenter#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/yuheiy/note-first-presenter/issues"
   },
   "license": "MIT",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "Yuhei Yasuda",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/yuheiy/note-first-presenter.git",
+    "directory": "packages/client"
   },
   "files": [
     "src",
