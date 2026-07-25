@@ -27,14 +27,8 @@ export default defineConfig({
       {
         // The published CLI depends on `vite` (npm:@voidzero-dev/vite-plus-core),
         // not the `vite-plus` toolchain, so it imports the runtime API from `vite`.
-        // It also renders no UI, so the react rules only produce false positives
-        // there (`useTempCwd`, a test helper, reads as a hook to the linter).
         files: ['packages/note-first-presenter/**'],
-        rules: {
-          'vite-plus/prefer-vite-plus-imports': 'off',
-          'react/rules-of-hooks': 'off',
-          'react/exhaustive-deps': 'off',
-        },
+        rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
       },
     ],
   },

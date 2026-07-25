@@ -23,10 +23,13 @@ export function createViteConfig({
   return {
     root: clientRoot,
     configFile: false,
-    build: {
-      outDir: outDir ?? 'build',
-      emptyOutDir: true,
-    },
+    // Only `build` supplies an outDir; dev has no output to place, so it gets no
+    // build section rather than a default that would resolve inside the client
+    // package. cli.ts always passes an absolute path, which lands outside `root`
+    // — Vite refuses to clear such a directory unless told to, and the
+    // adapter-static this replaces did clear it (builder.rimraf), so
+    // emptyOutDir keeps stale assets from surviving a rebuild.
+    ...(outDir === undefined ? {} : { build: { outDir, emptyOutDir: true } }),
     plugins: [tailwindcss(), react(), ViteNfpPlugin({ cwd: projectCwd })],
   };
 }
