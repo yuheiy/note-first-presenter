@@ -14,6 +14,7 @@
     "directory": "packages/client"
   },
   "files": [
+    "index.html",
     "src",
     "!src/**/__tests__",
     "messages",
@@ -26,7 +27,6 @@
     "./dbSchema": "./src/lib/dbSchema.ts"
   },
   "scripts": {
-    "prepare": "svelte-kit sync || echo ''",
     "test": "vp test"
   },
   "dependencies": {
@@ -41,19 +41,22 @@
     "prosemirror-state": "catalog:",
     "prosemirror-transform": "catalog:",
     "prosemirror-view": "catalog:",
-    "svelte": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "tailwindcss": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@sveltejs/kit": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "vitest-browser-svelte": "catalog:"
+    "vitest-browser-react": "catalog:"
   }
 }

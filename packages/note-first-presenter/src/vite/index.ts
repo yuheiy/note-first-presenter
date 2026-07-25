@@ -1,7 +1,6 @@
-import path from 'node:path';
-import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import type { InlineConfig, PluginOption } from 'vite';
+import type { InlineConfig } from 'vite';
 import { ViteNfpPlugin } from './plugin.ts';
 
 export interface CreateViteConfigInput {
@@ -10,37 +9,24 @@ export interface CreateViteConfigInput {
   projectCwd?: string;
 }
 
-export async function createViteConfig({
+// The inline config is the only source of truth for the app build (configFile:
+// false, see docs/adr/0007). Plain Vite + React: appType stays at its default
+// ('spa'), so dev falls back to index.html for anything the nfp middleware does
+// not claim, and the build finds `<root>/index.html` without a rollupOptions
+// input. The pages route off location.hash, which never reaches the server, so
+// static hosting needs no fallback document.
+export function createViteConfig({
   outDir,
   clientRoot,
   projectCwd,
-}: CreateViteConfigInput): Promise<InlineConfig> {
-  const [{ sveltekit }, { default: adapter }] = await Promise.all([
-    import('@sveltejs/kit/vite'),
-    import('@sveltejs/adapter-static'),
-  ]);
-
-  const outputDir = outDir ?? 'build';
-  const kitPlugins = (await sveltekit({
-    adapter: adapter({
-      pages: outputDir,
-      assets: outputDir,
-      fallback: '200.html',
-    }),
-  })) as PluginOption[];
-
+}: CreateViteConfigInput): InlineConfig {
   return {
     root: clientRoot,
     configFile: false,
-    plugins: [
-      tailwindcss(),
-      kitPlugins,
-      paraglideVitePlugin({
-        project: path.join(clientRoot, 'project.inlang'),
-        outdir: path.join(clientRoot, 'src/lib/paraglide'),
-        strategy: ['preferredLanguage', 'baseLocale'],
-      }) as PluginOption,
-      ViteNfpPlugin({ cwd: projectCwd }),
-    ],
+    build: {
+      outDir: outDir ?? 'build',
+      emptyOutDir: true,
+    },
+    plugins: [tailwindcss(), react(), ViteNfpPlugin({ cwd: projectCwd })],
   };
 }

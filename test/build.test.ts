@@ -27,8 +27,10 @@ afterAll(async () => {
 });
 
 describe('note-first-presenter build (bin integration)', () => {
-  it('emits spa shell with 200.html fallback', async () => {
-    await fs.access(path.join(tmp, 'dist', '200.html'));
+  // No 200.html any more: the pages route off location.hash, which never
+  // reaches the server, so index.html is the only document a static host needs.
+  it('emits the spa shell', async () => {
+    await fs.access(path.join(tmp, 'dist', 'index.html'));
   });
 
   // The former "no /api/ string in the bundle" marker for Editor dead-code

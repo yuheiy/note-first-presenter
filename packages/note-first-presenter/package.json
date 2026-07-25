@@ -31,11 +31,9 @@
     "check": "vp check"
   },
   "dependencies": {
-    "@inlang/paraglide-js": "catalog:",
     "@napi-rs/canvas": "catalog:",
-    "@sveltejs/adapter-static": "catalog:",
-    "@sveltejs/kit": "catalog:",
     "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "chokidar": "catalog:",
     "citty": "catalog:",
     "eta": "catalog:",

@@ -1,7 +1,9 @@
 <!doctype html>
 
-<!-- scheme-light-dark is the system/no-JS default; theme-store swaps it. See docs/adr/0009. -->
-<html lang="en" class="scheme-light-dark">
+<!-- scheme-light-dark is the system/no-JS default; the theme hook swaps it. See docs/adr/0009. -->
+<!-- dir is static: both catalogs (en/ja) are LTR, so nothing at runtime touches it.
+     lang is the one attribute the app does set at runtime, from the catalog's htmlLang. -->
+<html lang="en" dir="ltr" class="scheme-light-dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,10 +21,12 @@
         de.classList.add(cls);
       } catch {}
     </script>
-    %sveltekit.head%
   </head>
 
-  <body data-sveltekit-preload-data="hover">
-    <div style="display: contents">%sveltekit.body%</div>
+  <body>
+    <!-- display:contents keeps the mount point out of the layout, so the page
+         component's own box is laid out directly against <body>. -->
+    <div id="root" style="display: contents"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

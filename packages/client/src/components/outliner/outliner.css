@@ -1,0 +1,109 @@
+/* Styles for the DOM ProseMirror generates. This is the one stylesheet in the
+   client that is not Tailwind utilities: the editor's inner elements are created
+   by ProseMirror, so JSX cannot put classes on them. Reached through the
+   @import graph of src/style.css, never from JS. See docs/adr/0009. */
+
+.outliner-root .ProseMirror {
+  padding: 1rem;
+  /* Trailing space so the last note group can scroll to the top — the same
+     --scroll-tail the slide list uses, so the two panels' bottom spacing matches
+     (set on the Workspace wrapper). */
+  padding-bottom: var(--scroll-tail);
+  min-height: 100%;
+  font-size: 1.25rem;
+  line-break: strict;
+  text-autospace: normal;
+  white-space: pre-wrap;
+  text-spacing-trim: trim-start;
+  outline: none;
+  color: var(--color-gray-900);
+
+  ul {
+    padding-left: 1.5em;
+    list-style-type: disc;
+    counter-reset: slide 1;
+  }
+  li {
+    padding-block: 0.25rem;
+  }
+  li:has(> ul) {
+    padding-bottom: 0;
+  }
+  li > ul {
+    margin-top: 0.25rem;
+  }
+  li::marker {
+    color: var(--color-gray-300);
+  }
+
+  li.ProseMirror-selectednode,
+  li[data-range-selected='true'] {
+    background: color-mix(in srgb, var(--color-blue-600) 15%, transparent);
+    border-radius: 4px;
+  }
+
+  /* While a NodeRangeSelection is active, suppress the native
+     text-selection highlight and the caret so only the per-item
+     range decoration shows. */
+  &:has(li[data-range-selected='true']) {
+    caret-color: transparent;
+
+    &::selection,
+    & *::selection {
+      background: transparent;
+      color: inherit;
+    }
+  }
+
+  /* Top-level separator `---` styling */
+  > ul > li[data-separator='true'] {
+    padding-block: 1rem;
+    list-style-type: none;
+    counter-increment: slide;
+
+    > p {
+      position: relative;
+      color: var(--color-gray-400);
+    }
+    > p::before {
+      content: counter(slide);
+      position: absolute;
+      right: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      margin-right: 0.75rem;
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Accent bar marking the top-level items of the active slide. The bar
+     reaches back across the list's padding (1.5em) and the editor's own
+     padding (1rem) so it sits flush against the container's left edge. */
+  > ul > li[data-active-slide='true'] {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: calc(-1.5em - 1rem);
+      width: 3px;
+      background: var(--color-blue-600);
+    }
+  }
+
+  /* Collapse animation */
+  li > ul {
+    overflow: hidden;
+    transition:
+      height 200ms ease,
+      opacity 200ms ease;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+  li[data-collapsed='true'] > ul {
+    display: none;
+  }
+}

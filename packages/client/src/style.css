@@ -1,0 +1,12 @@
+/* source('.') pins content detection to src/: the published CLI roots Vite
+   inside node_modules, which default detection skips. See docs/adr/0009. */
+@import 'tailwindcss' source('.');
+/* The Outliner styles the DOM ProseMirror generates, so it cannot use utility
+   classes. Its stylesheet joins the entry's @import graph rather than being
+   imported from JS, which keeps Oxfmt's single-stylesheet Tailwind sorting
+   (root vite.config.ts `fmt.sortTailwindcss`) pointed at one file. */
+@import './components/outliner/outliner.css';
+
+@theme {
+  --font-sans: sans-serif;
+}

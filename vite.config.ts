@@ -7,18 +7,34 @@ export default defineConfig({
   fmt: {
     singleQuote: true,
     // Sort Tailwind classes; stylesheet points Oxfmt at the v4 CSS entry.
-    sortTailwindcss: { stylesheet: 'packages/client/src/routes/layout.css' },
+    sortTailwindcss: { stylesheet: 'packages/client/src/style.css' },
   },
   lint: {
     jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }],
-    rules: { 'vite-plus/prefer-vite-plus-imports': 'error' },
+    // `plugins` replaces the default set rather than extending it, so the
+    // defaults are spelled out alongside `react`.
+    plugins: ['eslint', 'unicorn', 'typescript', 'oxc', 'react'],
+    rules: {
+      'vite-plus/prefer-vite-plus-imports': 'error',
+      'react/rules-of-hooks': 'error',
+      'react/exhaustive-deps': 'error',
+      // The automatic JSX runtime (jsx: "react-jsx") means React is not a
+      // required import; this rule predates it.
+      'react/react-in-jsx-scope': 'off',
+    },
     options: { typeAware: true, typeCheck: true },
     overrides: [
       {
         // The published CLI depends on `vite` (npm:@voidzero-dev/vite-plus-core),
         // not the `vite-plus` toolchain, so it imports the runtime API from `vite`.
+        // It also renders no UI, so the react rules only produce false positives
+        // there (`useTempCwd`, a test helper, reads as a hook to the linter).
         files: ['packages/note-first-presenter/**'],
-        rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
+        rules: {
+          'vite-plus/prefer-vite-plus-imports': 'off',
+          'react/rules-of-hooks': 'off',
+          'react/exhaustive-deps': 'off',
+        },
       },
     ],
   },
