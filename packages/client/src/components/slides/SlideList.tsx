@@ -124,7 +124,7 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
               <>
                 {slide < overflow.overflowStart ? (
                   <div className="aspect-[var(--slide-aspect)] min-w-0 flex-1 shadow-sm">
-                    <SlideImage hash={hash} slide={slide} alt={`Slide ${slide}`} />
+                    <SlideImage hash={hash} slide={slide} />
                   </div>
                 ) : (
                   <div className="grid aspect-[var(--slide-aspect)] min-w-0 flex-1 place-items-center border border-dashed border-gray-200 text-sm text-gray-500">

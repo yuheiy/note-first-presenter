@@ -53,6 +53,8 @@ const enUS = {
   /** Guidance shown when the project has no PDF at all. Not an error: writing notes without slides is a valid state. */
   infoNoSlides: 'Add a PDF to the project root or set slides in note-first-presenter.config.ts.',
 
+  /** Alternative text of a rendered slide image, for readers who cannot see it. `n` is the 1-based slide number. */
+  slideLabel: ({ n }: { n: number }) => `Slide ${n}`,
   /** Label for a note group that has no slide behind it because the outline has more groups than the PDF has pages. `n` is the 1-based group number. */
   overflowLabel: ({ n }: { n: number }) => `Slide ${n} (overflow)`,
   /** Browser tab title. `title` is the presentation's title, or `titleDefault` when it is empty. */
@@ -87,6 +89,7 @@ const jaJP: IntlCatalog = {
   infoNoSlides:
     'プロジェクト直下に PDF を追加するか、note-first-presenter.config.ts で slides を設定してください。',
 
+  slideLabel: ({ n }) => `スライド ${n}`,
   overflowLabel: ({ n }) => `スライド ${n} (超過)`,
   pageTitle: ({ title }) => `プレゼンター: ${title}`,
 };
