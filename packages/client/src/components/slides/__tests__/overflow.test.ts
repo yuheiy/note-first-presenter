@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { computeSlideOverflow } from '../slide-overflow';
+import { computeSlideOverflow } from '../overflow';
 
 describe('computeSlideOverflow', () => {
   it('shows one slide per PDF page when the notes ask for no more', () => {

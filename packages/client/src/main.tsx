@@ -1,5 +1,7 @@
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import { loadSlidesMeta } from './components/slides/slidesMeta';
+import { loadDb } from './components/workspace/db';
 import './style.css';
 
 // The two pages are never navigated between inside one document: the slideshow
@@ -20,6 +22,13 @@ if (!window.location.hash) {
 }
 
 const Page = window.location.hash.startsWith('#/slideshow/') ? SlideshowPage : WorkspacePage;
+
+// Both pages read both documents, so ask for them here rather than from the
+// page's own effect: the requests then overlap the chunk download instead of
+// queueing behind it. The loaders cache, so the effect that consumes them —
+// which StrictMode runs twice — reuses these requests. See §1.3.
+void loadDb();
+void loadSlidesMeta();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('index.html is missing the #root mount point');

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vite-plus/test';
-import { onSlidesChanged, SLIDES_CHANGED_EVENT, type SlidesChangedHot } from '../live-reload';
+import { onSlidesChanged, SLIDES_CHANGED_EVENT, type SlidesChangedHot } from '../slidesMeta';
 
 describe('onSlidesChanged', () => {
   it('returns a no-op unsubscribe when no hot context is present', () => {
