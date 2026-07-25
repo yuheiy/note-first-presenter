@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
 import { ListBox, ListBoxItem, type Selection } from 'react-aria-components';
 import { useMessages } from '../useMessages';
-import type { SlideOverflow } from './overflow';
+import { stepSlide, type SlideOverflow } from './overflow';
 import { SlideImage } from './SlideImage';
 
 export interface SlideListProps {
@@ -48,7 +48,7 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
   }, [activeSlide]);
 
   function step(delta: number) {
-    const target = Math.min(overflow.slideCount, Math.max(1, activeSlide + delta));
+    const target = stepSlide(overflow, activeSlide, delta);
     if (target === activeSlide) return;
     onActiveSlideChange(target);
     // Selection is controlled, but RAC exposes no way to control which item holds

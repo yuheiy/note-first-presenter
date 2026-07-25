@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type DbV1 } from '../../lib/dbSchema';
 import { api } from '../../lib/serverClient';
-import { createResourceLoader, useResource, type Resource } from '../useResource';
+import {
+  createResourceLoader,
+  useResource,
+  type Resource,
+  type ResourceStatus,
+} from '../useResource';
 
 // One URL for both modes: in dev the CLI middleware answers it, in the static
 // build it is a real file. GET and PUT differ only in method — read it as "the db
@@ -107,7 +112,7 @@ async function saveDb(db: DbV1): Promise<void> {
 }
 
 export interface EditableDb {
-  status: Resource<DbV1>['status'];
+  status: ResourceStatus;
   /** The stored outline. Only meaningful once `status` is `'ready'`. */
   initialOutline: unknown;
   title: string;

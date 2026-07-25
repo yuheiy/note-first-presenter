@@ -13,6 +13,13 @@ export type Resource<T> =
   | { status: 'error'; data: null; error: string };
 
 /**
+ * Where one fetch has got to, for callers that pass the phase along without
+ * caring what was fetched — the Workspace shell decides what to draw from this
+ * alone, and never sees the db itself.
+ */
+export type ResourceStatus = Resource<unknown>['status'];
+
+/**
  * A request wrapped so that it settles instead of rejecting, and so that the
  * same generation is only ever requested once.
  *

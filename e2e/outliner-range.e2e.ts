@@ -76,7 +76,7 @@ test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', asy
   // Sanity: the range now covers two items.
   await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(2);
 
-  // Outliner.svelte registers the move keymap as Mod-Shift-ArrowDown on macOS
+  // Outliner.tsx registers the move keymap as Mod-Shift-ArrowDown on macOS
   // and Alt-Shift-ArrowDown elsewhere, following ProseMirror's own platform
   // detection. Mirror that source of truth here — prosemirror-commands reads
   // `navigator.platform` in the browser, so matching against the runner's

@@ -27,3 +27,19 @@ export function computeSlideOverflow(
     overflowStart: pdfPageCount + 1,
   };
 }
+
+/**
+ * `slide` moved by `delta`, held inside the deck — the first and last slides
+ * stop rather than wrap.
+ *
+ * Both places that step through slides use this: the slide list's arrow keys and
+ * the slideshow's every-key-is-next. Neither owns the deck's bounds, so the
+ * arithmetic lives with the type that does.
+ *
+ * The lower bound is applied last so that it wins: a deck of no slides still
+ * answers 1, because slide numbers are 1-based and there is no slide 0 to
+ * navigate to or to write into the URL.
+ */
+export function stepSlide(overflow: SlideOverflow, slide: number, delta: number): number {
+  return Math.max(1, Math.min(overflow.slideCount, slide + delta));
+}
