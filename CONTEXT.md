@@ -27,5 +27,5 @@ The read-write mode of the app, where the author writes the outline and pairs it
 _Avoid_: Presenter (the product name, not a mode)
 
 **Viewer**:
-The read-only mode of the app, produced by the static build for sharing a finished presentation. Content changes to the outline are impossible in the Viewer; view-state operations (folding notes, selecting slides, running the slideshow) remain available.
+The read-only mode of the app, produced by the static build for sharing a finished presentation. Content changes to the outline are impossible in the Viewer; view-state operations (selecting slides, running the slideshow) remain available. Folding is not one of them — its only trigger is a keymap, and ProseMirror does not call keydown handlers when the view is not editable, so the Viewer renders the folded state the Editor saved without being able to change it.
 _Avoid_: static build (refers to the artifact, not the mode), readonly mode
