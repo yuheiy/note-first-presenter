@@ -1,4 +1,4 @@
-import { defaultDb, type DbV1 } from './schema';
+import { defaultDb, type DbV1 } from '$lib/dbSchema';
 
 export const SAVE_DEBOUNCE_MS = 500;
 export const SAVE_RETRY_MS = 5000;

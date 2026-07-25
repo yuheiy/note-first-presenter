@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { DbStore, SAVE_DEBOUNCE_MS, SAVE_RETRY_MS } from '../client.svelte';
-import { defaultDb } from '../schema';
+import { defaultDb } from '$lib/dbSchema';
 
 describe('DbStore', () => {
   beforeEach(() => {

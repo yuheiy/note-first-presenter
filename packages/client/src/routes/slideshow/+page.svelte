@@ -4,7 +4,7 @@
     import { m } from "$lib/paraglide/messages";
     import SlideImage from "$lib/slide-image/SlideImage.svelte";
     import SlideshowFallback from "$lib/slide-status/SlideshowFallback.svelte";
-    import type { DbV1 } from "$lib/db/schema";
+    import type { DbV1 } from "$lib/dbSchema";
     import { api } from "$lib/server-client";
     import { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
     import { SyncSubscriber } from "$lib/sync/sync-subscriber";

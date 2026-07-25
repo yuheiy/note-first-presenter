@@ -1,10 +1,11 @@
 import { once } from 'node:events';
 import path from 'node:path';
+import { dbSchema } from '@note-first-presenter/client/dbSchema';
 import chokidar, { type FSWatcher } from 'chokidar';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import * as v from 'valibot';
 import { CONFIG_FILENAMES, loadNfpConfig } from '../config.ts';
-import { dbInputSchema, readDb, writeDb } from '../db.ts';
+import { readDb, writeDb } from '../db.ts';
 import {
   openSlides,
   PageOutOfRangeError,
@@ -231,7 +232,9 @@ export function createNfpDataMiddleware(opts: {
             json(400, { error: 'invalid JSON' });
             return;
           }
-          const result = v.safeParse(dbInputSchema, body);
+          // Guards the trust boundary with the client-owned schema, so the shape
+          // accepted here cannot drift from the one the client sends (ADR-0013).
+          const result = v.safeParse(dbSchema, body);
           if (!result.success) {
             json(400, { error: 'invalid body' });
             return;

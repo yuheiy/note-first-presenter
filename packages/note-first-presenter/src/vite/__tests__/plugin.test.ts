@@ -2,8 +2,8 @@ import { mkdtempSync, promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import { defaultDb } from '@note-first-presenter/client/dbSchema';
 import { afterAll, describe, expect, it, vi } from 'vite-plus/test';
-import { emptyDb } from '../../db.ts';
 import { openSlides, type SlidesStatus } from '../../slides.ts';
 import { useTempCwd } from '../../__tests__/helpers.ts';
 import { createNfpDataMiddleware, createSlidesContext } from '../plugin.ts';
@@ -203,7 +203,7 @@ describe('createNfpDataMiddleware', () => {
     });
     await res.done;
     expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body!.toString())).toEqual(emptyDb());
+    expect(JSON.parse(res.body!.toString())).toEqual(defaultDb());
   });
 
   it('PUT /nfp-data/db.json with a valid body returns 204 and writes the file', async () => {

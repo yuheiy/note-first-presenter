@@ -1,33 +1,14 @@
 import { promises as fs } from 'node:fs';
+import { defaultDb } from '@note-first-presenter/client/dbSchema';
 import { describe, expect, it } from 'vite-plus/test';
-import { emptyDb, readDb, writeDb } from '../db.ts';
+import { readDb, writeDb } from '../db.ts';
 import { useTempCwd } from './helpers.ts';
 
 useTempCwd('nfp-db-');
 
-describe('emptyDb', () => {
-  it('returns an empty title and a single empty list_item', () => {
-    expect(emptyDb()).toEqual({
-      version: 1,
-      title: '',
-      outline: {
-        type: 'doc',
-        content: [
-          {
-            type: 'bullet_list',
-            content: [{ type: 'list_item', content: [{ type: 'paragraph' }] }],
-          },
-        ],
-      },
-    });
-  });
-});
-
 describe('readDb / writeDb', () => {
-  it('returns default when file missing', async () => {
-    const db = await readDb();
-    expect(db.version).toBe(1);
-    expect(db.title).toBe('');
+  it('returns the client default when file missing', async () => {
+    expect(await readDb()).toEqual(defaultDb());
   });
 
   it('writes pretty-printed JSON with trailing newline', async () => {

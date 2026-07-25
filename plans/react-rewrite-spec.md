@@ -921,7 +921,7 @@ Svelte→React の切り替えは原子的にしか起こせない(SvelteKit を
 **R1 の削除/保持の内訳**:
 
 - **削除** = `.svelte` 12本 / `.svelte.ts` ストア4本(`db/client` `active-slide/active-slide-store` `slides-meta/slides-meta-store` `theme/theme-store`)/ `routes/` / `paraglide/` / `app.html` / `app.d.ts`
-- **保持** = PM 資産・`lib/sync/*`・`lib/db/schema.ts`・`lib/slide-filename.ts`(いずれも素の `.ts` で React 非依存)
+- **保持** = PM 資産・`lib/sync/*`・`lib/dbSchema.ts`・`lib/slide-filename.ts`(いずれも素の `.ts` で React 非依存)
 
 **R7 は統合ブランチ内に置く。** ドキュメントは新しい状態を記述するので、main マージ後に回すと移行中ずっとドキュメントが嘘になる。
 
@@ -966,7 +966,7 @@ Svelte→React の切り替えは原子的にしか起こせない(SvelteKit を
 
 **`vp check`(型検査)を全 R で必須にするのが要点。** React 化の失敗はほぼ型で出るので、ここを緩めると R6 に全部のツケが回る。
 
-**knip は R7 に集約する。** R1 が `.svelte` を全部消しつつ PM 資産・`lib/sync/*`・`lib/db/schema.ts` を残すため、R3/R4 で参照が戻るまでそれらは孤立ファイルになり `pre-push` の knip が落ちる。**それまでの push は `--no-verify` で通す。**
+**knip は R7 に集約する。** R1 が `.svelte` を全部消しつつ PM 資産・`lib/sync/*`・`lib/dbSchema.ts` を残すため、R3/R4 で参照が戻るまでそれらは孤立ファイルになり `pre-push` の knip が落ちる。**それまでの push は `--no-verify` で通す。**
 
 **却下**: `knip.json` に一時 ignore を足して R7 で剥がす(捨てる設定を書き、剥がし忘れのリスクを作る)。R1 で PM 資産等も一旦削除し R3/R4 で git から復活させる(「そのまま移設」を削除→復活の2手にするだけで、復活漏れのリスクを足す)。
 

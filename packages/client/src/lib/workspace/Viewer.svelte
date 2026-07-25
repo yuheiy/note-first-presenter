@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { ActiveSlideStore } from "$lib/active-slide/active-slide-store.svelte";
-    import { defaultDb, type DbV1 } from "$lib/db/schema";
+    import { defaultDb, type DbV1 } from "$lib/dbSchema";
     import Outliner from "$lib/outliner/Outliner.svelte";
     import { m } from "$lib/paraglide/messages";
     import { api } from "$lib/server-client";
