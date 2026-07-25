@@ -250,7 +250,9 @@ latest-ref パターン(同じ効果の手作業実装)も、親側で `useCallb
 - **外部 → エディタ**: `activeSlide` prop + `useEffect(..., [activeSlide])`。caret 移動と `scrollIntoView` はこの effect 内(現行と同じ)。
 - **echo 抑制は `echoingActiveSlide` boolean をやめ、transaction meta にする。** caret 移動時に `tr.setMeta(ECHO_META, true)` を立て、`dispatchTransaction` は `tr.getMeta(ECHO_META)` が無いときだけ `onActiveSlideChange` を呼ぶ。
 
-**echo 抑制自体は消せない。** 抑制が守っている具体的な破綻ケース: 連続セパレータで**空のノートグループ**ができると `findGroupPosition` は `itemPositions[0]` が無いので `rangeStart` を返す。この位置は直前グループの `rangeEnd` と同一で、`findActiveGroup` は範囲を両端含みで先頭一致に走査するため**直前のグループ**として解決される。抑制が無いと「スライド2を選ぶ → caret 移動 → エディタが『今は1です』と報告 → 選択が1に巻き戻り、effect が再走して往復する」。
+**echo 抑制自体は消せない。** 抑制が守っている具体的な破綻ケース: **空のノートグループ**では `findGroupPosition` は `itemPositions[0]` が無いので `rangeStart` を返す。この生の位置は直前グループの `rangeEnd` と同一だが、caret 移動は `Selection.near($pos, 1)` を通すので前方バイアスでスナップされ、実際の caret は `rangeStart` に留まらない。**破綻するのは先頭がセパレータでグループ1が空になる場合** — `rangeStart` が 0 でスナップ先が最初のセパレータ項目の段落、すなわち**グループ2の範囲**になる。抑制が無いと「スライド1を選ぶ → caret 移動 → エディタが『今は2です』と報告 → 選択が2へ押し流される」。
+
+方向に注意: 巻き戻りではなく押し流しで、連続セパレータで**中間**に空グループができる場合(`a / --- / --- / c` の 2)は前方スナップがそのグループ自身のセパレータ段落に入るため食い違わない。実測(抑制を外して browser テストで確認)でも、中間の空グループは正しく 2 が報告され、先頭セパレータのケースだけが 1 の要求に対して 2 を報告する。
 
 **meta を選ぶ理由**: フラグは「2つの effect が可変変数を共有し、`dispatch` が同期であることに暗黙に依存する」形で、React では `useRef` に置くしかなく StrictMode の二重実行に対して正しさを説明しづらい。meta なら因果がトランザクション自身に乗る。しかも**このリポジトリは既に同じ手段を使っている**(`commands/rangeIndent.ts` が `setMeta(SKIP_TEXT_SELECTION_CLAMP_META, true)` を立て `plugins/textSelectionClamp.ts` が `getMeta` で見ている)。
 
