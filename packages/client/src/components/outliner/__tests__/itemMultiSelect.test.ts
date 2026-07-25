@@ -1,7 +1,7 @@
 import { EditorState, NodeSelection, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
-import { resolveItemClickSelection } from '../plugins/item-multi-select';
-import { NodeRangeSelection } from '../selections/node-range-selection';
+import { resolveItemClickSelection } from '../plugins/itemMultiSelect';
+import { NodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {

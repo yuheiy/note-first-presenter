@@ -4,9 +4,9 @@ import {
   collectAllSelectedItemPositions,
   createNodeRangeSelection,
   isNodeRangeSelection,
-} from '../selections/node-range-selection';
+} from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
-import { cleanupEmptyBulletLists } from './_cleanup';
+import { cleanupEmptyBulletLists } from './cleanup';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;
 const BULLET_LIST = outlinerSchema.nodes.bullet_list;

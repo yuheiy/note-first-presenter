@@ -19,7 +19,7 @@ import {
   type Selection,
   TextSelection,
 } from 'prosemirror-state';
-import { createNodeRangeSelection, isNodeRangeSelection } from '../selections/node-range-selection';
+import { createNodeRangeSelection, isNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;

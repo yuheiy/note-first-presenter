@@ -1,7 +1,7 @@
 import { EditorState, TextSelection } from 'prosemirror-state';
 import type { DecorationSet } from 'prosemirror-view';
 import { describe, expect, it } from 'vite-plus/test';
-import { activeSlideDecorations } from '../plugins/active-slide-decorations';
+import { activeSlideDecorations } from '../plugins/activeSlideDecorations';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {

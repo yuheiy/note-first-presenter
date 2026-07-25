@@ -1,7 +1,7 @@
 import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { type Command, TextSelection } from 'prosemirror-state';
-import { isNodeRangeSelection } from '../selections/node-range-selection';
-import { SKIP_TEXT_SELECTION_CLAMP_META } from '../plugins/text-selection-clamp';
+import { isNodeRangeSelection } from '../selections/nodeRangeSelection';
+import { SKIP_TEXT_SELECTION_CLAMP_META } from '../plugins/textSelectionClamp';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;

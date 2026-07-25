@@ -1,7 +1,7 @@
 import { Node } from 'prosemirror-model';
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
-import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
+import { NodeRangeSelection, createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]): Node {

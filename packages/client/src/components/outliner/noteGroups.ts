@@ -1,5 +1,6 @@
 import type { Node } from 'prosemirror-model';
 import type { Selection } from 'prosemirror-state';
+import { docToItems, isSeparatorItem } from './jsonDoc';
 import { isTopLevelSeparator } from './separator';
 
 export interface NoteGroup {
@@ -14,8 +15,11 @@ export interface NoteGroup {
  * Transaction meta flag marking a caret move that the editor made *because* the
  * active slide changed from outside. The dispatch handler skips reporting such a
  * transaction back through `onActiveSlideChange`, which would otherwise clobber
- * the change's origin — and for an empty note group (see `findGroupPosition`)
- * would report the *previous* group and drag the selection back to it.
+ * the change's origin. What that costs concretely: when the outline opens with a
+ * separator, group 1 is empty, so `findGroupPosition` returns its raw range start
+ * of 0 and `Selection.near(_, 1)` snaps forward into the first separator's own
+ * paragraph — which reads as group 2. Unsuppressed, picking slide 1 is answered
+ * with "2" and the selection is pushed off the slide the user picked.
  */
 export const ACTIVE_SLIDE_ECHO_META = 'nfp-active-slide-echo';
 
@@ -100,4 +104,19 @@ export function findGroupPosition(doc: Node, slideIndex: number): number | null 
   const group = deriveNoteGroups(doc).find((g) => g.slideIndex === slideIndex);
   if (!group) return null;
   return group.itemPositions[0] ?? group.rangeStart;
+}
+
+/**
+ * The number of note groups in a stored outline. The same split as
+ * `deriveNoteGroups`, but over the saved JSON rather than a ProseMirror doc:
+ * the Viewer counts groups without ever mounting an editor, and the Editor's
+ * `onChange` hands out plain JSON (plans/react-rewrite-spec.md §4.7).
+ */
+export function countNoteGroups(outline: unknown): number {
+  const items = docToItems(outline);
+  let separators = 0;
+  for (const item of items) {
+    if (isSeparatorItem(item)) separators++;
+  }
+  return separators + 1;
 }

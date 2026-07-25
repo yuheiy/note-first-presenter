@@ -1,8 +1,8 @@
 import { EditorState } from 'prosemirror-state';
 import type { DecorationSet } from 'prosemirror-view';
 import { describe, expect, it } from 'vite-plus/test';
-import { rangeSelectionDecorations } from '../plugins/range-selection-decorations';
-import { createNodeRangeSelection } from '../selections/node-range-selection';
+import { rangeSelectionDecorations } from '../plugins/rangeSelectionDecorations';
+import { createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {

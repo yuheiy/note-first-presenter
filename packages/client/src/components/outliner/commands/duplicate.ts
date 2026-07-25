@@ -4,7 +4,7 @@ import {
   collectAllSelectedItemPositions,
   createNodeRangeSelection,
   isNodeRangeSelection,
-} from '../selections/node-range-selection';
+} from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;

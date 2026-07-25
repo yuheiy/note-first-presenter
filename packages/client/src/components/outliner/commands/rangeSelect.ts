@@ -1,11 +1,11 @@
 import { type Node } from 'prosemirror-model';
 import { type Command, type EditorState, NodeSelection, TextSelection } from 'prosemirror-state';
-import { findListItemAncestor } from '../plugins/text-selection-clamp';
+import { findListItemAncestor } from '../plugins/textSelectionClamp';
 import {
   isNodeRangeSelection,
   type LiftedFrom,
   NodeRangeSelection,
-} from '../selections/node-range-selection';
+} from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 const LIST_ITEM = outlinerSchema.nodes.list_item;

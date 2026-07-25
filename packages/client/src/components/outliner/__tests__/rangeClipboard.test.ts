@@ -2,7 +2,7 @@ import { Slice } from 'prosemirror-model';
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { sliceToIndentedText } from '../plugins/clipboard';
-import { createNodeRangeSelection } from '../selections/node-range-selection';
+import { createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {

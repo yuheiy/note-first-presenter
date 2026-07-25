@@ -1,7 +1,7 @@
 import type { EditorState } from 'prosemirror-state';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
-import { findActiveGroup } from '../active-slide';
+import { findActiveGroup } from '../noteGroups';
 
 const key = new PluginKey('nfp-active-slide-decorations');
 

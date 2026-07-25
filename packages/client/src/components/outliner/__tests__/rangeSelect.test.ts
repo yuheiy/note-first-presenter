@@ -4,8 +4,8 @@ import {
   exitRangeSelection,
   extendRangeSelectionDown,
   extendRangeSelectionUp,
-} from '../commands/range-select';
-import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
+} from '../commands/rangeSelect';
+import { NodeRangeSelection, createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {

@@ -1,7 +1,7 @@
 import type { Node } from 'prosemirror-model';
 import { Selection, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
-import { computeActiveSlide, deriveNoteGroups, findGroupPosition } from '../active-slide';
+import { computeActiveSlide, deriveNoteGroups, findGroupPosition } from '../noteGroups';
 import { outlinerSchema } from '../schema';
 
 function docOf(items: Array<{ text: string }>): Node {

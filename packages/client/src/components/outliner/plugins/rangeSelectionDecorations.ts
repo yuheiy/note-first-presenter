@@ -1,6 +1,6 @@
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
-import { isNodeRangeSelection } from '../selections/node-range-selection';
+import { isNodeRangeSelection } from '../selections/nodeRangeSelection';
 
 export const rangeSelectionDecorations = new Plugin({
   key: new PluginKey('nfp-range-selection-decorations'),

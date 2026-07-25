@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vite-plus/test';
 import { smartBackspace, smartDelete } from '../commands/backspace';
 import { duplicateItem } from '../commands/duplicate';
 import { collapseItem, expandItem } from '../commands/fold';
-import { rangeAwareLiftListItem, rangeAwareSinkListItem } from '../commands/range-indent';
-import { rangeAwareSplitListItem } from '../commands/range-split';
+import { rangeAwareLiftListItem, rangeAwareSinkListItem } from '../commands/rangeIndent';
+import { rangeAwareSplitListItem } from '../commands/rangeSplit';
 import { moveItemDown, moveItemUp } from '../commands/move';
-import { NodeRangeSelection, createNodeRangeSelection } from '../selections/node-range-selection';
+import { NodeRangeSelection, createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {

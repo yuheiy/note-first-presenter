@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { countNoteGroups } from '../count-groups';
+import { countNoteGroups } from '../noteGroups';
 
 function li(text: string) {
   return { type: 'list_item', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] };

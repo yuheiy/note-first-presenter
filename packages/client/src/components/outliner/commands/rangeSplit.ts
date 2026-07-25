@@ -1,5 +1,5 @@
 import { type Command, TextSelection } from 'prosemirror-state';
-import { isNodeRangeSelection } from '../selections/node-range-selection';
+import { isNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
 export const rangeAwareSplitListItem: Command = (state, dispatch) => {

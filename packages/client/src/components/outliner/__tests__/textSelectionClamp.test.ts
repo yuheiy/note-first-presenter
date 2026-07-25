@@ -1,6 +1,6 @@
 import { EditorState, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
-import { textSelectionClamp } from '../plugins/text-selection-clamp';
+import { textSelectionClamp } from '../plugins/textSelectionClamp';
 import { outlinerSchema } from '../schema';
 
 function makeDoc(texts: string[]) {
