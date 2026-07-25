@@ -13,7 +13,11 @@
     const db = new DbStore({
         initial: defaultDb(),
         save: (state) =>
-            api("/api/db", { method: "PUT", body: state, keepalive: true }),
+            api("/nfp-data/db.json", {
+                method: "PUT",
+                body: state,
+                keepalive: true,
+            }),
     });
     const meta = new SlidesMetaStore();
     const active = new ActiveSlideStore();
@@ -25,7 +29,7 @@
         void (async () => {
             try {
                 const [dbData] = await Promise.all([
-                    api("/api/db"),
+                    api("/nfp-data/db.json"),
                     meta.load(),
                 ]);
                 db.replace(dbData as DbV1);

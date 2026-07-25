@@ -7,7 +7,7 @@ async function renderList(props: { pageCount?: number; activeSlide?: number } = 
   const screen = await render(SlideList, {
     hash: 'testhash',
     pageCount: props.pageCount ?? 10,
-    overflowStart: 1, // render every item as a placeholder to avoid /api/slide image fetches
+    overflowStart: 1, // render every item as a placeholder to avoid /nfp-data/slides image fetches
     activeSlide: props.activeSlide ?? 3,
     onSelect,
   });

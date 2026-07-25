@@ -28,7 +28,7 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
       },
       { timeout: 5000 },
     )
-    .toMatch(/\/2$/);
+    .toMatch(/\/0002\.webp$/);
 
   // Click slide 3
   await presenterOptions.nth(2).click();
@@ -40,7 +40,7 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
       },
       { timeout: 5000 },
     )
-    .toMatch(/\/3$/);
+    .toMatch(/\/0003\.webp$/);
 
   await context.close();
 });
@@ -51,7 +51,7 @@ test('slide image endpoint serves a webp image', async ({ page }) => {
   await expect
     .poll(
       async () => {
-        const res = await page.request.get('/api/slides/meta');
+        const res = await page.request.get('/nfp-data/meta.json');
         if (!res.ok()) return null;
         meta = await res.json();
         return meta.kind;
@@ -59,7 +59,7 @@ test('slide image endpoint serves a webp image', async ({ page }) => {
       { timeout: 10_000 },
     )
     .toBe('resolved');
-  const res = await page.request.get(`/api/slide/${meta.hash}/1`);
+  const res = await page.request.get(`/nfp-data/slides/${meta.hash}/0001.webp`);
   expect(res.status()).toBe(200);
   expect(res.headers()['content-type']).toBe('image/webp');
   const body = await res.body();

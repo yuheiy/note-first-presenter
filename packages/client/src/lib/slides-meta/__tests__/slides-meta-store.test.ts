@@ -6,10 +6,6 @@ vi.mock('$lib/server-client', () => ({
   api: (...args: unknown[]) => fetchMock(...args),
 }));
 
-vi.mock('$lib/runtime-mode', () => ({
-  metaUrl: () => '/api/slides/meta',
-}));
-
 import { SlidesMetaStore } from '../slides-meta-store.svelte';
 
 describe('SlidesMetaStore', () => {
@@ -17,26 +13,24 @@ describe('SlidesMetaStore', () => {
     fetchMock.mockReset();
   });
 
-  it('load() stores resolved meta on 200', async () => {
+  it('load() reads resolved meta from /nfp-data/meta.json', async () => {
     fetchMock.mockResolvedValueOnce({ kind: 'resolved', hash: 'h', pageCount: 4 });
     const s = new SlidesMetaStore();
     await s.load();
+    expect(fetchMock).toHaveBeenCalledWith('/nfp-data/meta.json');
     expect(s.data).toEqual({ kind: 'resolved', hash: 'h', pageCount: 4 });
     expect(s.error).toBeNull();
   });
 
-  it('load() stores SlidesStatus body on 422 (via err.data)', async () => {
-    fetchMock.mockRejectedValueOnce({
-      data: { kind: 'no-config-no-file' },
-      message: '422',
-    });
+  it('load() stores an unresolved kind as ordinary data, not an error', async () => {
+    fetchMock.mockResolvedValueOnce({ kind: 'no-config-no-file' });
     const s = new SlidesMetaStore();
     await s.load();
     expect(s.data).toEqual({ kind: 'no-config-no-file' });
     expect(s.error).toBeNull();
   });
 
-  it('load() stores message on network failure (no err.data)', async () => {
+  it('load() stores message on network failure', async () => {
     fetchMock.mockRejectedValueOnce(new Error('network down'));
     const s = new SlidesMetaStore();
     await s.load();

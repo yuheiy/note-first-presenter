@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createCanvas } from '@napi-rs/canvas';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import type { RenderAllResult, RenderedSlide, Slides } from '../slides.ts';
+import { type RenderAllResult, type RenderedSlide, slideFilename, type Slides } from '../slides.ts';
 
 const TARGET_SCALE = 2.0;
 const WEBP_QUALITY = 85;
@@ -28,10 +28,6 @@ interface LoadedPdf {
   hash: string;
   pdf: PdfDocument;
   pageCount: number;
-}
-
-function slideFilename(pageNumber: number): string {
-  return `${String(pageNumber).padStart(4, '0')}.webp`;
 }
 
 function slideCachePath(cacheRoot: string, hash: string, pageNumber: number): string {

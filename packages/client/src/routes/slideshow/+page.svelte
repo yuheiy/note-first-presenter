@@ -5,7 +5,6 @@
     import SlideImage from "$lib/slide-image/SlideImage.svelte";
     import SlideshowFallback from "$lib/slide-status/SlideshowFallback.svelte";
     import type { DbV1 } from "$lib/db/schema";
-    import { dbUrl } from "$lib/runtime-mode";
     import { api } from "$lib/server-client";
     import { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
     import { SyncSubscriber } from "$lib/sync/sync-subscriber";
@@ -90,7 +89,7 @@
     onMount(() => {
         active.hydrate();
         void meta.load();
-        void api(dbUrl()).then((db) => {
+        void api("/nfp-data/db.json").then((db) => {
             title = (db as DbV1).title;
         });
         const stop = sub.subscribe((msg) => {

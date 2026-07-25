@@ -16,7 +16,7 @@ export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): P
   const previousNodeEnv = process.env.NODE_ENV;
   // Vite derives import.meta.env.DEV (and Svelte dev compilation) from an
   // inherited NODE_ENV, so a caller environment like NODE_ENV=test would
-  // silently produce a dev-mode artifact that talks to the live /api/*.
+  // silently ship the Editor (db writes, live-reload) in the static artifact.
   process.env.NODE_ENV = 'production';
   process.chdir(clientRoot);
   try {

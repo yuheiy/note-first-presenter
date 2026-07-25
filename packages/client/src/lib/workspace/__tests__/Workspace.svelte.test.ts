@@ -29,8 +29,8 @@ function outlineWith(texts: string[]) {
 
 function mockApi(meta: SlidesMeta | Error) {
   apiMock.mockImplementation((url: string, opts?: { method?: string }) => {
-    if (url === '/api/db' && opts?.method === 'PUT') return Promise.resolve();
-    if (url === '/api/db')
+    if (url === '/nfp-data/db.json' && opts?.method === 'PUT') return Promise.resolve();
+    if (url === '/nfp-data/db.json')
       return Promise.resolve({ version: 1, title: 'Deck', outline: outlineWith(['note']) });
     if (meta instanceof Error) return Promise.reject(meta);
     return Promise.resolve(meta);
@@ -68,8 +68,8 @@ describe('Workspace', () => {
 
   it('selecting a slide moves the outliner active group to that slide', async () => {
     apiMock.mockImplementation((url: string, opts?: { method?: string }) => {
-      if (url === '/api/db' && opts?.method === 'PUT') return Promise.resolve();
-      if (url === '/api/db')
+      if (url === '/nfp-data/db.json' && opts?.method === 'PUT') return Promise.resolve();
+      if (url === '/nfp-data/db.json')
         return Promise.resolve({
           version: 1,
           title: 'Deck',

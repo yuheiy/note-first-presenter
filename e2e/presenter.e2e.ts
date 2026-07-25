@@ -4,7 +4,9 @@ import { focusEditor, resetDb } from './helpers.ts';
 function waitForDbSave(page: import('@playwright/test').Page) {
   return page.waitForResponse(
     (res) =>
-      res.url().endsWith('/api/db') && res.request().method() === 'PUT' && res.status() === 204,
+      res.url().endsWith('/nfp-data/db.json') &&
+      res.request().method() === 'PUT' &&
+      res.status() === 204,
   );
 }
 

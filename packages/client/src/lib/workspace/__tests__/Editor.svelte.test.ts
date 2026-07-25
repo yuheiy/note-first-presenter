@@ -44,8 +44,8 @@ function outlineWith(texts: string[]) {
 
 function mockLiveDb(db: { title: string; outline: unknown }) {
   apiMock.mockImplementation((url: string, opts?: { method?: string }) => {
-    if (url === '/api/db' && opts?.method === 'PUT') return Promise.resolve();
-    if (url === '/api/db') return Promise.resolve({ version: 1, ...db });
+    if (url === '/nfp-data/db.json' && opts?.method === 'PUT') return Promise.resolve();
+    if (url === '/nfp-data/db.json') return Promise.resolve({ version: 1, ...db });
     return Promise.resolve({ kind: 'no-config-no-file' });
   });
 }
@@ -65,13 +65,13 @@ describe('Editor', () => {
     await expect.element(title).not.toHaveAttribute('readonly');
     const outliner = screen.getByRole('textbox', { name: 'Outliner' });
     await expect.element(outliner).toHaveAttribute('contenteditable', 'true');
-    expect(apiMock).toHaveBeenCalledWith('/api/db');
+    expect(apiMock).toHaveBeenCalledWith('/nfp-data/db.json');
   });
 
   it('surfaces an error when the initial db load fails', async () => {
     apiMock.mockImplementation((url: string, opts?: { method?: string }) => {
-      if (url === '/api/db' && opts?.method === 'PUT') return Promise.resolve();
-      if (url === '/api/db') return Promise.reject(new Error('server gone'));
+      if (url === '/nfp-data/db.json' && opts?.method === 'PUT') return Promise.resolve();
+      if (url === '/nfp-data/db.json') return Promise.reject(new Error('server gone'));
       return Promise.resolve({ kind: 'no-config-no-file' });
     });
     const { default: Editor } = await import('../Editor.svelte');
@@ -92,7 +92,7 @@ describe('Editor', () => {
     await vi.waitFor(
       () => {
         expect(apiMock).toHaveBeenCalledWith(
-          '/api/db',
+          '/nfp-data/db.json',
           expect.objectContaining({
             method: 'PUT',
             body: expect.objectContaining({ title: 'Renamed' }),
@@ -106,8 +106,8 @@ describe('Editor', () => {
   it('refreshes slides in place on a slides-changed push, preserving the outline', async () => {
     let metaResponse: unknown = { kind: 'resolved', hash: 'h1', pageCount: 1 };
     apiMock.mockImplementation((url: string, opts?: { method?: string }) => {
-      if (url === '/api/db' && opts?.method === 'PUT') return Promise.resolve();
-      if (url === '/api/db')
+      if (url === '/nfp-data/db.json' && opts?.method === 'PUT') return Promise.resolve();
+      if (url === '/nfp-data/db.json')
         return Promise.resolve({ version: 1, title: 'Deck', outline: outlineWith(['hello note']) });
       return Promise.resolve(metaResponse);
     });

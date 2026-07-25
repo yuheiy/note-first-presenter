@@ -9,6 +9,7 @@ import {
   openSlides,
   PageOutOfRangeError,
   resolveSlides,
+  slideFilename,
   SLIDES_EXTENSIONS,
   type Slides,
   type SlidesStatus,
@@ -36,8 +37,8 @@ export async function createSlidesContext(opts?: {
   const onSettle = opts?.onSettle;
   const onError = opts?.onError;
 
-  // Defaults to no-config-no-file so a failed initial reload degrades the API
-  // to 422 rather than leaving the getter undefined.
+  // Defaults to no-config-no-file so a failed initial reload degrades to a
+  // renderable "no slides" meta rather than leaving the getter undefined.
   let slidesStatus: SlidesStatus = { kind: 'no-config-no-file' };
 
   // Per-path cache: openSlides returns a fresh closure each call, so reusing
@@ -172,7 +173,7 @@ export async function createSlidesContext(opts?: {
   };
 }
 
-const SLIDE_RE = /^\/api\/slide\/([^/]+)\/(\d+)$/;
+const SLIDE_RE = /^\/nfp-data\/slides\/([^/]+)\/(\d+\.webp)$/;
 
 function readBody(req: Connect.IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -183,17 +184,21 @@ function readBody(req: Connect.IncomingMessage): Promise<Buffer> {
   });
 }
 
-// ─── API middleware ────────────────────────────────────────────────────────
-// Connect middleware that routes `/api/*` requests against the slides state.
-// Knows nothing about reload or watchers.
+// ─── nfp-data middleware ───────────────────────────────────────────────────
+// Connect middleware that routes `/nfp-data/*` requests against the slides
+// state. Knows nothing about reload or watchers.
+//
+// The URL space mirrors the static build's `nfp-data/` directory
+// (`commands/build.ts`) so the Editor and the Viewer read through identical
+// client code; the only dev-only verb is `PUT /nfp-data/db.json`.
 
-export function createApiMiddleware(opts: {
+export function createNfpDataMiddleware(opts: {
   getSlidesStatus: () => SlidesStatus;
   getSlides: (slidesPath: string) => Slides;
 }): Connect.NextHandleFunction {
   const { getSlidesStatus, getSlides } = opts;
   return (req, res, next) => {
-    if (!req.url?.startsWith('/api/')) {
+    if (!req.url?.startsWith('/nfp-data/')) {
       next();
       return;
     }
@@ -211,13 +216,13 @@ export function createApiMiddleware(opts: {
       const slidesStatus = getSlidesStatus();
 
       switch (true) {
-        case url === '/api/db' && method === 'GET': {
+        case url === '/nfp-data/db.json' && method === 'GET': {
           const db = await readDb();
           json(200, db);
           return;
         }
 
-        case url === '/api/db' && method === 'PUT': {
+        case url === '/nfp-data/db.json' && method === 'PUT': {
           const raw = await readBody(req);
           let body: unknown;
           try {
@@ -237,9 +242,13 @@ export function createApiMiddleware(opts: {
           return;
         }
 
-        case url === '/api/slides/meta' && method === 'GET': {
+        case url === '/nfp-data/meta.json' && method === 'GET': {
+          // Always 200: the unresolved kinds are ordinary domain values the
+          // client renders as hints, not failures. Only a real fault (500)
+          // is an error. The static build writes the same union to
+          // `nfp-data/meta.json`.
           if (slidesStatus.kind !== 'resolved') {
-            json(422, slidesStatus);
+            json(200, slidesStatus);
             return;
           }
           const meta = await getSlides(slidesStatus.path).meta();
@@ -259,8 +268,11 @@ export function createApiMiddleware(opts: {
           }
 
           const requestedHash = slideMatch[1];
-          const n = Number(slideMatch[2]);
-          if (!Number.isInteger(n) || n < 1) {
+          const requestedFile = slideMatch[2];
+          const n = Number.parseInt(requestedFile, 10);
+          // Only the canonical zero-padded name is served, so dev can't answer
+          // a path the static build never writes (`1.webp` vs `0001.webp`).
+          if (!Number.isInteger(n) || n < 1 || slideFilename(n) !== requestedFile) {
             json(400, { error: 'invalid page' });
             return;
           }
@@ -314,7 +326,7 @@ export const ViteNfpPlugin = (opts?: { cwd?: string }): Plugin => ({
         });
       },
     });
-    server.middlewares.use(createApiMiddleware({ getSlidesStatus, getSlides }));
+    server.middlewares.use(createNfpDataMiddleware({ getSlidesStatus, getSlides }));
     server.httpServer?.on('close', () => {
       close().catch((err) => server.config.logger.error(String(err)));
     });

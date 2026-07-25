@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { slideUrl } from "$lib/runtime-mode";
+    import { slideImageUrl } from "$lib/slide-filename";
 
     interface Props {
         hash: string;
@@ -8,7 +8,7 @@
     }
 
     const { hash, slide, alt = "" }: Props = $props();
-    const src = $derived(slideUrl(hash, slide));
+    const src = $derived(slideImageUrl(hash, slide));
 </script>
 
 <img {src} {alt} loading="lazy" class="h-full w-full object-contain" />

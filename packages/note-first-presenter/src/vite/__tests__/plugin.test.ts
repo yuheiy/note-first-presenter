@@ -6,7 +6,7 @@ import { afterAll, describe, expect, it, vi } from 'vite-plus/test';
 import { emptyDb } from '../../db.ts';
 import { openSlides, type SlidesStatus } from '../../slides.ts';
 import { useTempCwd } from '../../__tests__/helpers.ts';
-import { createApiMiddleware, createSlidesContext } from '../plugin.ts';
+import { createNfpDataMiddleware, createSlidesContext } from '../plugin.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
 
@@ -139,7 +139,7 @@ describe('createSlidesContext', () => {
   });
 });
 
-// ─── createApiMiddleware ───────────────────────────────────────────────────
+// ─── createNfpDataMiddleware ───────────────────────────────────────────────────
 
 interface MockResponse {
   statusCode: number;
@@ -153,7 +153,7 @@ interface MockResponse {
 function createMockReq(method: string, url: string, body?: string) {
   const req = Readable.from(body == null ? [] : [Buffer.from(body)]);
   return Object.assign(req, { method, url }) as unknown as Parameters<
-    ReturnType<typeof createApiMiddleware>
+    ReturnType<typeof createNfpDataMiddleware>
   >[0];
 }
 
@@ -183,22 +183,22 @@ function createMockRes(): MockResponse {
 }
 
 function asRes(res: MockResponse) {
-  return res as unknown as Parameters<ReturnType<typeof createApiMiddleware>>[1];
+  return res as unknown as Parameters<ReturnType<typeof createNfpDataMiddleware>>[1];
 }
 
 const NO_SLIDES: SlidesStatus = { kind: 'no-config-no-file' };
 
-describe('createApiMiddleware', () => {
-  const mw = createApiMiddleware({
+describe('createNfpDataMiddleware', () => {
+  const mw = createNfpDataMiddleware({
     getSlidesStatus: () => NO_SLIDES,
     getSlides: () => {
       throw new Error('getSlides should not be called when slides are unresolved');
     },
   });
 
-  it('GET /api/db on a missing db file returns 200 with empty db', async () => {
+  it('GET /nfp-data/db.json on a missing db file returns 200 with empty db', async () => {
     const res = createMockRes();
-    mw(createMockReq('GET', '/api/db'), asRes(res), () => {
+    mw(createMockReq('GET', '/nfp-data/db.json'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
@@ -206,10 +206,10 @@ describe('createApiMiddleware', () => {
     expect(JSON.parse(res.body!.toString())).toEqual(emptyDb());
   });
 
-  it('PUT /api/db with a valid body returns 204 and writes the file', async () => {
+  it('PUT /nfp-data/db.json with a valid body returns 204 and writes the file', async () => {
     const res = createMockRes();
     const db = { version: 1, title: 'x', outline: { type: 'doc', content: [] } };
-    mw(createMockReq('PUT', '/api/db', JSON.stringify(db)), asRes(res), () => {
+    mw(createMockReq('PUT', '/nfp-data/db.json', JSON.stringify(db)), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
@@ -219,35 +219,39 @@ describe('createApiMiddleware', () => {
     expect(written).toEqual(db);
   });
 
-  it('PUT /api/db with an invalid body returns 400', async () => {
+  it('PUT /nfp-data/db.json with an invalid body returns 400', async () => {
     const res = createMockRes();
-    mw(createMockReq('PUT', '/api/db', JSON.stringify({ version: 2 })), asRes(res), () => {
+    mw(
+      createMockReq('PUT', '/nfp-data/db.json', JSON.stringify({ version: 2 })),
+      asRes(res),
+      () => {
+        throw new Error('next should not be called');
+      },
+    );
+    await res.done;
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('PUT /nfp-data/db.json with malformed JSON returns 400', async () => {
+    const res = createMockRes();
+    mw(createMockReq('PUT', '/nfp-data/db.json', '{not json'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
     expect(res.statusCode).toBe(400);
   });
 
-  it('PUT /api/db with malformed JSON returns 400', async () => {
+  it('GET /nfp-data/meta.json with unresolved slides returns 200 with the status body', async () => {
     const res = createMockRes();
-    mw(createMockReq('PUT', '/api/db', '{not json'), asRes(res), () => {
+    mw(createMockReq('GET', '/nfp-data/meta.json'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
-    expect(res.statusCode).toBe(400);
-  });
-
-  it('GET /api/slides/meta with unresolved slides returns 422 with the status body', async () => {
-    const res = createMockRes();
-    mw(createMockReq('GET', '/api/slides/meta'), asRes(res), () => {
-      throw new Error('next should not be called');
-    });
-    await res.done;
-    expect(res.statusCode).toBe(422);
+    expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body!.toString())).toEqual(NO_SLIDES);
   });
 
-  it('calls next for a non-API path', async () => {
+  it('calls next for a path outside /nfp-data/', async () => {
     const res = createMockRes();
     let nextCalled = false;
     mw(createMockReq('GET', '/whatever'), asRes(res), () => {
@@ -259,17 +263,17 @@ describe('createApiMiddleware', () => {
   });
 });
 
-// ─── createApiMiddleware slide images ──────────────────────────────────────
+// ─── createNfpDataMiddleware slide images ──────────────────────────────────────
 // Wires a real `Slides` over the sample PDF fixture to cover the branches the
 // throw-on-getSlides stub above can't reach: hash matching, page validation,
 // and the success/out-of-range response shapes.
 
-describe('createApiMiddleware slide images', () => {
+describe('createNfpDataMiddleware slide images', () => {
   // An explicit cacheRoot sidesteps openSlides()'s cwd-relative default so
   // this describe doesn't need to chdir before constructing `slides`.
   const cacheRoot = mkdtempSync(path.join(tmpdir(), 'nfp-mw-cache-'));
   const slides = openSlides(SAMPLE_PDF, { cacheRoot });
-  const mw = createApiMiddleware({
+  const mw = createNfpDataMiddleware({
     getSlidesStatus: () => ({ kind: 'resolved', path: SAMPLE_PDF }),
     getSlides: () => slides,
   });
@@ -278,10 +282,21 @@ describe('createApiMiddleware slide images', () => {
     await fs.rm(cacheRoot, { recursive: true, force: true });
   });
 
+  it('GET /nfp-data/meta.json with resolved slides returns 200 with the resolved meta', async () => {
+    const { hash, pageCount } = await slides.meta();
+    const res = createMockRes();
+    mw(createMockReq('GET', '/nfp-data/meta.json'), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body!.toString())).toMatchObject({ kind: 'resolved', hash, pageCount });
+  });
+
   it('GET with a valid hash and page returns 200 with image headers', async () => {
     const { hash } = await slides.meta();
     const res = createMockRes();
-    mw(createMockReq('GET', `/api/slide/${hash}/1`), asRes(res), () => {
+    mw(createMockReq('GET', `/nfp-data/slides/${hash}/0001.webp`), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
@@ -294,7 +309,7 @@ describe('createApiMiddleware slide images', () => {
 
   it('GET with a mismatched hash returns 404', async () => {
     const res = createMockRes();
-    mw(createMockReq('GET', '/api/slide/wronghash/1'), asRes(res), () => {
+    mw(createMockReq('GET', '/nfp-data/slides/wronghash/0001.webp'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
@@ -305,7 +320,7 @@ describe('createApiMiddleware slide images', () => {
   it('GET a page past the last page returns 404', async () => {
     const { hash } = await slides.meta();
     const res = createMockRes();
-    mw(createMockReq('GET', `/api/slide/${hash}/999`), asRes(res), () => {
+    mw(createMockReq('GET', `/nfp-data/slides/${hash}/0999.webp`), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
@@ -313,10 +328,21 @@ describe('createApiMiddleware slide images', () => {
     expect(JSON.parse(res.body!.toString())).toEqual({ error: 'out of range' });
   });
 
+  it('GET an unpadded page name returns 400 (only the static build’s names are served)', async () => {
+    const { hash } = await slides.meta();
+    const res = createMockRes();
+    mw(createMockReq('GET', `/nfp-data/slides/${hash}/1.webp`), asRes(res), () => {
+      throw new Error('next should not be called');
+    });
+    await res.done;
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body!.toString())).toEqual({ error: 'invalid page' });
+  });
+
   it('GET page 0 returns 400', async () => {
     const { hash } = await slides.meta();
     const res = createMockRes();
-    mw(createMockReq('GET', `/api/slide/${hash}/0`), asRes(res), () => {
+    mw(createMockReq('GET', `/nfp-data/slides/${hash}/0000.webp`), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
@@ -325,14 +351,14 @@ describe('createApiMiddleware slide images', () => {
   });
 
   it('GET a slide image when slides are unresolved returns 404', async () => {
-    const unresolvedMw = createApiMiddleware({
+    const unresolvedMw = createNfpDataMiddleware({
       getSlidesStatus: () => NO_SLIDES,
       getSlides: () => {
         throw new Error('getSlides should not be called when slides are unresolved');
       },
     });
     const res = createMockRes();
-    unresolvedMw(createMockReq('GET', '/api/slide/x/1'), asRes(res), () => {
+    unresolvedMw(createMockReq('GET', '/nfp-data/slides/x/0001.webp'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;

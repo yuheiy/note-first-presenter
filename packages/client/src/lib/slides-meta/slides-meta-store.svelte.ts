@@ -1,5 +1,4 @@
 import { api } from '$lib/server-client';
-import { metaUrl } from '$lib/runtime-mode';
 
 export type SlidesMeta =
   | { kind: 'resolved'; hash: string; pageCount: number; width?: number; height?: number }
@@ -11,18 +10,15 @@ export class SlidesMetaStore {
   data: SlidesMeta | null = $state(null);
   error: string | null = $state(null);
 
+  // Both modes answer with the same 200 JSON — dev from the CLI middleware,
+  // the static build from the file `build` wrote — so every kind of the union
+  // is data. Only a transport/server fault lands in `error`.
   async load() {
     try {
-      this.data = await api<SlidesMeta>(metaUrl());
+      this.data = await api<SlidesMeta>('/nfp-data/meta.json');
       this.error = null;
     } catch (err) {
-      const cause = err as { data?: SlidesMeta; message?: string };
-      if (cause.data) {
-        this.data = cause.data;
-        this.error = null;
-      } else {
-        this.error = cause.message ?? String(err);
-      }
+      this.error = err instanceof Error ? err.message : String(err);
     }
   }
 }
