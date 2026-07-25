@@ -6,6 +6,7 @@
     import { countNoteGroups } from "$lib/outliner/count-groups";
     import { m } from "$lib/paraglide/messages";
     import SlideList from "$lib/slide-list/SlideList.svelte";
+    import { computeSlideOverflow } from "$lib/slide-overflow";
     import SlideListErrorOverlay from "$lib/slide-status/SlideListErrorOverlay.svelte";
     import SlideListHint from "$lib/slide-status/SlideListHint.svelte";
     import type { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
@@ -47,7 +48,10 @@
     const pdfCount = $derived(
         meta.data?.kind === "resolved" ? meta.data.pageCount : 0,
     );
-    const effectivePageCount = $derived(Math.max(pdfCount, groupCount));
+    const overflow = $derived(computeSlideOverflow(pdfCount, groupCount));
+    // Read through a scalar derived so the publish effect below only re-runs when
+    // the count itself changes — `overflow` is a fresh object on every recompute.
+    const slideCount = $derived(overflow.slideCount);
     // Slide aspect ratio (width / height) from the actual PDF, falling back to 16:9
     // until the resolved meta provides real page dimensions. Drives --scroll-tail and
     // the overflow placeholders.
@@ -84,7 +88,7 @@
     });
 
     $effect(() => {
-        publisher.publishPageCount(effectivePageCount);
+        publisher.publishPageCount(slideCount);
     });
 
     function onSelectFromList(n: number) {
@@ -178,8 +182,8 @@
             {:else if meta.data?.kind === "resolved"}
                 <SlideList
                     hash={meta.data.hash}
-                    pageCount={effectivePageCount}
-                    overflowStart={pdfCount + 1}
+                    pageCount={slideCount}
+                    overflowStart={overflow.overflowStart}
                     activeSlide={active.value}
                     onSelect={onSelectFromList}
                 />

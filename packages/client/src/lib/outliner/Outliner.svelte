@@ -1,13 +1,16 @@
 <script lang="ts">
-    import { baseKeymap } from "prosemirror-commands";
+    import { baseKeymap, macBaseKeymap } from "prosemirror-commands";
     import { history, redo, undo } from "prosemirror-history";
     import { keymap } from "prosemirror-keymap";
     import { splitListItem } from "prosemirror-schema-list";
     import { EditorState, Selection } from "prosemirror-state";
     import { EditorView } from "prosemirror-view";
     import { untrack } from "svelte";
-    import Bowser from "bowser";
-    import { computeActiveSlide, findGroupPosition } from "./active-slide";
+    import {
+        ACTIVE_SLIDE_ECHO_META,
+        computeActiveSlide,
+        findGroupPosition,
+    } from "./active-slide";
     import { smartBackspace, smartDelete } from "./commands/backspace";
     import { duplicateItem } from "./commands/duplicate";
     import { collapseItem, expandItem } from "./commands/fold";
@@ -42,18 +45,17 @@
 
     const props: Props = $props();
 
+    // Reuse ProseMirror's own platform detection instead of a second detector:
+    // prosemirror-commands sets `baseKeymap = mac ? macBaseKeymap : pcBaseKeymap`,
+    // so this identity check always agrees with the `Mod-` normalization that
+    // prosemirror-keymap applies to the bindings below.
+    const isMac = baseKeymap === macBaseKeymap;
+
     let mountEl: HTMLDivElement | undefined = $state();
     let view: EditorView | null = $state(null);
-    // Set while we move the caret in response to an external active-slide change, so
-    // dispatchTransaction skips reporting it back (which would clobber the change's
-    // origin via onActiveSlideChange -> setFromEditor).
-    let echoingActiveSlide = false;
 
     $effect(() => {
         if (!mountEl) return;
-        const isMac =
-            typeof navigator !== "undefined" &&
-            Bowser.getParser(navigator.userAgent).getOSName() === "macOS";
         // Build the initial EditorState untracked: if this read of `props.outline`
         // were reactive, every outline edit would recreate the editor and drop
         // focus mid-typing.
@@ -117,7 +119,10 @@
                 const next = editor.state.apply(tr);
                 editor.updateState(next);
                 if (tr.docChanged) props.onChange?.(next.doc.toJSON());
-                if ((tr.docChanged || tr.selectionSet) && !echoingActiveSlide) {
+                if (
+                    (tr.docChanged || tr.selectionSet) &&
+                    !tr.getMeta(ACTIVE_SLIDE_ECHO_META)
+                ) {
                     props.onActiveSlideChange(
                         computeActiveSlide(next.doc, next.selection),
                     );
@@ -145,12 +150,14 @@
         const pos = findGroupPosition(state.doc, slide);
         if (pos === null) return;
         const selection = Selection.near(state.doc.resolve(pos), 1);
-        echoingActiveSlide = true;
-        try {
-            editor.dispatch(state.tr.setSelection(selection));
-        } finally {
-            echoingActiveSlide = false;
-        }
+        // Tag the caret move so dispatchTransaction doesn't report it back out —
+        // the meta rides on the transaction itself, so the suppression can't be
+        // widened or missed by anything else dispatching around it.
+        editor.dispatch(
+            state.tr
+                .setSelection(selection)
+                .setMeta(ACTIVE_SLIDE_ECHO_META, true),
+        );
         // Smooth-scroll the group's first top-level item flush to the top of the outliner
         // panel. `pos` is that item's position, so resolve its DOM directly via nodeDOM (no
         // dependency on the active-slide decoration or its apply timing). We scroll

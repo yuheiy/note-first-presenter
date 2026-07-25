@@ -31,7 +31,6 @@
   },
   "dependencies": {
     "@ark-ui/svelte": "catalog:",
-    "bowser": "catalog:",
     "ofetch": "catalog:",
     "phosphor-svelte": "catalog:",
     "prosemirror-commands": "catalog:",

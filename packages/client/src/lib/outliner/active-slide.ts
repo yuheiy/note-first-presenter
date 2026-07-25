@@ -10,6 +10,15 @@ export interface NoteGroup {
   precedingSeparatorPos: number | null;
 }
 
+/**
+ * Transaction meta flag marking a caret move that the editor made *because* the
+ * active slide changed from outside. The dispatch handler skips reporting such a
+ * transaction back through `onActiveSlideChange`, which would otherwise clobber
+ * the change's origin — and for an empty note group (see `findGroupPosition`)
+ * would report the *previous* group and drag the selection back to it.
+ */
+export const ACTIVE_SLIDE_ECHO_META = 'nfp-active-slide-echo';
+
 const noteGroupsCache = new WeakMap<Node, NoteGroup[]>();
 
 export function deriveNoteGroups(doc: Node): NoteGroup[] {

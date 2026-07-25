@@ -77,11 +77,11 @@ test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', asy
   await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(2);
 
   // Outliner.svelte registers the move keymap as Mod-Shift-ArrowDown on macOS
-  // and Alt-Shift-ArrowDown elsewhere, detecting platform via the browser's
-  // userAgent (Bowser). Mirror that source of truth here — Playwright's
-  // Desktop Chrome device ships a Windows UA regardless of the host OS, so
-  // matching against the runner's `process.platform` would miss the keymap.
-  const isMac = await page.evaluate(() => /Mac/i.test(navigator.userAgent));
+  // and Alt-Shift-ArrowDown elsewhere, following ProseMirror's own platform
+  // detection. Mirror that source of truth here — prosemirror-commands reads
+  // `navigator.platform` in the browser, so matching against the runner's
+  // `process.platform` could disagree with the keymap that was installed.
+  const isMac = await page.evaluate(() => /Mac|iP(hone|[oa]d)/.test(navigator.platform));
   await page.keyboard.press(isMac ? 'Meta+Shift+ArrowDown' : 'Alt+Shift+ArrowDown');
 
   const texts = await page.locator('.outliner-root li > p').allTextContents();

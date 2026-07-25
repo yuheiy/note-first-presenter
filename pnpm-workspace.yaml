@@ -22,7 +22,6 @@ catalog:
   prosemirror-keymap: ^1.2.3
   ofetch: ^1.5.1
   valibot: ^1.4.2
-  bowser: ^2.14.1
   '@inlang/paraglide-js': ^2.22.0
   pdfjs-dist: ^6.1.200
   '@napi-rs/canvas': ^1.0.2

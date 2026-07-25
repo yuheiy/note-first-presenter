@@ -6,6 +6,7 @@
     import SlideshowFallback from "$lib/slide-status/SlideshowFallback.svelte";
     import type { DbV1 } from "$lib/dbSchema";
     import { api } from "$lib/server-client";
+    import { computeSlideOverflow } from "$lib/slide-overflow";
     import { SlidesMetaStore } from "$lib/slides-meta/slides-meta-store.svelte";
     import { SyncSubscriber } from "$lib/sync/sync-subscriber";
 
@@ -22,12 +23,15 @@
     const hash = $derived(
         meta.data?.kind === "resolved" ? meta.data.hash : null,
     );
-    const navigablePageCount = $derived(Math.max(pageCount, syncedPageCount));
+    // The workspace publishes a page count that already accounts for note groups
+    // past the PDF's last page, so the slideshow can be asked to navigate further
+    // than its own meta reports.
+    const overflow = $derived(computeSlideOverflow(pageCount, syncedPageCount));
 
     const fallbackMessage = $derived.by(() => {
         const d = meta.data;
         switch (true) {
-            case !!hash && active.value > pageCount:
+            case !!hash && active.value >= overflow.overflowStart:
                 return m.overflow_label({ n: active.value });
             case d?.kind === "no-config-no-file":
                 return m.info_no_slides();
@@ -48,7 +52,7 @@
 
     function step(delta: number) {
         const target = Math.min(
-            navigablePageCount,
+            overflow.slideCount,
             Math.max(1, active.value + delta),
         );
         if (target !== active.value) active.set(target);
@@ -73,8 +77,11 @@
                 if (active.value !== 1) active.set(1);
                 break;
             case "End":
-                if (navigablePageCount && active.value !== navigablePageCount)
-                    active.set(navigablePageCount);
+                if (
+                    overflow.slideCount &&
+                    active.value !== overflow.slideCount
+                )
+                    active.set(overflow.slideCount);
                 break;
             default:
                 return;
@@ -121,7 +128,7 @@
 <svelte:body onclick={onAdvanceClick} />
 
 <div class="h-svh bg-black">
-    {#if hash && active.value <= pageCount}
+    {#if hash && active.value < overflow.overflowStart}
         <SlideImage {hash} slide={active.value} alt={`Slide ${active.value}`} />
     {:else if fallbackMessage}
         <SlideshowFallback message={fallbackMessage} />
