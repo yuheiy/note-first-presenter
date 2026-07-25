@@ -17,8 +17,6 @@
     "index.html",
     "src",
     "!src/**/__tests__",
-    "messages",
-    "project.inlang",
     "tsconfig.json"
   ],
   "type": "module",
@@ -31,6 +29,7 @@
   },
   "dependencies": {
     "@ark-ui/svelte": "catalog:",
+    "@internationalized/string": "catalog:",
     "ofetch": "catalog:",
     "phosphor-svelte": "catalog:",
     "prosemirror-commands": "catalog:",
@@ -42,6 +41,7 @@
     "prosemirror-transform": "catalog:",
     "prosemirror-view": "catalog:",
     "react": "catalog:",
+    "react-aria-components": "catalog:",
     "react-dom": "catalog:",
     "tailwindcss": "catalog:",
     "valibot": "catalog:"
