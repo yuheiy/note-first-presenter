@@ -93,3 +93,18 @@ dev/build は CLI の `createViteConfig` が担い client の `vite.config.ts` �
 **実アプリに効かせたい Vite プラグインは `createViteConfig` に追加する**。Tailwind v4（ADR-0009）
 ではここに `tailwindcss()` を足し、`@tailwindcss/vite` を CLI の `dependencies` に宣言した
 （client の `vite.config.ts` にもテスト一貫性のため残すが、正本は CLI 側）。
+
+## 追記（2026-07-26）: `svelte-check` を撤去した
+
+動機の3点目（`svelte-check` が `vite.config.ts` の `sveltekit()` から設定を読み取れる）は、
+`svelte-check` 自体を落としたため成立しなくなった。`svelte-check@4.7.3` が
+`pnpm-workspace.yaml` の `overrides.typescript: 'catalog:'`（TypeScript 7）の下で
+モジュール初期化中にクラッシュし（`typescript.sys` が `undefined`）、対象ファイルに関係なく
+必ず失敗していた。この状態でテンプレート内型検査は既に実質ゼロだったが、root `vite.config.ts` の
+`staged` フック `'*.svelte'` が `.svelte` を含む全コミットをブロックしていた（#37）。
+
+撤去したもの: `staged` の `'*.svelte'` エントリ、client `package.json` の `check` スクリプトと
+`svelte-check` devDependency、`pnpm-workspace.yaml` の `svelte-check` catalog エントリ。
+型検査は `vp check`（tsgolint）一本になり、`.svelte` テンプレート内は型検査されない。
+`plans/react-rewrite-spec.md` §9.1 が React 書き直し（R1）で同じ削除を予定していたため、
+前倒しであって方針変更ではない。`svelte.config.js` は knip 検出用として残る（2026-06-12 の追記）。

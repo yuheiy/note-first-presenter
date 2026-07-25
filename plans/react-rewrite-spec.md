@@ -765,6 +765,8 @@ S2 のテストは共通 render ヘルパーで `StrictModeWrapper` のみを巻
 
 `svelte-check` が担っていた3つ(テンプレート内型検査 / client の `check` スクリプト / `staged` の `'*.svelte'` フック)を**全削除**し、`tsc --noEmit` も per-package `check` スクリプトも足さない。
 
+**この削除は #37 で前倒しした**(2026-07-26)。`svelte-check` が TypeScript 7 の下でクラッシュし `.svelte` を含む全コミットを止めていたため、テンプレート内型検査が実質ゼロの状態のまま先に落とした。経緯は **ADR-0007 の追記(2026-07-26)が正本**。§10.5 #8 は消化済み、#5 と #12 は `check` スクリプト・`svelte-check` devDependency・catalog エントリの分だけ消化済み。
+
 **根拠(実測)**: `lint.options` の `typeAware: true, typeCheck: true` により `vp lint` は tsgolint で `.tsx` を型検査する(probe を置いて `vp lint` すると `typescript(TS2307)` `typescript(TS17004)` 等が出る)。追加の型検査は純粋に二重。
 
 **代償**: `packages/client/tsconfig.json` は `"extends": "./.svelte-kit/tsconfig.json"` なので、SvelteKit 撤去で土台ごと消える。**R1 で自前に書き起こす** — 必須項目は `jsx: "react-jsx"` / `lib` / `target` / `moduleResolution` / `include` / `types`。
@@ -927,29 +929,29 @@ Svelte→React の切り替えは原子的にしか起こせない(SvelteKit を
 
 ### 10.5 ツーリング項目の振り分け
 
-| #   | 項目                                                                                                                    | 割り当て | 根拠                                                                           |
-| --- | ----------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
-| 1   | ADR-0013 起草(0002 supersede)                                                                                           | **P2**   | P2 = db 単一化 + ADR 改訂                                                      |
-| 2   | `packages/client/tsconfig.json` を自前で書き起こす                                                                      | **R1**   | これ無しに型検査が成立しない                                                   |
-| 3   | `packages/client/.svelte-kit/` 削除                                                                                     | **R1**   | 偽陽性の除去(付録 A)                                                           |
-| 4   | `packages/client/svelte.config.js` 削除                                                                                 | **R1**   | SvelteKit 撤去と不可分                                                         |
-| 5   | client `package.json`: `prepare`/`check` スクリプト削除、svelte 系 devDeps・`svelte` 削除、`files` に `index.html` 追加 | **R1**   | 依存撤去と同時                                                                 |
-| 6   | client `package.json`: `files` から `messages`/`project.inlang` 削除、`@inlang/paraglide-js` 撤去                       | **R2**   | i18n の担当範囲                                                                |
-| 7   | client `package.json`: `@ark-ui/svelte`/`phosphor-svelte` 撤去、`react-aria-components`/`@phosphor-icons/react` 追加    | **R5**   | UI 部品の担当範囲                                                              |
-| 8   | root `vite.config.ts`: `staged` の `'*.svelte'` エントリ削除                                                            | **R1**   | コマンド消滅                                                                   |
-| 9   | root `vite.config.ts`: `lint.plugins` に `react` 追加 + react ルール確定                                                | **R1**   | R2 以降の全コードが対象                                                        |
-| 10  | root `vite.config.ts`: `fmt.sortTailwindcss.stylesheet` を `packages/client/src/style.css` へ                           | **R1**   | Tailwind エントリ移動と同時                                                    |
-| 11  | nfp `package.json` / `createViteConfig`: kit・adapter-static・paraglide 撤去、`@vitejs/plugin-react` 追加               | **R1**   | §1.6 の決定そのもの                                                            |
-| 12  | `pnpm-workspace.yaml` catalog の svelte 系削除・react 系追加                                                            | **R1**   | 依存撤去と同時                                                                 |
-| 13  | `pnpm-workspace.yaml` の `overrides.typescript` 再検討                                                                  | **R7**   | 緑には影響しない                                                               |
-| 14  | `knip.json` の client エントリ書き換え・`svelte.config.js` 前提の解消                                                   | **R7**   | knip は R7 集約                                                                |
-| 15  | `.gitignore` の `.svelte-kit` 節削除                                                                                    | **R7**   | 緑に無関係                                                                     |
-| 16  | `.mcp.json` を react-aria に差し替え / `.claude/settings.json` 削除 / `packages/client/CLAUDE.md` 削除                  | **R7**   | 同上                                                                           |
-| 17  | root `CLAUDE.md` のテスト層の表を更新                                                                                   | **R7**   | 同上                                                                           |
-| 18  | ADR-0014 / ADR-0015 起草、ADR-0005 追記                                                                                 | **R7**   | 同上                                                                           |
-| 19  | `e2e/live-update.e2e.ts` / `e2e/outliner-range.e2e.ts` の camelCase 改名                                                | **R7**   | Playwright の `testMatch: '**/*.e2e.{ts,js}'` はパターン一致なので改名に非依存 |
+| #   | 項目                                                                                                                 | 割り当て | 根拠                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
+| 1   | ADR-0013 起草(0002 supersede)                                                                                        | **P2**   | P2 = db 単一化 + ADR 改訂                                                      |
+| 2   | `packages/client/tsconfig.json` を自前で書き起こす                                                                   | **R1**   | これ無しに型検査が成立しない                                                   |
+| 3   | `packages/client/.svelte-kit/` 削除                                                                                  | **R1**   | 偽陽性の除去(付録 A)                                                           |
+| 4   | `packages/client/svelte.config.js` 削除                                                                              | **R1**   | SvelteKit 撤去と不可分                                                         |
+| 5   | client `package.json`: `prepare` スクリプト削除、svelte 系 devDeps・`svelte` 削除、`files` に `index.html` 追加      | **R1**   | 依存撤去と同時(`check` と `svelte-check` は #37 で消化済み)                    |
+| 6   | client `package.json`: `files` から `messages`/`project.inlang` 削除、`@inlang/paraglide-js` 撤去                    | **R2**   | i18n の担当範囲                                                                |
+| 7   | client `package.json`: `@ark-ui/svelte`/`phosphor-svelte` 撤去、`react-aria-components`/`@phosphor-icons/react` 追加 | **R5**   | UI 部品の担当範囲                                                              |
+| 8   | ~~root `vite.config.ts`: `staged` の `'*.svelte'` エントリ削除~~                                                     | ~~R1~~   | **#37 で消化済み**(§9.1)                                                       |
+| 9   | root `vite.config.ts`: `lint.plugins` に `react` 追加 + react ルール確定                                             | **R1**   | R2 以降の全コードが対象                                                        |
+| 10  | root `vite.config.ts`: `fmt.sortTailwindcss.stylesheet` を `packages/client/src/style.css` へ                        | **R1**   | Tailwind エントリ移動と同時                                                    |
+| 11  | nfp `package.json` / `createViteConfig`: kit・adapter-static・paraglide 撤去、`@vitejs/plugin-react` 追加            | **R1**   | §1.6 の決定そのもの                                                            |
+| 12  | `pnpm-workspace.yaml` catalog の svelte 系削除・react 系追加                                                         | **R1**   | 依存撤去と同時(`svelte-check` は #37 で消化済み)                               |
+| 13  | `pnpm-workspace.yaml` の `overrides.typescript` 再検討                                                               | **R7**   | 緑には影響しない                                                               |
+| 14  | `knip.json` の client エントリ書き換え・`svelte.config.js` 前提の解消                                                | **R7**   | knip は R7 集約                                                                |
+| 15  | `.gitignore` の `.svelte-kit` 節削除                                                                                 | **R7**   | 緑に無関係                                                                     |
+| 16  | `.mcp.json` を react-aria に差し替え / `.claude/settings.json` 削除 / `packages/client/CLAUDE.md` 削除               | **R7**   | 同上                                                                           |
+| 17  | root `CLAUDE.md` のテスト層の表を更新                                                                                | **R7**   | 同上                                                                           |
+| 18  | ADR-0014 / ADR-0015 起草、ADR-0005 追記                                                                              | **R7**   | 同上                                                                           |
+| 19  | `e2e/live-update.e2e.ts` / `e2e/outliner-range.e2e.ts` の camelCase 改名                                             | **R7**   | Playwright の `testMatch: '**/*.e2e.{ts,js}'` はパターン一致なので改名に非依存 |
 
-**client 外に漏れるパス参照は3箇所だけ**(洗い出し済み): root `vite.config.ts`(#8・#10)、`knip.json`(#14)、root `CLAUDE.md`(#17)。`playwright.config.ts`(`testMatch: '**/*.e2e.{ts,js}'`)と root `package.json` の scripts(`vp run --filter './packages/*' test` 等)は**改名・移動に非依存**でグロブ/フィルタのみ。
+**client 外に漏れるパス参照は3箇所だけ**(洗い出し済み): root `vite.config.ts`(#10)、`knip.json`(#14)、root `CLAUDE.md`(#17)。`playwright.config.ts`(`testMatch: '**/*.e2e.{ts,js}'`)と root `package.json` の scripts(`vp run --filter './packages/*' test` 等)は**改名・移動に非依存**でグロブ/フィルタのみ。
 
 ### 10.6 緑の定義
 

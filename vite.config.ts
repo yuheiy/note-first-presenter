@@ -3,7 +3,6 @@ import { defineConfig } from 'vite-plus';
 export default defineConfig({
   staged: {
     '*': 'vp check --fix',
-    '*.svelte': 'vp exec --filter @note-first-presenter/client -- svelte-check --threshold error',
   },
   fmt: {
     singleQuote: true,
