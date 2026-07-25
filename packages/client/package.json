@@ -28,10 +28,10 @@
     "test": "vp test"
   },
   "dependencies": {
-    "@ark-ui/svelte": "catalog:",
     "@internationalized/string": "catalog:",
+    "@phosphor-icons/react": "catalog:",
+    "clsx": "catalog:",
     "ofetch": "catalog:",
-    "phosphor-svelte": "catalog:",
     "prosemirror-commands": "catalog:",
     "prosemirror-history": "catalog:",
     "prosemirror-keymap": "catalog:",

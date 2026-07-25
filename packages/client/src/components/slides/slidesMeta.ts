@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/serverClient';
+import type { MessageFormatter } from '../useMessages';
 import { createResourceLoader, useResource, type Resource } from '../useResource';
 
 /**
@@ -16,6 +17,59 @@ export type SlidesMeta =
   | { kind: 'configured-but-missing'; configuredPath: string }
   | { kind: 'no-config-no-file' }
   | { kind: 'no-config-multiple-files'; candidates: string[] };
+
+/** What to tell the reader about the deck, when there is no deck to draw. */
+export interface SlidesMetaStatus {
+  /** `hint` is an ordinary state to explain; `error` is something that went wrong. */
+  tone: 'hint' | 'error';
+  message: string;
+}
+
+/**
+ * Turns the fetched metadata into the one sentence the reader needs, or `null`
+ * when there is nothing to say — either because the deck resolved and the slides
+ * speak for themselves, or because the request is still in flight.
+ *
+ * Both pages call this. The workspace draws `hint` and `error` differently; the
+ * slideshow ignores `tone` and shows the message on its black field. Keeping the
+ * five arms here rather than in two components is what stops the four that agree
+ * (§5.7) from drifting apart, and it keeps them reachable from a Node test.
+ *
+ * @param error The transport-level failure, if the request itself did not land.
+ *   Every *shape* the server can answer with is data, not an error (§2.1).
+ */
+export function describeSlidesMeta(
+  meta: SlidesMeta | null,
+  error: string | null,
+  format: MessageFormatter,
+): SlidesMetaStatus | null {
+  if (meta === null) {
+    // No metadata: either the request failed — in which case the message comes
+    // from the transport and has no catalog entry — or it is still loading.
+    return error === null ? null : { tone: 'error', message: error };
+  }
+
+  // No `default` arm on purpose: a sixth `SlidesMeta` kind should fail type-check
+  // here rather than quietly fall through to silence.
+  switch (meta.kind) {
+    case 'resolved':
+      return null;
+    case 'no-config-no-file':
+      // Writing notes before there are slides is a normal way to start, so this
+      // is guidance rather than a failure.
+      return { tone: 'hint', message: format('infoNoSlides') };
+    case 'configured-but-missing':
+      return {
+        tone: 'error',
+        message: format('errorSlidesNotFound', { path: meta.configuredPath }),
+      };
+    case 'no-config-multiple-files':
+      return {
+        tone: 'error',
+        message: format('errorMultiplePdfs', { files: meta.candidates.join(', ') }),
+      };
+  }
+}
 
 const META_URL = '/nfp-data/meta.json';
 

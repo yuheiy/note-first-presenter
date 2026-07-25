@@ -33,6 +33,15 @@ type MessageArgs<K extends MessageKey> = IntlCatalog[K] extends (args: infer A) 
   ? [A]
   : [];
 
+/**
+ * What `useMessages()` hands back.
+ *
+ * Named so that React-free modules can take a formatter as a parameter — the
+ * `import type` costs them no runtime dependency on this file, and none on React
+ * (§5.7's `describeSlidesMeta` is the case that needs it).
+ */
+export type MessageFormatter = <K extends MessageKey>(key: K, ...args: MessageArgs<K>) => string;
+
 // The cast is the seam between two type systems, and it has to go through
 // `unknown`: a message in `LocalizedStrings` takes `Variables` (any record, or
 // nothing), while intlMessages.ts types each message's arguments exactly, and a
@@ -55,7 +64,7 @@ const dictionary = new LocalizedStringDictionary(
  * `languagechange`), and the catalog is picked by the dictionary's own matching.
  * Tests wrap `I18nProvider` to pin the locale; the app never does.
  */
-export function useMessages() {
+export function useMessages(): MessageFormatter {
   const { locale } = useLocale();
   const formatter = useMemo(() => new LocalizedStringFormatter(locale, dictionary), [locale]);
   return useCallback(
