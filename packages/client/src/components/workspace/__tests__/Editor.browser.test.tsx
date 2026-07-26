@@ -1,3 +1,4 @@
+import { createStore, Provider } from 'jotai';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { userEvent } from 'vite-plus/test/browser/context';
@@ -17,9 +18,9 @@ import { Editor } from '../Editor';
  * half of what is under test here.
  */
 
-// One db for the whole file: `loadDb` caches its request per module, so every
-// render below starts from these same bytes. A non-empty title keeps the
-// Editor's fill-in-the-blank-title save out of the counts.
+// One db's worth of bytes, handed to a fresh store per test — see
+// `renderEditor`. A non-empty title keeps the Editor's fill-in-the-blank-title
+// save out of the counts.
 const server = vi.hoisted(() => {
   const stored = {
     version: 1,
@@ -61,9 +62,16 @@ async function renderEditor() {
   // The locale is pinned for the whole browser project in vitest-setup.browser.ts
   // — it is Paraglide's now, not a provider's, so it cannot be wrapped around a
   // subtree. That is what lets the expectations below stay English literals.
+  // A store of this test's own. The app renders no Provider, so it reads jotai's
+  // default store; injecting one here is what keeps a document fetched by one
+  // test out of the next. Without it every test in the file would share the one
+  // cached request, which is what the module-level loader used to force.
+  //
   const screen = await render(
     <StrictMode>
-      <Editor />
+      <Provider store={createStore()}>
+        <Editor />
+      </Provider>
     </StrictMode>,
   );
   const outliner = screen.getByRole('textbox', { name: 'Outliner' });

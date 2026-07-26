@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { atom, useAtomValue, useStore } from 'jotai';
+import { selectAtom, unwrap } from 'jotai/utils';
+import { useEffect, useState } from 'react';
 import { type DbV1 } from '../../lib/dbSchema';
 import { dataUrl } from '../../lib/routes';
 import { api } from '../../lib/serverClient';
-import {
-  createResourceLoader,
-  useResource,
-  type Resource,
-  type ResourceStatus,
-} from '../useResource';
+import { countNoteGroups } from '../outliner/noteGroups';
 
 // One URL for both modes: in dev the CLI middleware answers it, in the static
 // build it is a real file. GET and PUT differ only in method — read it as "the db
@@ -35,7 +32,8 @@ export interface DbSaver {
  * The save pipeline: debounce, coalesce, retry — with no React in it.
  *
  * It holds no document of its own. Callers hand it the whole db each time, which
- * is what lets the Editor keep the outline in a ref rather than in state.
+ * is what keeps it outside the atom graph — testable without a store, and absent
+ * from the Viewer's bundle (`docs/adr/0018`).
  * There is no `lastError`: the only reader was a test, and the UI shows one
  * generic message off `saveStatus === 'error'`.
  */
@@ -97,81 +95,114 @@ export function createDbSaver({ save, onStatusChange }: DbSaverOptions): DbSaver
 }
 
 /**
- * The stored document. Exported so `main.tsx` can fire the request before the
- * page chunk has finished downloading; the hooks below then find it in
- * the cache rather than asking again.
+ * The stored document, fetched once.
+ *
+ * Reading it suspends, so only the gate below does. `main.tsx` reads it off
+ * React so the request overlaps the page chunk's download instead of queueing
+ * behind it.
  *
  * The response is trusted as-is: the CLI is the only other writer of the file
  * and it validates every PUT against this same schema at the trust boundary
  * (ADR-0013).
  */
-export const loadDb = createResourceLoader(() => api<DbV1>(DB_URL));
+export const storedDbAtom = /*#__PURE__*/ atom(() => api<DbV1>(DB_URL));
+
+/** The stored document once it lands, as a value rather than a suspension. */
+const settledStoredDbAtom = /*#__PURE__*/ unwrap(storedDbAtom);
+
+/** Edits made in this session. `null` until the first one. */
+const editsAtom = /*#__PURE__*/ atom<DbV1 | null>(null);
+
+/**
+ * The working document — what would be saved.
+ *
+ * Deliberately synchronous, which is the whole reason the stored document is a
+ * separate atom: `selectAtom` hands its selector whatever `get` returns, and
+ * `get` does not resolve promises, so a slice of an async atom is `undefined`
+ * (`docs/adr/0018`). Everything fine-grained below therefore hangs off this one.
+ *
+ * `unwrap` is what makes the stored half readable synchronously — it answers
+ * `undefined` until the request lands rather than suspending. So this is `null`
+ * only in that window, and the gate below is what keeps the outline from being
+ * drawn in it.
+ *
+ * The fallback is spelled here, in the graph, rather than seeded from the entry
+ * point. An entry that forgot to seed would leave every reader looking at an
+ * empty document with nothing failing — and the browser tests are exactly such
+ * an entry.
+ *
+ * Not exported: outside this file the document is only ever read a slice at a
+ * time, through the selectors below, and only ever written through
+ * `useDbEditing`. Handing it out whole would make it possible to subscribe to
+ * every keystroke by accident.
+ */
+const documentAtom = /*#__PURE__*/ atom(
+  (get) => get(editsAtom) ?? get(settledStoredDbAtom) ?? null,
+  (_get, set, next: DbV1) => {
+    set(editsAtom, next);
+  },
+);
+
+/** The presentation's title. Moves only when the title does, not on every keystroke. */
+export const titleAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) => db?.title ?? '');
+
+/**
+ * Half of the deck's length — the other half is the PDF's page count.
+ *
+ * Recomputed on every keystroke but compared with `Object.is`, so the slide list
+ * is spared a re-render unless a `---` was added or removed. This replaces a
+ * hand-written guard in the Editor that existed because React's bail-out on an
+ * equal value lapses whenever the fiber already has another update pending; a
+ * `selectAtom` that never bumps its own epoch has no such lapse.
+ */
+export const groupCountAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) =>
+  db ? countNoteGroups(db.outline) : 0,
+);
 
 async function saveDb(db: DbV1): Promise<void> {
   // keepalive so a save started on pagehide outlives the document.
   await api(DB_URL, { method: 'PUT', body: db, keepalive: true });
 }
 
-export interface EditableDb {
-  status: ResourceStatus;
-  /** The stored outline. Only meaningful once `status` is `'ready'`. */
-  initialOutline: unknown;
-  title: string;
+/**
+ * Suspends until the stored document has landed, then hands it over.
+ *
+ * The one place that waits, and the reason the `status === 'ready'` guard that
+ * used to be repeated at every call site is gone. It answers the *stored*
+ * document rather than the working one on purpose: its only caller mounts the
+ * outliner, which reads the outline once and owns it from then on. Subscribing
+ * to the working document here would re-render this on every keystroke.
+ */
+export function useStoredDocument(): DbV1 {
+  return useAtomValue(storedDbAtom);
+}
+
+export interface DbEditing {
   saveStatus: SaveStatus;
   setTitle: (title: string) => void;
   setOutline: (outline: unknown) => void;
 }
 
 /**
- * The Editor's half of the db: load it, hold the title, save the edits.
+ * The Editor's write half: hand edits to the saver, and report how that went.
  *
  * Wiring only — the debounce, the retry and the coalescing all live in
- * `createDbSaver`. Static builds drop this entire path, because the Editor that
- * calls it is behind `import.meta.env.DEV` in a component the Viewer never
+ * `createDbSaver`, which stays outside the atom graph so that it remains
+ * testable without a store and so that the Viewer's bundle never reaches it
+ * (`docs/adr/0018`). Static builds drop this entire path, because the Editor
+ * that calls it is behind `import.meta.env.DEV` in a component the Viewer never
  * renders.
+ *
+ * No guard against editing before the document lands: callers live below the
+ * gate, so there is always something to merge into.
  */
-export function useEditableDb(): EditableDb {
-  const resource = useResource(loadDb);
-  const [editedTitle, setEditedTitle] = useState<string | null>(null);
+export function useDbEditing(): DbEditing {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-
-  const saverRef = useRef<DbSaver | null>(null);
-  const saver = (saverRef.current ??= createDbSaver({
-    save: saveDb,
-    onStatusChange: setSaveStatus,
-  }));
-
-  // The document as it would be saved. A ref, not state: the outline changes on
-  // every keystroke and nothing renders it — ProseMirror owns it. It stays
-  // null until the load lands, which is also the signal that an edit has
-  // something to merge into.
-  const savedRef = useRef<DbV1 | null>(null);
-  const loaded = resource.status === 'ready' ? resource.data : null;
-  if (loaded && !savedRef.current) savedRef.current = loaded;
-
-  const setTitle = useCallback(
-    (title: string) => {
-      const saved = savedRef.current;
-      // Typing into the title before the load lands is dropped rather than
-      // merged: the alternative is saving a document whose outline is still the
-      // empty default, over the real one.
-      if (!saved) return;
-      setEditedTitle(title);
-      savedRef.current = { ...saved, title };
-      saver.schedule(savedRef.current);
-    },
-    [saver],
-  );
-
-  const setOutline = useCallback(
-    (outline: unknown) => {
-      const saved = savedRef.current;
-      if (!saved) return;
-      savedRef.current = { ...saved, outline };
-      saver.schedule(savedRef.current);
-    },
-    [saver],
-  );
+  // The store rather than `useAtomValue`: this hook writes the document on every
+  // keystroke and must not subscribe to it, or the Editor would re-render for
+  // each one — which is the cost the old `savedRef` existed to avoid.
+  const store = useStore();
+  const [saver] = useState(() => createDbSaver({ save: saveDb, onStatusChange: setSaveStatus }));
 
   // Flush before the page goes away, so an edit made inside the debounce window
   // is not lost. visibilitychange covers the mobile/background case that
@@ -191,22 +222,22 @@ export function useEditableDb(): EditableDb {
     };
   }, [saver]);
 
-  return {
-    status: resource.status,
-    initialOutline: loaded ? loaded.outline : null,
-    title: editedTitle ?? loaded?.title ?? '',
-    saveStatus,
-    setTitle,
-    setOutline,
+  const edit = (patch: Partial<DbV1>) => {
+    // Non-null because every caller is below the gate. The old code dropped edits
+    // made before the load landed, to avoid saving an empty outline over a real
+    // one; there is no such window left to drop.
+    const next = { ...store.get(documentAtom)!, ...patch };
+    store.set(documentAtom, next);
+    saver.schedule(next);
   };
-}
 
-/**
- * The Viewer's half: the same load, and nothing that writes.
- *
- * Static builds have no PUT route at all, and this is what keeps the Viewer from
- * ever reaching for one.
- */
-export function useReadOnlyDb(): Resource<DbV1> {
-  return useResource(loadDb);
+  return {
+    saveStatus,
+    setTitle: (title) => {
+      edit({ title });
+    },
+    setOutline: (outline) => {
+      edit({ outline });
+    },
+  };
 }

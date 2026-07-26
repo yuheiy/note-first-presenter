@@ -1,11 +1,10 @@
-import { useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useEffect, useEffectEvent } from 'react';
 import { Input, TextField } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
-import { countNoteGroups } from '../outliner/noteGroups';
 import { Outliner } from '../outliner/Outliner';
 import { useActiveSlide } from '../../lib/routes';
-import { useSlidesMeta } from '../slides/slidesMeta';
-import { useEditableDb } from './db';
+import { titleAtom, useDbEditing, useStoredDocument, type DbEditing } from './db';
 import { Workspace } from './Workspace';
 
 /**
@@ -13,95 +12,108 @@ import { Workspace } from './Workspace';
  *
  * Editor and Viewer stay two components rather than one with an `editable` prop
  * because `import.meta.env.DEV` folds to a constant: the static build drops this
- * file, and with it the save pipeline, the live-reload subscription and the title
- * write-back. A prop would keep all of that in the Viewer's bundle.
+ * file, and with it the save pipeline and the title write-back. A prop would
+ * keep all of that in the Viewer's bundle.
+ *
+ * Nothing here waits for a document. The one half that must — the outliner — is
+ * handed to the shell as a slot and suspends on its own, so a slow or failed
+ * request never reaches the toolbar or the theme footer.
+ *
+ * `useActiveSlide` is called here and nowhere else below: it owns React state,
+ * so a second call would be a second slide rather than the same one.
  */
 export function Editor() {
-  const db = useEditableDb();
-  const meta = useSlidesMeta();
   const [activeSlide, setActiveSlide] = useActiveSlide();
-
-  // What the loaded document starts out as. The Outliner mounts once the load
-  // lands, so this is read exactly once per document.
-  const loadedGroupCount = useMemo(
-    () => (db.status === 'ready' ? countNoteGroups(db.initialOutline) : 0),
-    [db.status, db.initialOutline],
-  );
-  const [editedGroupCount, setEditedGroupCount] = useState<number | null>(null);
-  const groupCount = editedGroupCount ?? loadedGroupCount;
-
-  // The field is never left showing nothing: a blank title becomes the default
-  // and is saved as such. Only at the two moments the user is done with it — the
-  // document landing, and the field losing focus — because applying it on every
-  // render where the title is empty would make the field impossible to clear
-  // while typing.
-  function nameIfBlank() {
-    if (db.title === '') db.setTitle(m.untitled_title_placeholder());
-  }
-
-  // The effect fires on the load transition alone, but has to read the title as
-  // it is by then; an effect event is what separates the two.
-  const nameIfBlankOnLoad = useEffectEvent(nameIfBlank);
-  useEffect(() => {
-    if (db.status === 'ready') nameIfBlankOnLoad();
-  }, [db.status]);
-
-  function handleOutlineChange(outline: unknown) {
-    db.setOutline(outline);
-    // Recomputed on every keystroke, but set only when it actually moves, which
-    // is what keeps the slide list's thumbnails out of the typing path.
-    // Spelled as a guard rather than left to React's bail-out on an equal value:
-    // that bail-out is an optimisation that lapses whenever the fiber already
-    // has an update pending — a title edit, a saveStatus change — and nothing
-    // below here is memoised to catch the difference.
-    const next = countNoteGroups(outline);
-    if (next !== groupCount) setEditedGroupCount(next);
-  }
+  const editing = useDbEditing();
+  const title = useAtomValue(titleAtom);
 
   return (
     <Workspace
-      title={db.title}
-      groupCount={groupCount}
-      status={db.status}
-      meta={meta}
+      title={title}
       activeSlide={activeSlide}
       onActiveSlideChange={setActiveSlide}
-      titleArea={
-        <>
-          <TextField
-            aria-label={m.title_field_label()}
-            value={db.title}
-            onChange={db.setTitle}
-            // Layout belongs to the wrapper, looks to the input.
-            className="mr-auto"
-          >
-            <Input
-              onBlur={nameIfBlank}
-              className="-mx-1.5 field-sizing-content min-h-7 rounded px-1.5 text-sm text-gray-800 transition duration-100 hover:bg-gray-200 focus:bg-white focus:transition-none"
-            />
-          </TextField>
-          {db.saveStatus === 'error' && (
-            // One generic message: what failed is a write to a local file, and
-            // the edit itself is still on screen.
-            <span role="alert" aria-live="polite" className="text-sm text-red-600">
-              {m.save_failed_status()}
-            </span>
-          )}
-        </>
-      }
+      titleArea={<TitleField editing={editing} />}
       outliner={
-        // Mounted only once the document is here, so the editor never has to
-        // swap its doc out from under an undo history.
-        db.status === 'ready' && (
-          <Outliner
-            initialOutline={db.initialOutline}
-            activeSlide={activeSlide}
-            onActiveSlideChange={setActiveSlide}
-            editable
-            onChange={handleOutlineChange}
-          />
-        )
+        <EditableOutline
+          editing={editing}
+          activeSlide={activeSlide}
+          onActiveSlideChange={setActiveSlide}
+        />
       }
+    />
+  );
+}
+
+function TitleField({ editing }: { editing: DbEditing }) {
+  const title = useAtomValue(titleAtom);
+
+  // The field is never left showing nothing: a blank title becomes the default
+  // and is saved as such. Applied on blur rather than on every render where the
+  // title is empty, which would make the field impossible to clear while typing.
+  function nameIfBlank() {
+    if (title === '') editing.setTitle(m.untitled_title_placeholder());
+  }
+
+  return (
+    <>
+      <TextField
+        aria-label={m.title_field_label()}
+        value={title}
+        onChange={editing.setTitle}
+        // Layout belongs to the wrapper, looks to the input.
+        className="mr-auto"
+      >
+        <Input
+          onBlur={nameIfBlank}
+          className="-mx-1.5 field-sizing-content min-h-7 rounded px-1.5 text-sm text-gray-800 transition duration-100 hover:bg-gray-200 focus:bg-white focus:transition-none"
+        />
+      </TextField>
+      {editing.saveStatus === 'error' && (
+        // One generic message: what failed is a write to a local file, and
+        // the edit itself is still on screen.
+        <span role="alert" aria-live="polite" className="text-sm text-red-600">
+          {m.save_failed_status()}
+        </span>
+      )}
+    </>
+  );
+}
+
+interface EditableOutlineProps {
+  editing: DbEditing;
+  activeSlide: number;
+  onActiveSlideChange: (slide: number) => void;
+}
+
+/**
+ * The outliner, and the one thing in the Editor that waits for the document.
+ *
+ * Suspending here rather than in the Editor is what keeps the shell on screen
+ * while the request is in flight, and what lets the shell's ErrorBoundary
+ * replace this pane alone if it fails. ProseMirror reads the outline once at
+ * mount, so this never has to swap a doc out from under an undo history — which
+ * is also why it reads the *stored* document rather than the working one.
+ */
+function EditableOutline({ editing, activeSlide, onActiveSlideChange }: EditableOutlineProps) {
+  const stored = useStoredDocument();
+
+  // Naming an untitled deck belongs to the moment the document lands, and this
+  // component mounts exactly then. An effect event so the effect can stay on
+  // mount alone while still reading the values as they are by then.
+  const nameIfBlankOnLoad = useEffectEvent(() => {
+    if (stored.title === '') editing.setTitle(m.untitled_title_placeholder());
+  });
+  useEffect(() => {
+    nameIfBlankOnLoad();
+  }, []);
+
+  return (
+    <Outliner
+      initialOutline={stored.outline}
+      activeSlide={activeSlide}
+      onActiveSlideChange={onActiveSlideChange}
+      editable
+      onChange={editing.setOutline}
     />
   );
 }

@@ -6,23 +6,19 @@
  * and there is no way back, which is why the two pages share no state and no
  * cache.
  */
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { Suspense, useEffect, useEffectEvent, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useActiveSlide } from '../lib/routes';
 import { computeSlideOverflow, stepSlide } from '../components/slides/overflow';
 import { SlideImage } from '../components/slides/SlideImage';
-import { describeSlidesMeta, useSlidesMeta } from '../components/slides/slidesMeta';
+import { describeSlidesMeta, slidesMetaAtom } from '../components/slides/slidesMeta';
 import { useSyncSubscriber } from '../components/slides/sync';
-import { useReadOnlyDb } from '../components/workspace/db';
+import { storedDbAtom, titleAtom } from '../components/workspace/db';
 import { m } from '../lib/paraglide/messages.js';
 
 export default function Slideshow() {
-  const meta = useSlidesMeta();
-  // Only for the window's title, and read-only in the literal sense: the
-  // slideshow has nothing to save, in either mode. The ownership split gives
-  // this page only meta/activeSlide/subscribe, so this fetch is a
-  // deliberate addition to it — dropping it would leave the slideshow window
-  // nameless, and main.tsx already warms the request for both pages.
-  const db = useReadOnlyDb();
+  const meta = useAtomValue(slidesMetaAtom);
   const [activeSlide, setActiveSlide] = useActiveSlide();
   const [syncedSlideCount, setSyncedSlideCount] = useState(0);
 
@@ -38,20 +34,11 @@ export default function Slideshow() {
     }
   });
 
-  const resolved = meta.data?.kind === 'resolved' ? meta.data : null;
+  const resolved = meta.kind === 'resolved' ? meta : null;
   // The count on the wire already accounts for note groups past the PDF's last
   // page, so this window can be asked to navigate further than its own meta
   // reports.
   const overflow = computeSlideOverflow(resolved?.pageCount ?? 0, syncedSlideCount);
-
-  // The presentation's own title, verbatim — not the workspace's "Presenter: …",
-  // because this window is the presentation. Left alone until the document
-  // lands, so the tab keeps index.html's title until there is something truer to
-  // say.
-  const title = db.status === 'ready' ? db.data.title : null;
-  useEffect(() => {
-    if (title !== null) document.title = title;
-  }, [title]);
 
   function step(delta: number) {
     // No guard against setting the slide it is already on: React drops a state
@@ -109,7 +96,7 @@ export default function Slideshow() {
   const fallbackMessage =
     resolved && overflowing
       ? m.slide_beyond_pdf_pages_label({ n: activeSlide })
-      : (describeSlidesMeta(meta.data, meta.error)?.message ?? null);
+      : (describeSlidesMeta(meta)?.message ?? null);
 
   return (
     // Click anywhere to advance, the way a slide remote's single button behaves.
@@ -120,6 +107,15 @@ export default function Slideshow() {
         step(1);
       }}
     >
+      {/* Its own boundaries, not the entry's. The title is the one thing on this
+          page that needs the stored document, and the slides must neither wait
+          on it nor fail with it: db.json carries the whole outline and is the
+          heavier of the two requests. */}
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <WindowTitle />
+        </Suspense>
+      </ErrorBoundary>
       {resolved && !overflowing ? (
         <SlideImage hash={resolved.hash} slide={activeSlide} />
       ) : (
@@ -132,4 +128,20 @@ export default function Slideshow() {
       )}
     </div>
   );
+}
+
+/**
+ * Names the window after the presentation. Draws nothing.
+ *
+ * The title is used verbatim — not the workspace's "Presenter: …" — because this
+ * window *is* the presentation. It waits on the stored document rather than the
+ * working one: this page never edits, and there is no second writer to follow.
+ */
+function WindowTitle() {
+  useAtomValue(storedDbAtom);
+  const title = useAtomValue(titleAtom);
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+  return null;
 }

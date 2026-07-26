@@ -51,4 +51,40 @@ test.describe('live partial update', () => {
     expect(await page.evaluate(() => (window as ReloadProbe).__nfpReloaded)).toBe(false);
     await expect(editor).toContainText('unsaved note');
   });
+
+  test('keeps the slide list on screen while the new metadata is in flight', async ({ page }) => {
+    // The one guard for a requirement nothing else can hold. The metadata atom's
+    // refresh has to run inside `startTransition`; without it React falls the
+    // Suspense boundary back to its fallback and the list blinks empty
+    // (docs/adr/0018). No type or lint rule catches a missing transition, and
+    // locally meta.json answers too fast for the gap to be visible — hence the
+    // delay below, which is what opens a window wide enough to look into.
+    await page.route('**/nfp-data/meta.json', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.continue();
+    });
+
+    const slides = page.getByRole('option');
+    const before = await slides.count();
+    expect(before).toBeGreaterThan(0);
+    const initialSrc = await page.getByRole('img', { name: 'Slide 1' }).getAttribute('src');
+
+    await writeFile(pdfPath, Buffer.concat([original, Buffer.from('\n% transition test\n')]));
+
+    // Sampled across the whole delayed window rather than once: the failure this
+    // guards against is a blink, so a single reading could land either side of it.
+    const deadline = Date.now() + 1200;
+    while (Date.now() < deadline) {
+      expect(await slides.count()).toBe(before);
+      await page.waitForTimeout(100);
+    }
+
+    // And the refresh did land, so the test cannot pass by the update never
+    // arriving at all — which is how a "nothing blinked" assertion usually rots.
+    await expect
+      .poll(() => page.getByRole('img', { name: 'Slide 1' }).getAttribute('src'), {
+        timeout: 10000,
+      })
+      .not.toBe(initialSrc);
+  });
 });

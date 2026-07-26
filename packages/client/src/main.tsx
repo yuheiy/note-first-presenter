@@ -1,8 +1,9 @@
+import { getDefaultStore } from 'jotai';
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nProvider } from 'react-aria-components';
-import { loadSlidesMeta } from './components/slides/slidesMeta';
-import { loadDb } from './components/workspace/db';
+import { slidesMetaAtom } from './components/slides/slidesMeta';
+import { storedDbAtom } from './components/workspace/db';
 import { getLocale } from './lib/paraglide/runtime.js';
 import { currentRoutePath, SLIDESHOW_PATH } from './lib/routes';
 import './style.css';
@@ -21,12 +22,21 @@ const SlideshowPage = lazy(() => import('./pages/Slideshow'));
 
 const Page = currentRoutePath() === SLIDESHOW_PATH ? SlideshowPage : WorkspacePage;
 
-// Both pages read both documents, so ask for them here rather than from the
-// page's own effect: the requests then overlap the chunk download instead of
-// queueing behind it. The loaders cache, so the effect that consumes them —
-// which StrictMode runs twice — reuses these requests.
-void loadDb();
-void loadSlidesMeta();
+// Both pages read both documents, so ask for them here rather than from a page:
+// the requests then overlap the chunk download instead of queueing behind it.
+// The store caches, so the components that read them — including the second of
+// StrictMode's doubled renders — reuse these requests rather than firing more.
+//
+// No Provider anywhere in the tree, so the default store is the one the app
+// reads. Tests inject their own with `<Provider store={createStore()}>`, which
+// jotai prefers over this one and which is what lets each test start clean.
+//
+// Caught, not handled: the ErrorBoundary around whoever reads the atom is what
+// reports a failure. Without this, warming a request nobody has awaited yet
+// would surface as an unhandled rejection.
+const store = getDefaultStore();
+void store.get(storedDbAtom).catch(() => {});
+void store.get(slidesMetaAtom).catch(() => {});
 
 // Everything the app does with its locale, in one place above both pages. Read
 // once per document and never re-read, so a browser language change takes effect
