@@ -5,7 +5,7 @@ import { defineConfig } from 'vite-plus';
 
 // Test/IDE config only. Plugins that must affect the real app go into the CLI's
 // createViteConfig (packages/note-first-presenter/src/vite/index.ts), which is
-// the single source of truth for the app build — see docs/adr/0007.
+// the single source of truth for the app build — see docs/adr/0014.
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   test: {

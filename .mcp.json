@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "ark-ui": {
+    "react-aria": {
       "type": "stdio",
       "command": "vpx",
-      "args": ["@ark-ui/mcp"],
+      "args": ["@react-aria/mcp"],
       "env": {}
     }
   }

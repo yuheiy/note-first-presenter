@@ -33,12 +33,12 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 
 Four layers, keyed by filename. Client uses `test.projects` to split into `node` and `browser` (Chromium); nfp defines `test` directly; root defines integration via `test.include`. e2e runs under Playwright. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
 
-| Pattern                                              | Layer                        | Vitest project | Run with                  |
-| ---------------------------------------------------- | ---------------------------- | -------------- | ------------------------- |
-| `**/*.test.ts` (excluding `*.browser.test.{ts,tsx}`) | node                         | `node`/`unit`  | `vp run test:unit`        |
-| `packages/client/src/**/*.browser.test.{ts,tsx}`     | browser (vitest, Chromium)   | `browser`      | `vp run test:unit`        |
-| `test/*.test.ts`                                     | CLI integration (source bin) | —              | `vp run test:integration` |
-| `e2e/**/*.e2e.ts`                                    | end-to-end (Playwright)      | —              | `vp run test:e2e`         |
+| Pattern                                              | Layer                        | Vitest project       | Run with                  |
+| ---------------------------------------------------- | ---------------------------- | -------------------- | ------------------------- |
+| `**/*.test.ts` (excluding `*.browser.test.{ts,tsx}`) | node                         | `node` (client only) | `vp run test:unit`        |
+| `packages/client/src/**/*.browser.test.{ts,tsx}`     | browser (vitest, Chromium)   | `browser`            | `vp run test:unit`        |
+| `test/*.test.ts`                                     | CLI integration (source bin) | —                    | `vp run test:integration` |
+| `e2e/**/*.e2e.ts`                                    | end-to-end (Playwright)      | —                    | `vp run test:e2e`         |
 
 The suffix, not the extension, is the key: needing a real browser does not imply JSX (`plugins/paste.ts` needs `DOMParser` and no React at all).
 

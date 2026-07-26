@@ -15,16 +15,16 @@ const SCHEME_CLASS: Record<ThemeMode, string> = {
 };
 const SCHEME_CLASSES = Object.values(SCHEME_CLASS);
 
-export function readThemeMode(): ThemeMode {
+function readThemeMode(): ThemeMode {
   const stored = localStorage.getItem(STORAGE_KEY);
   return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
 }
 
-export function writeThemeMode(mode: ThemeMode): void {
+function writeThemeMode(mode: ThemeMode): void {
   localStorage.setItem(STORAGE_KEY, mode);
 }
 
-export function applyThemeMode(mode: ThemeMode): void {
+function applyThemeMode(mode: ThemeMode): void {
   // `system` follows the OS through CSS (`scheme-light-dark`), so there is no
   // matchMedia here.
   const root = document.documentElement;

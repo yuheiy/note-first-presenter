@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'nfp:listOpen';
 
-export function readListOpen(): boolean {
+function readListOpen(): boolean {
   // Open is the default, including the first visit and any unreadable value.
   return (localStorage.getItem(STORAGE_KEY) ?? 'true') === 'true';
 }
 
-export function writeListOpen(open: boolean): void {
+function writeListOpen(open: boolean): void {
   localStorage.setItem(STORAGE_KEY, String(open));
 }
 

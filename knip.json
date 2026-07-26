@@ -13,8 +13,8 @@
       "project": ["src/**/*.ts"]
     },
     "packages/client": {
-      "entry": ["src/**/*.svelte"],
-      "project": ["src/**/*.{ts,js,svelte}"],
+      "entry": ["src/main.tsx"],
+      "project": ["src/**/*.{ts,tsx}"],
       "ignoreDependencies": ["tailwindcss"]
     },
     "demo": {

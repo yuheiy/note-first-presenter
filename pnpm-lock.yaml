@@ -295,6 +295,9 @@ catalogs:
     tinyglobby:
       specifier: ^0.2.16
       version: 0.2.17
+    typescript:
+      specifier: ^7.0.2
+      version: 7.0.2
     valibot:
       specifier: ^1.4.2
       version: 1.4.2
@@ -312,7 +315,6 @@ overrides:
   vite: npm:@voidzero-dev/vite-plus-core@0.2.5
   vitest: 4.1.10
   chokidar: ^5.0.0
-  typescript: ^7.0.2
 
 importers:
 
@@ -428,7 +430,7 @@ importers:
         specifier: 'catalog:'
         version: 1.61.1
       typescript:
-        specifier: ^7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: npm:@voidzero-dev/vite-plus-core@0.2.5
@@ -1501,7 +1503,7 @@ packages:
       sugarss: ^5.0.0
       terser: ^5.16.0
       tsx: ^4.8.1
-      typescript: ^7.0.2
+      typescript: ^5.0.0 || ^6.0.0 || ^7.0.0
       unplugin-unused: ^0.5.0
       unrun: '*'
       yaml: ^2.4.2
@@ -2198,7 +2200,7 @@ packages:
   valibot@1.4.2:
     resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
     peerDependencies:
-      typescript: ^7.0.2
+      typescript: '>=5'
     peerDependenciesMeta:
       typescript:
         optional: true
