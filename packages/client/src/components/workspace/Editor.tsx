@@ -25,11 +25,9 @@ import { Workspace } from './Workspace';
 export function Editor() {
   const [activeSlide, setActiveSlide] = useActiveSlide();
   const editing = useDbEditing();
-  const title = useAtomValue(titleAtom);
 
   return (
     <Workspace
-      title={title}
       activeSlide={activeSlide}
       onActiveSlideChange={setActiveSlide}
       titleArea={<TitleField editing={editing} />}
@@ -98,8 +96,8 @@ function EditableOutline({ editing, activeSlide, onActiveSlideChange }: Editable
   const stored = useStoredDocument();
 
   // Naming an untitled deck belongs to the moment the document lands, and this
-  // component mounts exactly then. An effect event so the effect can stay on
-  // mount alone while still reading the values as they are by then.
+  // component mounts exactly then. An effect event because `editing` is a fresh
+  // object every render: as a dependency it would re-run this on each one.
   const nameIfBlankOnLoad = useEffectEvent(() => {
     if (stored.title === '') editing.setTitle(m.untitled_title_placeholder());
   });

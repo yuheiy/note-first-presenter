@@ -1,11 +1,8 @@
-import { useAtomValue } from 'jotai';
 import { ErrorOverlay } from '../ErrorOverlay';
 import { Hint } from '../Hint';
-import { groupCountAtom, storedDbAtom } from '../workspace/db';
-import { computeSlideOverflow } from './overflow';
+import { useDeck } from './deck';
 import { SlideList } from './SlideList';
-import { describeSlidesMeta, slidesMetaAtom } from './slidesMeta';
-import { useSyncPublisher } from './sync';
+import { describeSlidesMeta } from './slidesMeta';
 
 export interface SlidePanelProps {
   activeSlide: number;
@@ -22,20 +19,13 @@ export interface SlidePanelProps {
  * threading a `status` prop down and branching on it.
  */
 export function SlidePanel({ activeSlide, onActiveSlideChange }: SlidePanelProps) {
-  const meta = useAtomValue(slidesMetaAtom);
-  // Neither half of the deck's length is known until both requests land: the
-  // note-group count comes from the document, the page count from the metadata.
-  // Reading the stored document is how this waits for its half — the working
-  // document is synchronous by design and would answer 0. Nothing here re-reads
-  // it, so an edit does not re-render this.
-  useAtomValue(storedDbAtom);
-  const groupCount = useAtomValue(groupCountAtom);
+  const { meta, overflow } = useDeck();
 
   if (meta.kind === 'resolved') {
     return (
       <SlideList
         hash={meta.hash}
-        overflow={computeSlideOverflow(meta.pageCount, groupCount)}
+        overflow={overflow}
         activeSlide={activeSlide}
         onActiveSlideChange={onActiveSlideChange}
       />
@@ -51,22 +41,4 @@ export function SlidePanel({ activeSlide, onActiveSlideChange }: SlidePanelProps
   ) : (
     <ErrorOverlay message={state.message} />
   );
-}
-
-/**
- * Broadcasts the deck's shape to the slideshow window. Draws nothing.
- *
- * Split out of the shell for the same reason as the panel: it needs both halves
- * of the deck's length, so it is a place that can suspend, and the shell must
- * not be. Publishing simply does not happen until there is something true to
- * say — better than the shell's old behaviour of broadcasting a count of 0
- * while the requests were still in flight.
- */
-export function SlideCountPublisher({ activeSlide }: { activeSlide: number }) {
-  const meta = useAtomValue(slidesMetaAtom);
-  useAtomValue(storedDbAtom);
-  const groupCount = useAtomValue(groupCountAtom);
-  const overflow = computeSlideOverflow(meta.kind === 'resolved' ? meta.pageCount : 0, groupCount);
-  useSyncPublisher(activeSlide, overflow.slideCount);
-  return null;
 }

@@ -15,7 +15,7 @@ import { SlideImage } from '../components/slides/SlideImage';
 import { describeSlidesMeta, slidesMetaAtom } from '../components/slides/slidesMeta';
 import { useSyncSubscriber } from '../components/slides/sync';
 import { reason } from '../components/ErrorOverlay';
-import { storedDbAtom, titleAtom } from '../components/workspace/db';
+import { useStoredDocument } from '../components/workspace/db';
 import { m } from '../lib/paraglide/messages.js';
 
 /**
@@ -27,7 +27,13 @@ import { m } from '../lib/paraglide/messages.js';
  */
 export default function Slideshow() {
   return (
-    <ErrorBoundary fallbackRender={({ error }) => <SlideshowMessage message={reason(error)} />}>
+    <ErrorBoundary
+      fallbackRender={({ error }) => (
+        <div className="h-svh bg-black">
+          <SlideshowMessage message={reason(error)} />
+        </div>
+      )}
+    >
       <Suspense fallback={<div className="h-svh bg-black" />}>
         <SlideStage />
       </Suspense>
@@ -35,13 +41,17 @@ export default function Slideshow() {
   );
 }
 
-/** The former SlideshowFallback, back again now that two callers need it. */
+/**
+ * The one sentence a slideshow with nothing to show has to offer.
+ *
+ * The black field is the caller's, not this component's: the stage already draws
+ * one and takes the click that advances the deck, while the boundary's fallback
+ * needs a field of its own.
+ */
 function SlideshowMessage({ message }: { message: string }) {
   return (
-    <div className="h-svh bg-black">
-      <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
-        {message}
-      </div>
+    <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
+      {message}
     </div>
   );
 }
@@ -148,11 +158,7 @@ function SlideStage() {
       {resolved && !overflowing ? (
         <SlideImage hash={resolved.hash} slide={activeSlide} />
       ) : (
-        fallbackMessage !== null && (
-          <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
-            {fallbackMessage}
-          </div>
-        )
+        fallbackMessage !== null && <SlideshowMessage message={fallbackMessage} />
       )}
     </div>
   );
@@ -166,8 +172,7 @@ function SlideStage() {
  * working one: this page never edits, and there is no second writer to follow.
  */
 function WindowTitle() {
-  useAtomValue(storedDbAtom);
-  const title = useAtomValue(titleAtom);
+  const { title } = useStoredDocument();
   useEffect(() => {
     document.title = title;
   }, [title]);

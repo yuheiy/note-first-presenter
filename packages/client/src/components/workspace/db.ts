@@ -1,10 +1,9 @@
-import { atom, useAtomValue, useStore } from 'jotai';
+import { atom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, unwrap } from 'jotai/utils';
 import { useEffect, useState } from 'react';
 import { type DbV1 } from '../../lib/dbSchema';
 import { dataUrl } from '../../lib/routes';
 import { api } from '../../lib/serverClient';
-import { countNoteGroups } from '../outliner/noteGroups';
 
 // One URL for both modes: in dev the CLI middleware answers it, in the static
 // build it is a real file. GET and PUT differ only in method — read it as "the db
@@ -135,11 +134,23 @@ const editsAtom = /*#__PURE__*/ atom<DbV1 | null>(null);
  * time, through the selectors below, and only ever written through
  * `useDbEditing`. Handing it out whole would make it possible to subscribe to
  * every keystroke by accident.
+ *
+ * The writer takes a patch and answers the merged document, or nothing if there
+ * was none to merge into. Both halves belong here rather than in the hook: it
+ * makes "the working document is never composed out of `null`" a property of the
+ * graph rather than of whoever remembers to check. Spreading `null` is neither a
+ * type error nor a runtime one — it yields `{ ...patch }` — so without the guard
+ * a title typed before the load would PUT a document with no `version` and no
+ * `outline` over the real one.
  */
 const documentAtom = /*#__PURE__*/ atom(
   (get) => get(editsAtom) ?? get(settledStoredDbAtom) ?? null,
-  (_get, set, next: DbV1) => {
+  (get, set, patch: Partial<DbV1>): DbV1 | undefined => {
+    const current = get(editsAtom) ?? get(settledStoredDbAtom);
+    if (!current) return undefined;
+    const next = { ...current, ...patch };
     set(editsAtom, next);
+    return next;
   },
 );
 
@@ -147,17 +158,15 @@ const documentAtom = /*#__PURE__*/ atom(
 export const titleAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) => db?.title ?? '');
 
 /**
- * Half of the deck's length — the other half is the PDF's page count.
+ * The outline alone, so that counting note groups off it (`slides/deck.ts`) is
+ * not on the title's path: `Object.is` on the outline reference short-circuits
+ * every title keystroke.
  *
- * Recomputed on every keystroke but compared with `Object.is`, so the slide list
- * is spared a re-render unless a `---` was added or removed. This replaces a
- * hand-written guard in the Editor that existed because React's bail-out on an
- * equal value lapses whenever the fiber already has another update pending; a
- * `selectAtom` that never bumps its own epoch has no such lapse.
+ * Exported rather than counted here so that `db.ts` — which `main.tsx` imports
+ * eagerly — does not pull the outliner's modules into the entry chunk. The
+ * slideshow window would otherwise download them for nothing.
  */
-export const groupCountAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) =>
-  db ? countNoteGroups(db.outline) : 0,
-);
+export const outlineAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) => db?.outline ?? null);
 
 async function saveDb(db: DbV1): Promise<void> {
   // keepalive so a save started on pagehide outlives the document.
@@ -167,11 +176,11 @@ async function saveDb(db: DbV1): Promise<void> {
 /**
  * Suspends until the stored document has landed, then hands it over.
  *
- * The one place that waits, and the reason the `status === 'ready'` guard that
- * used to be repeated at every call site is gone. It answers the *stored*
- * document rather than the working one on purpose: its only caller mounts the
- * outliner, which reads the outline once and owns it from then on. Subscribing
- * to the working document here would re-render this on every keystroke.
+ * The one way to wait, and the reason the `status === 'ready'` guard that used to
+ * be repeated at every call site is gone. It answers the *stored* document
+ * rather than the working one on purpose — callers either read the outline once
+ * and own it from then on, or want the suspension and not the value. Subscribing
+ * to the working document here would re-render every one of them per keystroke.
  */
 export function useStoredDocument(): DbV1 {
   return useAtomValue(storedDbAtom);
@@ -193,15 +202,15 @@ export interface DbEditing {
  * that calls it is behind `import.meta.env.DEV` in a component the Viewer never
  * renders.
  *
- * `setTitle` can be called before the document lands — the toolbar draws with
- * the shell, ahead of the panes — so the guard below is load-bearing.
+ * `setTitle` can be called before the document lands — the toolbar draws with the
+ * shell, ahead of the panes — which is what `documentAtom`'s writer guards.
  */
 export function useDbEditing(): DbEditing {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  // The store rather than `useAtomValue`: this hook writes the document on every
+  // `useSetAtom`, not `useAtomValue`: this hook writes the document on every
   // keystroke and must not subscribe to it, or the Editor would re-render for
   // each one — which is the cost the old `savedRef` existed to avoid.
-  const store = useStore();
+  const editDocument = useSetAtom(documentAtom);
   const [saver] = useState(() => createDbSaver({ save: saveDb, onStatusChange: setSaveStatus }));
 
   // Flush before the page goes away, so an edit made inside the debounce window
@@ -222,17 +231,11 @@ export function useDbEditing(): DbEditing {
     };
   }, [saver]);
 
+  // Nothing to save when the atom answers nothing: the title can be typed into
+  // before the document lands, and that edit is dropped rather than merged.
   const edit = (patch: Partial<DbV1>) => {
-    const current = store.get(documentAtom);
-    // Typing into the title before the load lands is dropped rather than merged.
-    // Spreading `null` is not a type error and not a runtime one either — it
-    // yields `{ ...patch }` — so without this the app would PUT a document with
-    // no `version` and no `outline` over the real one, and `documentAtom` would
-    // shadow the stored document from then on.
-    if (!current) return;
-    const next = { ...current, ...patch };
-    store.set(documentAtom, next);
-    saver.schedule(next);
+    const next = editDocument(patch);
+    if (next) saver.schedule(next);
   };
 
   return {

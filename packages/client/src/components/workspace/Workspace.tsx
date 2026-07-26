@@ -9,15 +9,15 @@ import { m } from '../../lib/paraglide/messages.js';
 import { slideshowHref } from '../../lib/routes';
 import { ErrorOverlay, reason } from '../ErrorOverlay';
 import { Hint } from '../Hint';
-import { SlideCountPublisher, SlidePanel } from '../slides/SlidePanel';
-import { DEFAULT_SLIDE_ASPECT, slideAspectAtom } from '../slides/slidesMeta';
+import { SlideCountPublisher } from '../slides/SlideCountPublisher';
+import { SlidePanel } from '../slides/SlidePanel';
+import { slideAspectAtom } from '../slides/slidesMeta';
 import { Tooltip } from '../Tooltip';
+import { titleAtom } from './db';
 import { useListOpen } from './listOpen';
 import { useTheme, type ThemeMode } from './theme';
 
 export interface WorkspaceProps {
-  /** The presentation's title, for the browser tab. Already defaulted by the caller. */
-  title: string;
   activeSlide: number;
   onActiveSlideChange: (slide: number) => void;
   /**
@@ -57,7 +57,6 @@ const TOOLBAR_BUTTON =
  * slide count, and this is the one component holding both halves of it.
  */
 export function Workspace({
-  title,
   activeSlide,
   onActiveSlideChange,
   titleArea,
@@ -66,17 +65,10 @@ export function Workspace({
   const [theme, setTheme] = useTheme();
   const [listOpen, setListOpen] = useListOpen();
 
-  // The one read in the shell, and the one that is a value rather than a
-  // suspension. It has to be: --slide-aspect lives on the root grid because both
-  // panels' --scroll-tail queries it, and a shell that suspended would take the
-  // toolbar and the footer down with it. `slideAspectAtom` is an `unwrap`, so it
-  // answers `undefined` until the metadata lands and never throws.
-  const slideAspect = useAtomValue(slideAspectAtom) ?? DEFAULT_SLIDE_ASPECT;
-
-  const pageTitle = m.browser_tab_title({ title });
-  useEffect(() => {
-    document.title = pageTitle;
-  }, [pageTitle]);
+  // --slide-aspect has to live on the root grid, because both panels'
+  // --scroll-tail queries it. `slideAspectAtom` is shaped so that a read here
+  // can neither suspend nor throw; see its docblock for why that matters.
+  const slideAspect = useAtomValue(slideAspectAtom);
 
   return (
     // --scroll-tail: trailing scroll space below the slide list and the outliner so
@@ -97,6 +89,8 @@ export function Workspace({
       // the only way to hand one to the style attribute.
       style={{ '--slide-aspect': slideAspect } as CSSProperties}
     >
+      <BrowserTabTitle />
+
       <div className="col-span-full flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-1">
         {titleArea}
         <TooltipTrigger>
@@ -213,4 +207,21 @@ export function Workspace({
       </div>
     </div>
   );
+}
+
+/**
+ * Names the browser tab. Draws nothing.
+ *
+ * Reads the title itself rather than taking it as a prop so that a keystroke in
+ * the title field re-renders this and nothing else. As a prop it re-rendered the
+ * whole shell — the slide list included — per character, which is the cost the
+ * fine-grained selectors exist to avoid.
+ */
+function BrowserTabTitle() {
+  const title = useAtomValue(titleAtom) || m.untitled_title_placeholder();
+  const pageTitle = m.browser_tab_title({ title });
+  useEffect(() => {
+    document.title = pageTitle;
+  }, [pageTitle]);
+  return null;
 }

@@ -65,7 +65,7 @@ export function describeSlidesMeta(meta: SlidesMeta): SlidesMetaStatus | null {
 const META_URL = dataUrl('nfp-data/meta.json');
 
 /** 16:9, used until the metadata lands and for any deck that does not report its size. */
-export const DEFAULT_SLIDE_ASPECT = 16 / 9;
+const DEFAULT_SLIDE_ASPECT = 16 / 9;
 
 /**
  * The CLI's `ViteNfpPlugin` pushes this custom event over Vite's HMR WebSocket
@@ -117,7 +117,7 @@ slidesMetaAtom.onMount = (refresh) =>
   });
 
 /**
- * The deck's aspect ratio, or `undefined` until the metadata lands.
+ * The deck's aspect ratio, 16:9 until the metadata says otherwise.
  *
  * The one read in the app that is a value rather than a suspension, and the
  * exception the rest of `docs/adr/0018` is written against. It earns it: the
@@ -153,5 +153,5 @@ export const slideAspectAtom = /*#__PURE__*/ unwrap(
       return DEFAULT_SLIDE_ASPECT;
     }
   }),
-  (previous) => previous,
+  (previous) => previous ?? DEFAULT_SLIDE_ASPECT,
 );

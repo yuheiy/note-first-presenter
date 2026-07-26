@@ -19,7 +19,6 @@ export function Viewer() {
 
   return (
     <Workspace
-      title={title}
       activeSlide={activeSlide}
       onActiveSlideChange={setActiveSlide}
       titleArea={
