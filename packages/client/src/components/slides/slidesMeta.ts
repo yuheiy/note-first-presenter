@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/serverClient';
 import { m } from '../../lib/paraglide/messages.js';
+import { dataUrl } from '../../lib/routes';
 import { createResourceLoader, useResource, type Resource } from '../useResource';
 
 /**
@@ -70,7 +71,7 @@ export function describeSlidesMeta(
   }
 }
 
-const META_URL = '/nfp-data/meta.json';
+const META_URL = dataUrl('nfp-data/meta.json');
 
 /** Exported for the same reason as `loadDb`: the entry warms it (§1.3). */
 export const loadSlidesMeta = createResourceLoader(() => api<SlidesMeta>(META_URL));

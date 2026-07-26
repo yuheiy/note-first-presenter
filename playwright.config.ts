@@ -35,6 +35,14 @@ export default defineConfig({
       port: 4173,
       reuseExistingServer: false,
     },
+    {
+      // The same trick again for the subdirectory artifact, served under the
+      // base it was built for so `--base` is exercised the way a real deploy
+      // would exercise it.
+      command: `mkdir -p ${FIXTURE}/dist-sub && vp preview ${FIXTURE} --outDir dist-sub --base /sub/ --port 4174 --strictPort`,
+      port: 4174,
+      reuseExistingServer: false,
+    },
   ],
   // Split so a failure names its cause: `dev` exercises the CLI middleware
   // answering /nfp-data/* dynamically, `static` exercises the emitted file tree.
@@ -43,7 +51,7 @@ export default defineConfig({
     {
       name: 'dev',
       testDir: './e2e',
-      testIgnore: '**/static/**',
+      testIgnore: ['**/static/**', '**/subpath/**'],
       use: { baseURL: 'http://localhost:5173' },
     },
     // A full production build costs ~60s, so it is a setup project rather than
@@ -58,6 +66,24 @@ export default defineConfig({
       testDir: './e2e/static',
       dependencies: ['static-build'],
       use: { baseURL: 'http://localhost:4173' },
+    },
+    // `--base` is the one part of URL handling that no unit test can reach:
+    // four layers have to agree on it and only a real subdirectory deploy shows
+    // whether they do (docs/adr/0017, e2e/subpath/base.e2e.ts). The router-mode
+    // split needs no such project — it resolves inside lib/routes.ts and is
+    // pinned there.
+    {
+      name: 'subpath-build',
+      testDir: './e2e/subpath',
+      testMatch: '**/build.setup.ts',
+    },
+    {
+      name: 'subpath',
+      testDir: './e2e/subpath',
+      dependencies: ['subpath-build'],
+      // Trailing slash included: the specs address pages relatively so that this
+      // prefix survives, which a leading-slash path would discard.
+      use: { baseURL: 'http://localhost:4174/sub/' },
     },
   ],
   testMatch: '**/*.e2e.{ts,js}',

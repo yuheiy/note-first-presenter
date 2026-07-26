@@ -87,9 +87,9 @@ async function renderEditor() {
 
 describe('active slide', () => {
   beforeEach(() => {
-    // `useActiveSlide` seeds itself from the hash and mirrors back into it, so
-    // without this each test would start wherever the last one left off.
-    history.replaceState(null, '', location.pathname + location.search);
+    // `useActiveSlide` reads and writes `?slide=`, so without this each test
+    // would start wherever the last one left off.
+    history.replaceState(null, '', location.pathname);
   });
 
   it('has one option per note group', async () => {

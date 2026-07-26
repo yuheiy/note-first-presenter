@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Button, Link, Radio, RadioGroup, TooltipTrigger } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
+import { slideshowHref } from '../../lib/routes';
 import { ErrorOverlay } from '../ErrorOverlay';
 import { Hint } from '../Hint';
 import { computeSlideOverflow } from '../slides/overflow';
@@ -142,11 +143,12 @@ export function Workspace({
       <div className="col-span-full flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-1">
         {titleArea}
         <TooltipTrigger>
-          {/* Hash-only href: it carries no path, so it keeps working under a
-              subdirectory. The named target is what makes the slideshow reuse
-              its own window rather than pile up new ones. */}
+          {/* A real document load, not an in-app transition: the href knows the
+              router mode and the base, which lib/routes.ts is the only place to
+              know. The named target is what makes the slideshow reuse its own
+              window rather than pile up new ones. */}
           <Link
-            href={`#/slideshow/${activeSlide}`}
+            href={slideshowHref(activeSlide)}
             target="nfp-slideshow"
             aria-label={m.open_slideshow_button_label()}
             className={TOOLBAR_BUTTON}

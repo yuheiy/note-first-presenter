@@ -1,25 +1,27 @@
 import { expect, test } from '@playwright/test';
 
-// The static tree is where the hash router and the unified /nfp-data/* URLs are
-// most likely to break, because nothing serves them dynamically — whatever the
-// build emitted is all there is. See plans/react-rewrite-spec.md §8.7.
-//
-// Each page gets its own document on purpose: the hash is read once at startup
-// and there is no hashchange listener, so navigating by hash alone inside one
-// document would never switch pages (§1.2).
+// The static tree is where the router and the unified /nfp-data/* URLs are most
+// likely to break, because nothing serves them dynamically — whatever the build
+// emitted is all there is. See plans/react-rewrite-spec.md §8.7.
 
 test('serves the workspace off the emitted index.html', async ({ page }) => {
   await page.goto('/');
-  // A bare `/` normalises to the first slide before the page renders.
-  await expect(page).toHaveURL(/#\/1$/);
+  // The first slide carries no `?slide=`, so `/` is already the canonical URL
+  // and nothing rewrites it (docs/adr/0017).
+  await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('textbox', { name: 'Outliner' })).toBeVisible();
   await expect(page.getByRole('listbox', { name: 'Slides' })).toBeVisible();
 });
 
 test('serves the slideshow off the same index.html', async ({ page }) => {
-  await page.goto('/#/slideshow/1');
+  await page.goto('/slideshow');
   await expect(page.getByRole('img', { name: 'Slide 1' })).toBeVisible();
 });
+
+// The 404.html fallback is asserted one layer down, in test/build.test.ts:
+// emitting it is a `copyFile` in the CLI's build command, and nothing here could
+// add to that — `vite preview` falls back to index.html on its own, so no
+// request over this connection ever reaches the fallback document.
 
 test('emits the slide data next to the shell', async ({ page }) => {
   const meta = await page.request.get('/nfp-data/meta.json');

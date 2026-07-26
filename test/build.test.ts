@@ -27,10 +27,16 @@ afterAll(async () => {
 });
 
 describe('note-first-presenter build (bin integration)', () => {
-  // No 200.html any more: the pages route off location.hash, which never
-  // reaches the server, so index.html is the only document a static host needs.
-  it('emits the spa shell', async () => {
-    await fs.access(path.join(tmp, 'dist', 'index.html'));
+  // Still one shell for both routes rather than a document per route, plus a
+  // copy of it under the name a static host reaches for when it cannot rewrite.
+  // In history mode — the default — the slideshow arrives as a fresh
+  // `GET /slideshow`, so that copy is what keeps it from 404ing on GitHub Pages
+  // (docs/adr/0017).
+  it('emits the spa shell and its fallback copy', async () => {
+    const shell = await fs.readFile(path.join(tmp, 'dist', 'index.html'), 'utf8');
+    expect(await fs.readFile(path.join(tmp, 'dist', '404.html'), 'utf8')).toBe(shell);
+    const entries = await fs.readdir(path.join(tmp, 'dist'));
+    expect(entries.filter((e) => e.endsWith('.html')).sort()).toEqual(['404.html', 'index.html']);
   });
 
   // The former "no /api/ string in the bundle" marker for Editor dead-code

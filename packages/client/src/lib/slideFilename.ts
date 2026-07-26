@@ -1,3 +1,5 @@
+import { dataUrl } from './routes';
+
 function slideFilename(pageNumber: number): string {
   return `${String(pageNumber).padStart(4, '0')}.webp`;
 }
@@ -6,5 +8,5 @@ function slideFilename(pageNumber: number): string {
 // CLI middleware serves this path out of the PDF, and the static build writes
 // the identical tree under `nfp-data/`.
 export function slideImageUrl(hash: string, pageNumber: number): string {
-  return `/nfp-data/slides/${hash}/${slideFilename(pageNumber)}`;
+  return dataUrl(`nfp-data/slides/${hash}/${slideFilename(pageNumber)}`);
 }
