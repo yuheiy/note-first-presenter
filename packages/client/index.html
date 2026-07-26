@@ -2,7 +2,9 @@
 
 <!-- scheme-light-dark is the system/no-JS default; the theme hook swaps it. See docs/adr/0009. -->
 <!-- dir is static: both catalogs (en/ja) are LTR, so nothing at runtime touches it.
-     lang is the one attribute the app does set at runtime, from the catalog's htmlLang. -->
+     lang is the one attribute the app does set at runtime, from Paraglide's
+     getLocale() in main.tsx — which is already the displayed catalog's language,
+     because Paraglide only ever resolves to one of `locales` (ADR-0016). -->
 <html lang="en" dir="ltr" class="scheme-light-dark">
   <head>
     <meta charset="utf-8" />

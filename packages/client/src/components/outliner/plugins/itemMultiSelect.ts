@@ -19,6 +19,7 @@ import {
   type Selection,
   TextSelection,
 } from 'prosemirror-state';
+import { isMac } from '../platform';
 import { createNodeRangeSelection, isNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
 
@@ -147,7 +148,14 @@ export const itemMultiSelectPlugin = new Plugin({
       mousedown(view, event) {
         const ev = event as MouseEvent;
         if (ev.button !== 0) return false;
-        const hasModifier = ev.shiftKey || ev.metaKey || ev.ctrlKey;
+        // Cmd on a Mac, Ctrl elsewhere — the platform convention every native
+        // file manager follows. Not `metaKey || ctrlKey`: on a Mac, Ctrl+click
+        // is the secondary click, so accepting it there would toggle the
+        // selection out from under the context menu it is opening. `isMac`
+        // comes from ProseMirror, so this agrees with the `Mod-` keymap in
+        // Outliner.tsx rather than answering the same question separately.
+        const toggle = isMac ? ev.metaKey : ev.ctrlKey;
+        const hasModifier = ev.shiftKey || toggle;
         if (!hasModifier) return false;
 
         const itemPos = resolveItemPosFromTarget(view, ev.target as Element | null);
@@ -155,7 +163,7 @@ export const itemMultiSelectPlugin = new Plugin({
 
         const sel = resolveItemClickSelection(view.state, itemPos, {
           shift: ev.shiftKey,
-          meta: ev.metaKey || ev.ctrlKey,
+          meta: toggle,
         });
         if (!sel) return false;
 

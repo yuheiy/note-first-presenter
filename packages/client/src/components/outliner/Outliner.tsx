@@ -1,4 +1,4 @@
-import { baseKeymap, macBaseKeymap } from 'prosemirror-commands';
+import { baseKeymap } from 'prosemirror-commands';
 import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import { splitListItem } from 'prosemirror-schema-list';
@@ -17,6 +17,7 @@ import {
 } from './commands/rangeSelect';
 import { rangeAwareSplitListItem } from './commands/rangeSplit';
 import { ACTIVE_SLIDE_ECHO_META, computeActiveSlide, findGroupPosition } from './noteGroups';
+import { isMac } from './platform';
 import { activeSlideDecorations } from './plugins/activeSlideDecorations';
 import { clipboardPlugin } from './plugins/clipboard';
 import { itemMultiSelectPlugin } from './plugins/itemMultiSelect';
@@ -45,12 +46,6 @@ export interface OutlinerProps {
   /** Omit for the read-only Viewer. Receives the whole outline as plain JSON. */
   onChange?: (outline: unknown) => void;
 }
-
-// Reuse ProseMirror's own platform detection instead of a second detector:
-// prosemirror-commands sets `baseKeymap = mac ? macBaseKeymap : pcBaseKeymap`,
-// so this identity check always agrees with the `Mod-` normalization that
-// prosemirror-keymap applies to the bindings below.
-const isMac = baseKeymap === macBaseKeymap;
 
 // `splitListItem` builds a command rather than being one, so bind it to the schema
 // here instead of on every Enter press — the same module-scope binding the sibling
