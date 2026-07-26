@@ -7,7 +7,7 @@
  * cache (plans/react-rewrite-spec.md §1.2).
  */
 import { useEffect, useEffectEvent, useState } from 'react';
-import { useActiveSlide } from '../components/slides/activeSlide';
+import { useActiveSlide } from '../lib/routes';
 import { computeSlideOverflow, stepSlide } from '../components/slides/overflow';
 import { SlideImage } from '../components/slides/SlideImage';
 import { describeSlidesMeta, useSlidesMeta } from '../components/slides/slidesMeta';

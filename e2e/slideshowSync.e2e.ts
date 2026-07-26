@@ -10,10 +10,10 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
 
   await resetDb(presenter);
   await presenter.goto('/');
-  // The slideshow's own document, addressed by hash. The workspace opens it with
-  // this exact URL; here it is opened directly so the two pages can be driven
-  // independently.
-  await slideshow.goto('/#/slideshow/1');
+  // The slideshow's own document. The workspace opens it with this exact URL —
+  // the first slide carries no `?slide=` — and here it is opened directly so the
+  // two pages can be driven independently.
+  await slideshow.goto('/slideshow');
   await slideshow.waitForLoadState('networkidle');
 
   const presenterOptions = presenter.getByRole('option');

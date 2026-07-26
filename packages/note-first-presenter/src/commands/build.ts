@@ -1,6 +1,7 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { build as viteBuild } from 'vite';
+import type { RouterMode } from '../config.ts';
 import { readDb } from '../db.ts';
 import { openSlides, type SlidesStatus } from '../slides.ts';
 import { createViteConfig } from '../vite/index.ts';
@@ -9,9 +10,17 @@ export interface BuildInput {
   slidesStatus: SlidesStatus;
   clientRoot: string;
   outDir: string;
+  routerMode?: RouterMode;
+  base?: string;
 }
 
-export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): Promise<void> {
+export async function build({
+  slidesStatus,
+  clientRoot,
+  outDir,
+  routerMode,
+  base,
+}: BuildInput): Promise<void> {
   const previousCwd = process.cwd();
   const previousNodeEnv = process.env.NODE_ENV;
   // Vite derives import.meta.env.DEV from an inherited NODE_ENV, so a caller
@@ -20,12 +29,20 @@ export async function build({ slidesStatus, clientRoot, outDir }: BuildInput): P
   process.env.NODE_ENV = 'production';
   process.chdir(clientRoot);
   try {
-    await viteBuild(createViteConfig({ clientRoot, outDir }));
+    await viteBuild(createViteConfig({ clientRoot, outDir, routerMode, base }));
   } finally {
     process.chdir(previousCwd);
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousNodeEnv;
   }
+
+  // The SPA fallback document, still a single shell rather than one file per
+  // route. In history mode the slideshow arrives as a fresh `GET /slideshow`, so
+  // a host that does not rewrite would answer 404 without this; GitHub Pages
+  // serves 404.html for exactly that, preserving the URL so the app can boot.
+  // Emitted unconditionally, as Slidev does: a hash-mode site never reaches it,
+  // and making its presence depend on the mode buys nothing.
+  await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '404.html'));
 
   const db = await readDb();
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type DbV1 } from '../../lib/dbSchema';
+import { dataUrl } from '../../lib/routes';
 import { api } from '../../lib/serverClient';
 import {
   createResourceLoader,
@@ -11,7 +12,7 @@ import {
 // One URL for both modes: in dev the CLI middleware answers it, in the static
 // build it is a real file. GET and PUT differ only in method — read it as "the db
 // document, whose static representation is a file". See §2.2.
-const DB_URL = '/nfp-data/db.json';
+const DB_URL = dataUrl('nfp-data/db.json');
 
 export const SAVE_DEBOUNCE_MS = 500;
 export const SAVE_RETRY_MS = 5000;

@@ -22,6 +22,13 @@ A top-level outline item whose text is three or more consecutive hyphens (`---`,
 A single screen in a presentation. Composed of a slide image (a rendered PDF page) and its corresponding note group.
 _Avoid_: page (refers to the PDF page, not the presentation unit)
 
+**Active Slide**:
+The slide the app is currently on — the one the slide list selects, the outliner keeps the caret inside, and the slideshow window shows. It is 1-based, and it is not routing: the app has two pages, the workspace and the slideshow, and the active slide is not one of the things that picks between them. It appears in the URL as the `?slide=` search param, where the first slide is written by leaving the param out. Owned by `useActiveSlide` (`packages/client/src/lib/routes.ts`): React state is the source of truth and the URL is a mirror, written with `replaceState` and read only for the initial value.
+
+**Router Mode**:
+Where the route lives in the URL: `history` (`/slideshow`, the default) or `hash` (`/#/slideshow`). Chosen per project via `routerMode` in the config file or `--router-mode`, and named after Slidev's option of the same name — but only the name and the two values are borrowed, not the URL shape. `hash` is what a static host that cannot rewrite unknown paths needs; `history` needs the emitted `404.html` or a server-side rewrite. See `docs/adr/0017`.
+_Avoid_: routing mode, history mode/hash mode as the name of the _option_ (they are its values)
+
 **Editor**:
 The read-write mode of the app, where the author writes the outline and pairs it with slides. Exists only while the tool runs locally.
 _Avoid_: Presenter (the product name, not a mode)

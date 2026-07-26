@@ -24,6 +24,13 @@ import {
 // reload that throws (e.g. a malformed config) is reported via `onError`
 // without crashing the loop, and leaves the last good `slidesStatus` in place
 // (or `no-config-no-file` if the very first reload failed).
+//
+// That tolerance is for config files edited *while dev runs* — half-typed states
+// are normal there, and `onError` is loud enough (server log plus the browser's
+// error overlay) without taking the server down. It is not the startup
+// contract: since routerMode/base arrived, `cli.ts` parses the config itself
+// before this plugin exists, so a malformed config never gets this far — dev
+// exits, the same as build (docs/adr/0017, test/config.test.ts).
 
 const CONFIG_PATHS = new Set(CONFIG_FILENAMES.map((name) => path.resolve(name)));
 
@@ -192,6 +199,10 @@ function readBody(req: Connect.IncomingMessage): Promise<Buffer> {
 // The URL space mirrors the static build's `nfp-data/` directory
 // (`commands/build.ts`) so the Editor and the Viewer read through identical
 // client code; the only dev-only verb is `PUT /nfp-data/db.json`.
+//
+// Speaks in unprefixed `/nfp-data/*` and knows nothing about the base: it is
+// mounted at the base instead (see the install below), so connect has already
+// taken the prefix off `req.url` by the time this runs.
 
 export function createNfpDataMiddleware(opts: {
   getSlidesStatus: () => SlidesStatus;
@@ -329,7 +340,20 @@ export const ViteNfpPlugin = (opts?: { cwd?: string }): Plugin => ({
         });
       },
     });
-    server.middlewares.use(createNfpDataMiddleware({ getSlidesStatus, getSlides }));
+    // Installed here rather than from a returned post hook: Vite registers
+    // htmlFallbackMiddleware *before* it runs the post hooks, so a post hook
+    // would sit behind the SPA fallback and never see /nfp-data/* at all.
+    //
+    // The cost of being that early is that Vite's own baseMiddleware has not run
+    // yet, so `req.url` still carries the base. Mounting at it is connect's
+    // answer to that: it strips the prefix (matching on pathname and at a
+    // segment boundary, so `/subterranean/…` cannot slip through), restores the
+    // URL if the handler calls next(), and — since it drops a trailing slash
+    // from the mount point — collapses the default base to no mount at all.
+    server.middlewares.use(
+      server.config.base,
+      createNfpDataMiddleware({ getSlidesStatus, getSlides }),
+    );
     server.httpServer?.on('close', () => {
       close().catch((err) => server.config.logger.error(String(err)));
     });

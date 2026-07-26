@@ -4,26 +4,22 @@ import { I18nProvider } from 'react-aria-components';
 import { loadSlidesMeta } from './components/slides/slidesMeta';
 import { loadDb } from './components/workspace/db';
 import { getLocale } from './lib/paraglide/runtime.js';
+import { currentRoutePath, SLIDESHOW_PATH } from './lib/routes';
 import './style.css';
 
-// The two pages are never navigated between inside one document: the slideshow
-// is always opened into a separate window (target="nfp-slideshow") and has no
-// way back. So "routing" is a single read of location.hash at startup — no
-// hashchange listener, no history integration, no router library.
-// See plans/react-rewrite-spec.md §1.2.
+// Two pages off one index.html, in whichever router mode the CLI was told to
+// build for (docs/adr/0017). Still no router library and no listener: the pages
+// are never navigated between inside one document — the slideshow is always
+// opened into a separate window (target="nfp-slideshow") and has no way back —
+// so choosing the page is one read of the URL at startup. The slide index is not
+// part of that choice; it is a `?slide=` search param.
 //
 // React.lazy keeps the split: the slideshow window never downloads the
 // workspace chunk (ProseMirror and friends).
 const WorkspacePage = lazy(() => import('./pages/Workspace'));
 const SlideshowPage = lazy(() => import('./pages/Slideshow'));
 
-// A bare `/` carries no slide number for the pages to read. replaceState rather
-// than location.replace, so normalising does not add a history entry.
-if (!window.location.hash) {
-  window.history.replaceState(null, '', '#/1');
-}
-
-const Page = window.location.hash.startsWith('#/slideshow/') ? SlideshowPage : WorkspacePage;
+const Page = currentRoutePath() === SLIDESHOW_PATH ? SlideshowPage : WorkspacePage;
 
 // Both pages read both documents, so ask for them here rather than from the
 // page's own effect: the requests then overlap the chunk download instead of

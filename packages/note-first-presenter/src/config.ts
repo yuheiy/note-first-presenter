@@ -3,8 +3,21 @@ import path from 'node:path';
 import * as v from 'valibot';
 import { loadConfigFromFile } from 'vite';
 
+/**
+ * Where the route lives in the URL. Named and valued after Slidev's headmatter
+ * option of the same name; the URL *shape* underneath is nfp's own, since the
+ * slide index is a search param rather than a path segment (docs/adr/0017).
+ */
+export const ROUTER_MODES = ['hash', 'history'] as const;
+export type RouterMode = (typeof ROUTER_MODES)[number];
+export const DEFAULT_ROUTER_MODE: RouterMode = 'history';
+
 const configSchema = v.strictObject({
   slides: v.optional(v.string()),
+  // Both of these reach dev and build alike, which is why they sit at the top
+  // level rather than under `build`.
+  routerMode: v.optional(v.picklist(ROUTER_MODES)),
+  base: v.optional(v.string()),
   build: v.optional(
     v.strictObject({
       outDir: v.optional(v.string()),

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { m } from '../../lib/paraglide/messages.js';
 import { countNoteGroups } from '../outliner/noteGroups';
 import { Outliner } from '../outliner/Outliner';
-import { useActiveSlide } from '../slides/activeSlide';
+import { useActiveSlide } from '../../lib/routes';
 import { useSlidesMeta } from '../slides/slidesMeta';
 import { useReadOnlyDb } from './db';
 import { Workspace } from './Workspace';
