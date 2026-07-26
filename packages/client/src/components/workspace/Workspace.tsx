@@ -7,7 +7,8 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { Button, Link, Radio, RadioGroup, TooltipTrigger } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
 import { slideshowHref } from '../../lib/routes';
-import { ErrorOverlay } from '../ErrorOverlay';
+import { ErrorOverlay, reason } from '../ErrorOverlay';
+import { Hint } from '../Hint';
 import { SlideCountPublisher, SlidePanel } from '../slides/SlidePanel';
 import { DEFAULT_SLIDE_ASPECT, slideAspectAtom } from '../slides/slidesMeta';
 import { Tooltip } from '../Tooltip';
@@ -141,12 +142,14 @@ export function Workspace({
       </ErrorBoundary>
 
       <div className="[container-type:size] relative scroll-pt-4 overflow-auto overscroll-none">
-        {/* One generic message: which of the two requests failed is not something
-            the reader can act on differently. Loading is not handled here — the
-            entry's Suspense already holds the page back until the chunk arrives,
-            and both documents are local files that land inside that window. */}
+        {/* Both boundaries, not just the error one. A slot is still a child, so
+            without the Suspense here the outliner's wait would travel up to the
+            entry's boundary and blank the toolbar and the footer along with it —
+            measured, not assumed. Nothing is drawn while it waits, which is what
+            the shell did before, and one generic message if it fails: which of
+            the two requests broke is not something the reader can act on. */}
         <ErrorBoundary fallback={<ErrorOverlay message={m.outline_load_failed_status()} />}>
-          {outliner}
+          <Suspense fallback={null}>{outliner}</Suspense>
         </ErrorBoundary>
       </div>
 
@@ -156,8 +159,16 @@ export function Workspace({
         // --scroll-tail queries and ErrorOverlay's `absolute inset-0` positions
         // against.
         <div className="[container-type:size] border-l border-gray-200 bg-gray-50">
-          <ErrorBoundary fallback={<ErrorOverlay message={m.outline_load_failed_status()} />}>
-            <SlidePanel activeSlide={activeSlide} onActiveSlideChange={onActiveSlideChange} />
+          {/* The transport's own words rather than a catalog entry: a failure to
+              reach the server has no message of ours to show, which is what the
+              old `describeSlidesMeta(meta, error)` did with its second argument. */}
+          <ErrorBoundary fallbackRender={({ error }) => <ErrorOverlay message={reason(error)} />}>
+            {/* The ellipsis the panel used to show while it waited on both
+                requests. Now it is the boundary's business rather than a branch
+                inside the panel. */}
+            <Suspense fallback={<Hint message="…" />}>
+              <SlidePanel activeSlide={activeSlide} onActiveSlideChange={onActiveSlideChange} />
+            </Suspense>
           </ErrorBoundary>
         </div>
       )}

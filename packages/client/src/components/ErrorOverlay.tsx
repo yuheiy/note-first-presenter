@@ -1,3 +1,15 @@
+/**
+ * What a thrown request failure has to say for itself.
+ *
+ * A transport failure has no message of ours to show — there is no catalog entry
+ * for "the server did not answer" — so its own words are what reaches the
+ * reader. This is what the old `describeSlidesMeta(meta, error)` did with its
+ * second argument, kept now that errors travel as exceptions.
+ */
+export function reason(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export interface ErrorOverlayProps {
   message: string;
 }

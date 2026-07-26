@@ -193,8 +193,8 @@ export interface DbEditing {
  * that calls it is behind `import.meta.env.DEV` in a component the Viewer never
  * renders.
  *
- * No guard against editing before the document lands: callers live below the
- * gate, so there is always something to merge into.
+ * `setTitle` can be called before the document lands — the toolbar draws with
+ * the shell, ahead of the panes — so the guard below is load-bearing.
  */
 export function useDbEditing(): DbEditing {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -223,10 +223,14 @@ export function useDbEditing(): DbEditing {
   }, [saver]);
 
   const edit = (patch: Partial<DbV1>) => {
-    // Non-null because every caller is below the gate. The old code dropped edits
-    // made before the load landed, to avoid saving an empty outline over a real
-    // one; there is no such window left to drop.
-    const next = { ...store.get(documentAtom)!, ...patch };
+    const current = store.get(documentAtom);
+    // Typing into the title before the load lands is dropped rather than merged.
+    // Spreading `null` is not a type error and not a runtime one either — it
+    // yields `{ ...patch }` — so without this the app would PUT a document with
+    // no `version` and no `outline` over the real one, and `documentAtom` would
+    // shadow the stored document from then on.
+    if (!current) return;
+    const next = { ...current, ...patch };
     store.set(documentAtom, next);
     saver.schedule(next);
   };

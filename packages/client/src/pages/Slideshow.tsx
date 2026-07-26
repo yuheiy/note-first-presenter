@@ -14,10 +14,39 @@ import { computeSlideOverflow, stepSlide } from '../components/slides/overflow';
 import { SlideImage } from '../components/slides/SlideImage';
 import { describeSlidesMeta, slidesMetaAtom } from '../components/slides/slidesMeta';
 import { useSyncSubscriber } from '../components/slides/sync';
+import { reason } from '../components/ErrorOverlay';
 import { storedDbAtom, titleAtom } from '../components/workspace/db';
 import { m } from '../lib/paraglide/messages.js';
 
+/**
+ * The page, which is only the black field and the boundaries around it.
+ *
+ * The stage below reads the metadata, so it can wait and it can fail; neither
+ * may reach the field itself, or a slideshow whose deck did not resolve would be
+ * a blank document rather than a black screen with a sentence on it.
+ */
 export default function Slideshow() {
+  return (
+    <ErrorBoundary fallbackRender={({ error }) => <SlideshowMessage message={reason(error)} />}>
+      <Suspense fallback={<div className="h-svh bg-black" />}>
+        <SlideStage />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+/** The former SlideshowFallback, back again now that two callers need it. */
+function SlideshowMessage({ message }: { message: string }) {
+  return (
+    <div className="h-svh bg-black">
+      <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
+        {message}
+      </div>
+    </div>
+  );
+}
+
+function SlideStage() {
   const meta = useAtomValue(slidesMetaAtom);
   const [activeSlide, setActiveSlide] = useActiveSlide();
   const [syncedSlideCount, setSyncedSlideCount] = useState(0);
@@ -120,7 +149,6 @@ export default function Slideshow() {
         <SlideImage hash={resolved.hash} slide={activeSlide} />
       ) : (
         fallbackMessage !== null && (
-          // The former SlideshowFallback, inlined: one caller.
           <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
             {fallbackMessage}
           </div>

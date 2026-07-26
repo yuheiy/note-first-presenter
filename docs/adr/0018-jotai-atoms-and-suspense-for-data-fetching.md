@@ -91,7 +91,9 @@ ref は「React の外」だが、atom は「**React が知っている外**」�
 
 ### 境界は loading を粗く、error を細かく — ただし例外が 2 つある
 
-**Suspense は `main.tsx` の既存の 1 個に相乗りする。** そこには既にページチャンクの遅延ロード用の `<Suspense fallback={null}>` があり、**今も画面はチャンクが落ちるまで白紙**である。db/meta の fetch は `main.tsx` でチャンクのダウンロードと並行して開始され、どちらもローカルファイル（dev は CLI ミドルウェア、静的ビルドは実ファイル）なので、チャンクより先に着いている公算が高い。移行前に `Workspace` が出していた `<Hint message="…" />` が実際に見えることは、ほぼ無かったはずである。
+**Suspense の粒度は、error と同じく細かい。** 当初は `main.tsx` の既存の 1 個に相乗りさせる予定で、「アウトライナーは slot なので、それが待ってもシェルは残る」と考えていた。**これは実装後の検証で否定された** — slot でも React ツリー上は子であり、suspend は上方向の最も近い境界に伝播するので、ツールバーもテーマフッターも消える（実測: `packages/client/src/__tests__/boundaries.browser.test.tsx`）。したがって `Workspace` の各 ErrorBoundary の内側に Suspense を対で置く。fallback は移行前の挙動そのままで、アウトライナー枠は何も描かず、スライドパネルは `<Hint message="…" />`。
+
+`main.tsx` の既存の 1 個は残る。 それはページチャンクの遅延ロード用で、**今も画面はチャンクが落ちるまで白紙**である。db/meta の fetch は `main.tsx` でチャンクのダウンロードと並行して開始され、どちらもローカルファイルなので、チャンクより先に着いている公算が高い — つまり通常は下の境界が fallback を出す暇もない。**それでも境界を細かく置くのは、「速いから見えない」は保証ではないからである。**
 
 **ErrorBoundary は `ErrorOverlay` を描く場所ごとに置く。** 粗くすると確実に劣化する箇所が 2 つあるためである。
 
@@ -111,11 +113,13 @@ ref は「React の外」だが、atom は「**React が知っている外**」�
 - **`useSyncPublisher`** → 何も描画しない子コンポーネントに出し、`fallback={null}` の境界に入れる。データが無い間は publish しないのが正しい（移行前は `slideCount: 0` を publish していた）。
 - **スライドパネル** → 子コンポーネントに出し、自前の ErrorBoundary → `ErrorOverlay`。
 - **アウトライナー枠** → ErrorBoundary → `ErrorOverlay`（`m.outline_load_failed_status()`）。
-- **タイトル欄** → 境界の `fallback` は何も描かない。移行前は db 失敗時に空の TextField が残っていたが、これは `editedTitle ?? loaded?.title ?? ''` の副産物であって意図された挙動ではない。
+- **タイトル欄** → 境界を置かない。同期の selector を読むだけで待たず、失敗もしない。**代わりに書き込み側にガードが要る**: 欄はシェルと一緒に描かれるのでドキュメント到着前に打てる。`{ ...null, ...patch }` は型エラーでも実行時エラーでもなく `{ ...patch }` を返すので、ガードが無いと `version` も `outline` も無い文書を実文書の上に PUT する。移行前にあった「ロード前の入力は捨てる」という判断はそのまま必要である。
 
 **`--slide-aspect` だけは分解で解けない。** ルートの grid に載っており、`--scroll-tail` を通じて**両ペイン**が参照する（「Both panels use this same value so their bottom spacing matches」）。子に降ろすと下端余白が揃わなくなり、ルートで読むと throw する。
 
 ここは `unwrap(slidesMetaAtom, (prev) => prev)` を使う。**アスペクト比には意味のある既定値（16:9）があり、失敗時に出すエラー UI が無いからである。** 消費側が正当な既定値を持ち、失敗を報告する先を持たない read には、Suspense ではなく値モデルが正しい。`unwrap` は保留中に前の値を保つので、PDF 差し替え中にレイアウトが跳ねることもない。
+
+**ただし `unwrap` は rejection を握らない。** `loadable` との明示的な差がここで、当初の実装はこれを取り違えて「never throws」と書いていた。実測すると、meta の失敗はシェル本体で throw し、アプリが持つすべての境界より上なので誰も捕まえない — 分解が防ごうとした事態そのものが、分解のために入れた例外から起きていた。`await` を `try`/`catch` で包んで既定値を返すこと。報告はそれができるパネルの仕事である。
 
 `loadable` を「Suspense を避けるための逃げ道」として却下した判断は維持する。例外はこの 1 箇所だけである。
 
@@ -179,8 +183,10 @@ slidesMetaAtom.onMount = (refresh) => onSlidesChanged(() => startTransition(() =
 - **クライアントの依存が 2 つ増える**（`jotai`、`react-error-boundary`）。ADR-0017 の「クライアントの依存は1つも増えていない」という記述は、以後この ADR で上書きされる。client はソース配信なので、これは**公開ユーザーの実行時依存**である。`packages/client/package.json` の `dependencies` と、`pnpm-workspace.yaml` の catalog の両方に載せること。
 - **ツリーに Provider は現れない。** `Workspace.tsx` の「no context anywhere in the tree」は形式上維持されるが、jotai は内部で `StoreContext` を使う（Provider が無ければ既定 store に落ちる）。「context を宣言的に置かない」という性質は保たれ、「context が一切存在しない」は保たれない。
 - **`Workspace` が分解される。** `useSyncPublisher` の呼び出しとスライドパネルが子コンポーネントに出る。props は 2 つ減る（`status`、`meta`）が、コンポーネントの数は増える。
+- **`Slideshow` も同じ形に分かれる。** ページ本体は黒い面と境界だけになり、メタデータを読む `SlideStage` がその内側に入る。境界を置かないと meta の失敗が白画面になり、移行前に黒い面へ出していた文言が消える。
+- **境界の挙動は `src/__tests__/boundaries.browser.test.tsx` が押さえている。** ここに並ぶ 4 件はすべて、この ADR の初版の実装が実際に持っていた退行である。**どれも他のテストは気づかなかった** — 両ファイルが着いた後のアプリは同一に描画され、ローカルでは着くのがミリ秒だからである。`api` を止めて窓を開ける以外に見る方法がない。
 - **要件 1 つが、`startTransition` を書いたかどうかと e2e 1 ケースの上に乗る。** 「refresh 中に前のデータが残る」がそれである。当初はこれを jotai の非公開実装（`createContinuablePromise`）に帰していたが、スパイクで否定され、React の公開契約に乗る形に直した。脆さは減ったが、書き忘れを止める静的な手段は無い。
-- **この ADR の設計判断のうち 6 件は、使い捨てブランチの Chromium で実測して確定させた。** うち 2 件（`createContinuablePromise` 単独で足りる / ウォームにピン留めが要る）は**ソースの読みが間違っており、実測で覆った**。jotai の内部挙動についてソースを読んだだけの結論は、この repo では採用しない。
+- **この ADR の設計判断は二度、実測に覆されている。** 一度目は使い捨てブランチのスパイクで 2 件（`createContinuablePromise` 単独で足りる / ウォームにピン留めが要る）、二度目は実装後の検証で 3 件（slot なら suspend はシェルに届かない / `unwrap` は throw しない / ロード前のタイトル入力は到達不能）。**いずれも「ソースを読んで筋が通ったから正しい」で書いた主張だった。** ライブラリの挙動と境界の伝播については、この repo では推論の結論を採用しない。
 - **`createDbSaver` と `db.test.ts` は無傷。** 保存パイプラインは今後も React と jotai の外にある。
 - **`describeSlidesMeta` が 1 引数の純関数になる。** `describeSlidesMeta.test.ts` の null 分岐のケースは削除される。
 - **`Editor.browser.test.tsx` は store 注入でテストごとに分離できるようになる。** 「ファイル内で 1 個の db を共有する」という妥協は解消される。

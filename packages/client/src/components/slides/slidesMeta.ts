@@ -128,6 +128,13 @@ slidesMetaAtom.onMount = (refresh) =>
  *
  * `unwrap` also holds the previous ratio across a refresh, so swapping in a deck
  * of a different shape does not make the layout jump twice.
+ *
+ * **The `catch` is not defensive padding.** `unwrap` rethrows a rejection rather
+ * than swallowing it — that is the documented difference from `loadable` — and
+ * this atom is read in the workspace shell, which is above every boundary the
+ * app has. Without the catch, a failed metadata request takes the toolbar and
+ * the theme footer down with it, which is the exact failure the shell was
+ * decomposed to prevent.
  */
 export const slideAspectAtom = /*#__PURE__*/ unwrap(
   // `await`, not a bare `get`: jotai's `get` does not resolve promises, so
@@ -135,10 +142,16 @@ export const slideAspectAtom = /*#__PURE__*/ unwrap(
   // is `undefined`. Here the type checker catches the mistake; the same slip in
   // a `selectAtom` does not always (ADR-0018).
   atom(async (get) => {
-    const meta = await get(slidesMetaAtom);
-    return meta.kind === 'resolved' && meta.width && meta.height
-      ? meta.width / meta.height
-      : DEFAULT_SLIDE_ASPECT;
+    try {
+      const meta = await get(slidesMetaAtom);
+      return meta.kind === 'resolved' && meta.width && meta.height
+        ? meta.width / meta.height
+        : DEFAULT_SLIDE_ASPECT;
+    } catch {
+      // The panels that *can* report this failure do; the layout just keeps its
+      // default shape.
+      return DEFAULT_SLIDE_ASPECT;
+    }
   }),
   (previous) => previous,
 );
