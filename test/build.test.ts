@@ -47,8 +47,9 @@ describe('note-first-presenter build (bin integration)', () => {
   // What replaced it is narrower than what it claimed to be. The `static` e2e
   // project asserts that the built site issues no non-GET request and cannot be
   // typed into — the harm the marker was really standing in for. Elimination
-  // itself stays UNCOVERED, and deliberately so: §8.8 puts it outside G1〜G4,
-  // since a bundled-but-unreachable Editor costs bytes and nothing else.
+  // itself stays UNCOVERED, and deliberately so: it is not one of the guarantees
+  // this suite makes, since a bundled-but-unreachable Editor costs bytes and
+  // nothing else.
 
   it('writes static nfp-data with resolved meta and slide images', async () => {
     const meta = JSON.parse(

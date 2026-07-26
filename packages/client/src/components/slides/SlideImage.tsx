@@ -12,8 +12,8 @@ export interface SlideImageProps {
  * One rendered page of the deck.
  *
  * A bare `<img>`: there is no interaction to get right, so React Aria has nothing
- * to offer here (§5.1). The URL comes from `slideFilename.ts`, the single source
- * for it in both modes (§2.2).
+ * to offer here. The URL comes from `slideFilename.ts`, the single source
+ * for it in both modes.
  *
  * The alt text is not a prop. Every caller can say only the same thing — which
  * slide this is — and both of them had been saying it in hardcoded English, one

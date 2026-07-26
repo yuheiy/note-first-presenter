@@ -14,7 +14,7 @@ import { Workspace } from './Workspace';
  * Editor and Viewer stay two components rather than one with an `editable` prop
  * because `import.meta.env.DEV` folds to a constant: the static build drops this
  * file, and with it the save pipeline, the live-reload subscription and the title
- * write-back. A prop would keep all of that in the Viewer's bundle (§3.4).
+ * write-back. A prop would keep all of that in the Viewer's bundle.
  */
 export function Editor() {
   const db = useEditableDb();
@@ -49,7 +49,7 @@ export function Editor() {
   function handleOutlineChange(outline: unknown) {
     db.setOutline(outline);
     // Recomputed on every keystroke, but set only when it actually moves, which
-    // is what keeps the slide list's thumbnails out of the typing path (§3.6).
+    // is what keeps the slide list's thumbnails out of the typing path.
     // Spelled as a guard rather than left to React's bail-out on an equal value:
     // that bail-out is an optimisation that lapses whenever the fiber already
     // has an update pending — a title edit, a saveStatus change — and nothing
@@ -91,7 +91,7 @@ export function Editor() {
       }
       outliner={
         // Mounted only once the document is here, so the editor never has to
-        // swap its doc out from under an undo history (§4.4).
+        // swap its doc out from under an undo history.
         db.status === 'ready' && (
           <Outliner
             initialOutline={db.initialOutline}

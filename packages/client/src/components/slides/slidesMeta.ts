@@ -10,8 +10,7 @@ import { createResourceLoader, useResource, type Resource } from '../useResource
  * Every arm of this union is data, not an error: `no-config-no-file` is the
  * ordinary state of a fresh project and is drawn as a hint. Both modes answer
  * with the same 200 JSON — dev from the CLI middleware, the static build from
- * the file `build` wrote — so only a transport or server fault is an error
- * (§2.1).
+ * the file `build` wrote — so only a transport or server fault is an error.
  */
 export type SlidesMeta =
   | { kind: 'resolved'; hash: string; pageCount: number; width?: number; height?: number }
@@ -34,10 +33,10 @@ export interface SlidesMetaStatus {
  * Both pages call this. The workspace draws `hint` and `error` differently; the
  * slideshow ignores `tone` and shows the message on its black field. Keeping the
  * five arms here rather than in two components is what stops the four that agree
- * (§5.7) from drifting apart, and it keeps them reachable from a Node test.
+ * from drifting apart, and it keeps them reachable from a Node test.
  *
  * @param error The transport-level failure, if the request itself did not land.
- *   Every *shape* the server can answer with is data, not an error (§2.1).
+ *   Every *shape* the server can answer with is data, not an error.
  */
 export function describeSlidesMeta(
   meta: SlidesMeta | null,
@@ -73,7 +72,7 @@ export function describeSlidesMeta(
 
 const META_URL = dataUrl('nfp-data/meta.json');
 
-/** Exported for the same reason as `loadDb`: the entry warms it (§1.3). */
+/** Exported for the same reason as `loadDb`: the entry warms it. */
 export const loadSlidesMeta = createResourceLoader(() => api<SlidesMeta>(META_URL));
 
 /**

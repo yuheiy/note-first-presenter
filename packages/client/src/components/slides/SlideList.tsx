@@ -36,7 +36,7 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
   // it only aims for "minimally visible" rather than the top, and it only fires on
   // focus changes, so it would sit out every editor-driven change. Since this effect
   // has to exist anyway, the list is made the scroll container so that the two are
-  // never pulling on different elements (§5.2).
+  // never pulling on different elements.
   useEffect(() => {
     const target = slideElement(listRef.current, activeSlide);
     if (!target) return;

@@ -13,7 +13,7 @@ export interface ErrorOverlayProps {
  * panel only because both panels carry `container-type: size`, whose layout
  * containment makes them the containing block for absolutely positioned
  * descendants. There is no `relative` on them to say so. Drop `container-type`
- * from a panel and this overlay silently escapes to the viewport (§5.7).
+ * from a panel and this overlay silently escapes to the viewport.
  */
 export function ErrorOverlay({ message }: ErrorOverlayProps) {
   return (

@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
  *
  * A discriminated union rather than the pair of `ready` / `loadFailed` booleans
  * the Svelte version carried, so "loaded but also failed" cannot be spelled.
- * See plans/react-rewrite-spec.md §3.2.
  */
 export type Resource<T> =
   | { status: 'loading'; data: null; error: null }
@@ -24,13 +23,13 @@ export type ResourceStatus = Resource<unknown>['status'];
  * same generation is only ever requested once.
  *
  * The generation is what makes both of the app's needs one mechanism: the entry
- * can warm generation 0 while the page chunk is still downloading (§1.3), and
+ * can warm generation 0 while the page chunk is still downloading, and
  * `<StrictMode>`'s doubled effect then finds that same promise instead of firing
  * a second request. Bumping the generation is how live-reload asks for fresh
- * data (§3.3).
+ * data.
  *
- * Only the newest generation is kept, which fits the one-owner-per-document rule
- * of §3.3. Two consumers on different generations would cost one extra request
+ * Only the newest generation is kept, which fits the one-owner-per-document
+ * rule. Two consumers on different generations would cost one extra request
  * each time they crossed, never a loop.
  */
 export type ResourceLoader<T> = (generation?: number) => Promise<Resource<T>>;

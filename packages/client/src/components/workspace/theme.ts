@@ -37,7 +37,7 @@ function applyThemeMode(mode: ThemeMode): void {
  *
  * Nothing outside React writes the key — there is no `storage` listener and no
  * cross-tab sync — so plain `useState` seeded from localStorage is the whole
- * story, no external store needed (§3.5).
+ * story, no external store needed.
  */
 export function useTheme(): [ThemeMode, (mode: ThemeMode) => void] {
   const [mode, setMode] = useState(readThemeMode);

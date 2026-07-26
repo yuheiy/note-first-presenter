@@ -11,7 +11,7 @@ import {
 
 // One URL for both modes: in dev the CLI middleware answers it, in the static
 // build it is a real file. GET and PUT differ only in method — read it as "the db
-// document, whose static representation is a file". See §2.2.
+// document, whose static representation is a file".
 const DB_URL = dataUrl('nfp-data/db.json');
 
 export const SAVE_DEBOUNCE_MS = 500;
@@ -35,9 +35,9 @@ export interface DbSaver {
  * The save pipeline: debounce, coalesce, retry — with no React in it.
  *
  * It holds no document of its own. Callers hand it the whole db each time, which
- * is what lets the Editor keep the outline in a ref rather than in state (§3.6).
+ * is what lets the Editor keep the outline in a ref rather than in state.
  * There is no `lastError`: the only reader was a test, and the UI shows one
- * generic message off `saveStatus === 'error'` (§3.7).
+ * generic message off `saveStatus === 'error'`.
  */
 export function createDbSaver({ save, onStatusChange }: DbSaverOptions): DbSaver {
   let pending: DbV1 | null = null;
@@ -98,7 +98,7 @@ export function createDbSaver({ save, onStatusChange }: DbSaverOptions): DbSaver
 
 /**
  * The stored document. Exported so `main.tsx` can fire the request before the
- * page chunk has finished downloading (§1.3); the hooks below then find it in
+ * page chunk has finished downloading; the hooks below then find it in
  * the cache rather than asking again.
  *
  * The response is trusted as-is: the CLI is the only other writer of the file
@@ -128,7 +128,7 @@ export interface EditableDb {
  * Wiring only — the debounce, the retry and the coalescing all live in
  * `createDbSaver`. Static builds drop this entire path, because the Editor that
  * calls it is behind `import.meta.env.DEV` in a component the Viewer never
- * renders (§3.4).
+ * renders.
  */
 export function useEditableDb(): EditableDb {
   const resource = useResource(loadDb);
@@ -142,7 +142,7 @@ export function useEditableDb(): EditableDb {
   }));
 
   // The document as it would be saved. A ref, not state: the outline changes on
-  // every keystroke and nothing renders it — ProseMirror owns it (§3.6). It stays
+  // every keystroke and nothing renders it — ProseMirror owns it. It stays
   // null until the load lands, which is also the signal that an edit has
   // something to merge into.
   const savedRef = useRef<DbV1 | null>(null);

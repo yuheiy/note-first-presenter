@@ -24,7 +24,7 @@ const Page = currentRoutePath() === SLIDESHOW_PATH ? SlideshowPage : WorkspacePa
 // Both pages read both documents, so ask for them here rather than from the
 // page's own effect: the requests then overlap the chunk download instead of
 // queueing behind it. The loaders cache, so the effect that consumes them —
-// which StrictMode runs twice — reuses these requests. See §1.3.
+// which StrictMode runs twice — reuses these requests.
 void loadDb();
 void loadSlidesMeta();
 

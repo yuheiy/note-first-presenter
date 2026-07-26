@@ -25,7 +25,7 @@ export default defineConfig({
         test: {
           // Keyed by the `.browser.` suffix rather than by extension: needing a
           // real browser does not imply JSX (plugins/paste.ts needs DOMParser
-          // and no React at all). See plans/react-rewrite-spec.md §8.2.
+          // and no React at all). See docs/adr/0005 (2026-07-26 addendum, (a)).
           name: 'browser',
           browser: {
             enabled: true,

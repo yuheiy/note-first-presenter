@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 // The static tree is where the router and the unified /nfp-data/* URLs are most
 // likely to break, because nothing serves them dynamically — whatever the build
-// emitted is all there is. See plans/react-rewrite-spec.md §8.7.
+// emitted is all there is. See docs/adr/0005 (2026-07-26 addendum, (c)).
 
 test('serves the workspace off the emitted index.html', async ({ page }) => {
   await page.goto('/');
@@ -32,7 +32,7 @@ test('emits the slide data next to the shell', async ({ page }) => {
 // G4's static half: a shared build must not write, and must not look writable.
 //
 // It replaces the integration suite's old "no /api/ string in the bundle"
-// marker, which went hollow when §2.2 gave both modes the same URLs — GET and
+// marker, which went hollow once both modes were given the same URLs — GET and
 // PUT now share `/nfp-data/db.json`, so no string can tell a read from a write.
 //
 // Be precise about what this does and does not establish. It checks the
@@ -40,9 +40,10 @@ test('emits the slide data next to the shell', async ({ page }) => {
 // minification or refactoring can fake. It does *not* check that the Editor was
 // dead-code-eliminated: `import.meta.env.DEV` is false at runtime in a built
 // site too, so pages/Workspace.tsx would render the Viewer, and this test would
-// pass, even with the whole Editor still sitting in the bundle. §8.8 accepts
-// that gap on purpose — "DCE 自体は G1〜G4 に含まれない", its only cost being
-// bundle weight. Confirming elimination means reading the emitted chunks.
+// pass, even with the whole Editor still sitting in the bundle. That gap is
+// accepted on purpose: dead-code elimination is not one of the guarantees this
+// suite makes, its only cost being bundle weight. Confirming elimination means
+// reading the emitted chunks.
 test('never writes: the built site issues no non-GET request', async ({ page }) => {
   const writes: string[] = [];
   page.on('request', (request) => {
@@ -65,7 +66,7 @@ test('never writes: the built site issues no non-GET request', async ({ page }) 
 
   // And nothing was typed either: ProseMirror never reaches its keydown handlers
   // while `editable` is false, which is the Viewer's read-only guarantee seen
-  // from the outside (§4.6). Asserted second so the write check above is what
+  // from the outside. Asserted second so the write check above is what
   // names the failure when an Editor is what shipped.
   await expect(outliner).not.toContainText('should not be typed');
 });

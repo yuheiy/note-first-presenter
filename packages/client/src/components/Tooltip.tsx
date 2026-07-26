@@ -11,7 +11,7 @@ export interface TooltipProps {
  * The app's one styled tooltip, to be placed inside RAC's `TooltipTrigger`
  * alongside the trigger element (which is imported from RAC directly — this is
  * the only piece worth wrapping, because the arrow, the placement and the styles
- * are a lump that both trigger sites share; §5.3).
+ * are a lump that both trigger sites share).
  *
  * `placement="bottom"` is spelled out because RAC defaults to `top` and both
  * triggers sit in the toolbar at the very top of the viewport, where a top-placed

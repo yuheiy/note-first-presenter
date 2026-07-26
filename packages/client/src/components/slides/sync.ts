@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent, useRef } from 'react';
  *
  * One-way by design: the slideshow window follows, and never talks back. Keeping
  * publish and subscribe in separate hooks is what makes that asymmetry visible
- * instead of hiding it behind a "sync" object that looks bidirectional (§3.3).
+ * instead of hiding it behind a "sync" object that looks bidirectional.
  */
 export type SyncMessage =
   | { type: 'active-slide'; slide: number }

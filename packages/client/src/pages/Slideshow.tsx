@@ -1,10 +1,10 @@
 /**
- * Slideshow page (`/#/slideshow/<slide>`) — the full-bleed slide view opened in
- * a second window and driven over BroadcastChannel.
+ * Slideshow page (`/slideshow`, or `#/slideshow` in hash mode) — the full-bleed
+ * slide view opened in a second window and driven over BroadcastChannel.
  *
  * Its own document, always: the workspace opens it with `target="nfp-slideshow"`
  * and there is no way back, which is why the two pages share no state and no
- * cache (plans/react-rewrite-spec.md §1.2).
+ * cache.
  */
 import { useEffect, useEffectEvent, useState } from 'react';
 import { useActiveSlide } from '../lib/routes';
@@ -18,16 +18,15 @@ import { m } from '../lib/paraglide/messages.js';
 export default function Slideshow() {
   const meta = useSlidesMeta();
   // Only for the window's title, and read-only in the literal sense: the
-  // slideshow has nothing to save, in either mode. §3.3's ownership diagram
-  // gives this page only meta/activeSlide/subscribe, so this fetch is a
+  // slideshow has nothing to save, in either mode. The ownership split gives
+  // this page only meta/activeSlide/subscribe, so this fetch is a
   // deliberate addition to it — dropping it would leave the slideshow window
-  // nameless, and main.tsx already warms the request for both pages (§1.3).
+  // nameless, and main.tsx already warms the request for both pages.
   const db = useReadOnlyDb();
   const [activeSlide, setActiveSlide] = useActiveSlide();
   const [syncedSlideCount, setSyncedSlideCount] = useState(0);
 
-  // Receive-only. The workspace never listens, so nothing done here travels back
-  // (§3.3).
+  // Receive-only. The workspace never listens, so nothing done here travels back.
   useSyncSubscriber((message) => {
     switch (message.type) {
       case 'active-slide':
@@ -104,7 +103,7 @@ export default function Slideshow() {
   const overflowing = activeSlide >= overflow.overflowStart;
   // Overflow is decided here rather than in `describeSlidesMeta`: it depends on
   // which slide is showing, which is this page's business, and it applies even
-  // though the deck resolved (§5.7). Everything else is the sentence the
+  // though the deck resolved. Everything else is the sentence the
   // workspace's slide panel would have shown, minus the tone — a black field has
   // nothing to say a hint apart from an error with.
   const fallbackMessage =
@@ -125,7 +124,7 @@ export default function Slideshow() {
         <SlideImage hash={resolved.hash} slide={activeSlide} />
       ) : (
         fallbackMessage !== null && (
-          // The former SlideshowFallback, inlined: one caller (§5.7).
+          // The former SlideshowFallback, inlined: one caller.
           <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
             {fallbackMessage}
           </div>

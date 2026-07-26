@@ -43,7 +43,7 @@ describe('stepSlide', () => {
     // The slideshow can be driven before its metadata lands and before the
     // workspace has published a count. Clamping to the upper bound alone would
     // hand back slide 0, which nothing can render and which would be mirrored
-    // into the URL as `#/slideshow/0`.
+    // into the URL as `?slide=0`.
     const empty = computeSlideOverflow(0, 0);
     expect(stepSlide(empty, 1, 1)).toBe(1);
     expect(stepSlide(empty, 1, -1)).toBe(1);

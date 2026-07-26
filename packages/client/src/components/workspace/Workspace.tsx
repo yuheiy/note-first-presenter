@@ -23,7 +23,7 @@ export interface WorkspaceProps {
    * Note groups in the outline. Half of the deck's length — the other half is
    * the PDF's page count — and deliberately not the outline itself: this number
    * only moves when a `---` is added or removed, so the slide list is spared a
-   * re-render per keystroke (plans/react-rewrite-spec.md §3.6).
+   * re-render per keystroke.
    */
   groupCount: number;
   /** Where the stored document has got to. The outliner and the list wait on it. */
@@ -34,10 +34,10 @@ export interface WorkspaceProps {
   /**
    * The toolbar's leading area: an editable field in the Editor, a heading in
    * the Viewer. A `ReactNode` rather than a render prop — the shell has nothing
-   * to hand back (§3.3).
+   * to hand back.
    */
   titleArea: ReactNode;
-  /** The outline editor, or nothing while the document is still loading (§4.4). */
+  /** The outline editor, or nothing while the document is still loading. */
   outliner: ReactNode;
 }
 
@@ -62,7 +62,7 @@ const TOOLBAR_BUTTON =
  * Everything it owns is something that stops here — the colour scheme, whether
  * the list is showing, and the broadcast the slideshow window follows. Anything
  * two pages need is owned by the page above and arrives as a prop, so there is
- * no context anywhere in the tree (§3.3).
+ * no context anywhere in the tree.
  *
  * It broadcasts rather than owns `activeSlide`: publishing needs the effective
  * slide count, and this is the one component holding both halves of it.
@@ -180,7 +180,7 @@ export function Workspace({
       </div>
 
       {listOpen && (
-        // Scrolling and padding belong to the ListBox inside (§5.2); what stays
+        // Scrolling and padding belong to the ListBox inside; what stays
         // here is the panel's chrome and its `container-type: size`, which
         // --scroll-tail queries and ErrorOverlay's `absolute inset-0` positions
         // against.

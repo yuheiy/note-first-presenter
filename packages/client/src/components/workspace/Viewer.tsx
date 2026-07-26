@@ -11,7 +11,7 @@ import { Workspace } from './Workspace';
  * The read-only workspace, which is what a shared static build serves.
  *
  * The Editor's counterpart, and the reason the two are separate files: nothing
- * here can write, and nothing that writes is reachable from here (§3.4).
+ * here can write, and nothing that writes is reachable from here.
  */
 export function Viewer() {
   const db = useReadOnlyDb();
@@ -40,7 +40,7 @@ export function Viewer() {
           // `editable` is required rather than defaulted, so read-only is
           // something this component states rather than something it omits.
           // With it false, ProseMirror never reaches its keydown handlers, so
-          // none of the editing keymaps can fire (§4.6).
+          // none of the editing keymaps can fire.
           <Outliner
             initialOutline={loaded.outline}
             activeSlide={activeSlide}

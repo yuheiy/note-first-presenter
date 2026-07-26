@@ -11,7 +11,7 @@ import { Editor } from '../Editor';
  * whatever the editor is showing has to reach the PUT body, exactly once, no
  * matter how many times React mounts or re-renders the tree. This failure is
  * silent by nature (the edit stays on screen; only the write is lost), which is
- * what earns it a browser test while theming and the URL mirror get none (§8.1).
+ * what earns it a browser test while theming and the URL mirror get none.
  *
  * Everything renders under `<StrictMode>`, as the app does: the doubled mount is
  * half of what is under test here.
@@ -67,7 +67,7 @@ async function renderEditor() {
     </StrictMode>,
   );
   const outliner = screen.getByRole('textbox', { name: 'Outliner' });
-  // The editor is mounted only once the document has landed (§4.4).
+  // The editor is mounted only once the document has landed.
   await expect.element(outliner).toBeInTheDocument();
   await userEvent.click(outliner);
   return outliner;
@@ -86,7 +86,7 @@ describe('Editor', () => {
     await expect.poll(() => server.puts.length, { timeout: 5000 }).toBe(1);
     // Exactly one, not merely at least one: StrictMode mounts the tree twice, so
     // a save pipeline built without a guard would be built twice over and write
-    // every edit twice (§3.7).
+    // every edit twice.
     expect(savedTexts(server.puts[0]?.outline)).toEqual(['hello world']);
   });
 
@@ -96,9 +96,9 @@ describe('Editor', () => {
     // A separator adds a note group, and that number is state the Workspace
     // renders — so this edit goes out through the shell and back, which the
     // straight-line case above never touches. What is being watched is that the
-    // saved outline is still the whole outline afterwards (§3.6).
+    // saved outline is still the whole outline afterwards.
     //
-    // Note this does *not* exercise §4.3's stale-closure hazard: the callback
+    // Note this does *not* exercise the stale-closure hazard: the callback
     // reaching the EditorView closes over `setOutline` and a setState, both
     // already stable, so freezing the first render's copy changes nothing that
     // is observable here. useEffectEvent is what keeps that true as the Editor

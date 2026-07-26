@@ -9,12 +9,10 @@ import { Editor } from '../Editor';
  * slide has to move the caret, and moving the caret has to move the selection.
  *
  * Both directions in one file because the echo suppression only breaks when both
- * are live: each direction on its own looks correct while the pair oscillates
- * (§8.4).
+ * are live: each direction on its own looks correct while the pair oscillates.
  *
  * The outline opens with a separator, which is what makes the third test
- * possible — group 1 is then empty, the case §4.5 says the suppression exists
- * for.
+ * possible — group 1 is then empty, the case the suppression exists for.
  */
 
 const server = vi.hoisted(() => {
@@ -133,7 +131,7 @@ describe('active slide', () => {
     // forward into the leading separator's paragraph, which reads as group 2.
     // The move carries the echo meta, so the editor does not report it back —
     // without that, picking slide 1 would be answered with "2" and the selection
-    // would be pushed off the slide that was just picked (§4.5).
+    // would be pushed off the slide that was just picked.
     await settle();
     expect(selectedSlides()).toEqual(['1']);
   });

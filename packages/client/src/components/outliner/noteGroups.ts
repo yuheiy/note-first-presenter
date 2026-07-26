@@ -110,7 +110,7 @@ export function findGroupPosition(doc: Node, slideIndex: number): number | null 
  * The number of note groups in a stored outline. The same split as
  * `deriveNoteGroups`, but over the saved JSON rather than a ProseMirror doc:
  * the Viewer counts groups without ever mounting an editor, and the Editor's
- * `onChange` hands out plain JSON (plans/react-rewrite-spec.md §4.7).
+ * `onChange` hands out plain JSON.
  */
 export function countNoteGroups(outline: unknown): number {
   const items = docToItems(outline);

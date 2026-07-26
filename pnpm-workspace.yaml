@@ -10,6 +10,11 @@ catalog:
   '@types/node': ^22.20.1
   typescript: ^7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@0.2.5
+  # Pinned exactly at the version vite-plus bundles, so that `vp test` and a bare
+  # `vitest` cannot resolve two copies of @vitest/runner (which killed the unit
+  # tests and hung the browser ones silently). Never bump this independently of
+  # vite-plus — let `vp migrate` move them in lockstep. Same for
+  # @vitest/browser-playwright below.
   vitest: 4.1.10
   vite-plus: 0.2.5
   react: ^19.2.8

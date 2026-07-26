@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vite-plus/test';
 import { m } from '../../../lib/paraglide/messages.js';
 import { describeSlidesMeta } from '../slidesMeta';
 
-// The catalog's wording is not this function's job (§8.1 N3 leaves the copy
-// untested), so the expectations name the message rather than quote it: what the
+// The catalog's wording is not this function's job (the copy is left untested),
+// so the expectations name the message rather than quote it: what the
 // branching decides is which message, and with what. Comparing against the same
 // function the implementation calls looks circular but is not — swap two arms and
 // these fail, reword a message and they do not.

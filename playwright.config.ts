@@ -46,11 +46,14 @@ export default defineConfig({
   ],
   // Split so a failure names its cause: `dev` exercises the CLI middleware
   // answering /nfp-data/* dynamically, `static` exercises the emitted file tree.
-  // See plans/react-rewrite-spec.md §8.7.
+  // See docs/adr/0005 (2026-07-26 addendum, (c)).
   projects: [
     {
       name: 'dev',
       testDir: './e2e',
+      // Must name every directory the other projects own: `dev` takes all of
+      // ./e2e, so a directory left out here has its specs run a second time,
+      // against the dev server they were not written for.
       testIgnore: ['**/static/**', '**/subpath/**'],
       use: { baseURL: 'http://localhost:5173' },
     },

@@ -8,7 +8,7 @@ export interface HintProps {
  * Announced politely because it is never the result of an action the reader just
  * took — it appears as a panel finishes loading. `role="status"` is deliberately
  * not a React Aria component: RAC has no equivalent, and a live region is markup,
- * not an interaction (§5.1).
+ * not an interaction.
  */
 export function Hint({ message }: HintProps) {
   return (
