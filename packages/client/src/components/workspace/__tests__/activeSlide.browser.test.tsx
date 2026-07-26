@@ -1,5 +1,4 @@
 import { StrictMode } from 'react';
-import { I18nProvider } from 'react-aria-components';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { userEvent } from 'vite-plus/test/browser/context';
 import { render } from 'vitest-browser-react';
@@ -76,11 +75,10 @@ function settle() {
 }
 
 async function renderEditor() {
+  // Locale pinned globally in vitest-setup.browser.ts; see the note there.
   const screen = await render(
     <StrictMode>
-      <I18nProvider locale="en-US">
-        <Editor />
-      </I18nProvider>
+      <Editor />
     </StrictMode>,
   );
   await expect.element(screen.getByRole('textbox', { name: 'Outliner' })).toBeInTheDocument();
@@ -99,9 +97,9 @@ describe('active slide', () => {
     // Three groups from two separators, and no PDF pages to outnumber them.
     await expect.poll(() => screen.getByRole('option').elements().length).toBe(3);
     // Every row is a placeholder, this deck having no pages. Spelled in English
-    // because `renderEditor` pins the locale — a real Chromium follows the
-    // system's, so without that pin this line would read differently per machine
-    // (§8.6).
+    // because vitest-setup.browser.ts pins the locale — a real Chromium follows
+    // the system's, so without that pin this line would read differently per
+    // machine.
     await expect.element(screen.getByRole('option').nth(0)).toHaveTextContent('Slide 1 (overflow)');
   });
 

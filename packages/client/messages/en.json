@@ -1,0 +1,20 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "title_field_label": "Title",
+  "untitled_title_placeholder": "Untitled",
+  "theme_group_label": "Theme",
+  "theme_option_system": "System",
+  "theme_option_light": "Light",
+  "theme_option_dark": "Dark",
+  "save_failed_status": "Failed to save",
+  "outline_load_failed_status": "Failed to load. Please reload the page.",
+  "open_slideshow_button_label": "Play slideshow",
+  "toggle_slide_list_button_label": "Toggle slide list",
+  "slide_list_label": "Slides",
+  "configured_pdf_missing_error": "Configured PDF not found: {path}",
+  "multiple_pdfs_ambiguous_error": "Multiple PDFs found: {files}. Specify one in note-first-presenter.config.ts.",
+  "no_pdf_yet_hint": "Add a PDF to the project root or set slides in note-first-presenter.config.ts.",
+  "slide_image_alt": "Slide {n}",
+  "slide_beyond_pdf_pages_label": "Slide {n} (overflow)",
+  "browser_tab_title": "Presenter: {title}"
+}

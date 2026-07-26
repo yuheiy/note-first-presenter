@@ -3,6 +3,12 @@ import { defineConfig } from '@playwright/test';
 const FIXTURE = './e2e/fixtures/basic';
 
 export default defineConfig({
+  // Every spec below names UI in English ("Slides", "Slide 1", "Title"), and the
+  // app picks its language off `navigator.languages` — so without pinning this,
+  // the specs depend on whatever language the machine is set to. This is also the
+  // one layer that exercises Paraglide's real locale resolution rather than
+  // stubbing it the way the browser tests do (docs/adr/0016).
+  use: { locale: 'en-US' },
   // Tests share one server-side DB instance, so concurrent workers cause
   // cross-worker DB state races (e.g. beforeEach waitForResponse never fires
   // because another worker's title-save reached the server between our resetDb

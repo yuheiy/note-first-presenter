@@ -3,6 +3,7 @@ import { SidebarSimpleIcon } from '@phosphor-icons/react/dist/csr/SidebarSimple'
 import clsx from 'clsx';
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Button, Link, Radio, RadioGroup, TooltipTrigger } from 'react-aria-components';
+import { m } from '../../lib/paraglide/messages.js';
 import { ErrorOverlay } from '../ErrorOverlay';
 import { Hint } from '../Hint';
 import { computeSlideOverflow } from '../slides/overflow';
@@ -10,7 +11,6 @@ import { SlideList } from '../slides/SlideList';
 import { describeSlidesMeta, type SlidesMeta } from '../slides/slidesMeta';
 import { useSyncPublisher } from '../slides/sync';
 import { Tooltip } from '../Tooltip';
-import { useMessages } from '../useMessages';
 import type { Resource, ResourceStatus } from '../useResource';
 import { useListOpen } from './listOpen';
 import { useTheme, type ThemeMode } from './theme';
@@ -40,13 +40,16 @@ export interface WorkspaceProps {
   outliner: ReactNode;
 }
 
+// The label is the message function itself rather than a key to look up: a
+// dynamic `m[someKey]()` would defeat the tree-shaking that is the point of
+// compiling messages.
 const THEME_OPTIONS: {
   mode: ThemeMode;
-  label: 'themeSystem' | 'themeLight' | 'themeDark';
+  label: () => string;
 }[] = [
-  { mode: 'system', label: 'themeSystem' },
-  { mode: 'light', label: 'themeLight' },
-  { mode: 'dark', label: 'themeDark' },
+  { mode: 'system', label: m.theme_option_system },
+  { mode: 'light', label: m.theme_option_light },
+  { mode: 'dark', label: m.theme_option_dark },
 ];
 
 const TOOLBAR_BUTTON =
@@ -73,7 +76,6 @@ export function Workspace({
   titleArea,
   outliner,
 }: WorkspaceProps) {
-  const format = useMessages();
   const [theme, setTheme] = useTheme();
   const [listOpen, setListOpen] = useListOpen();
 
@@ -86,7 +88,7 @@ export function Workspace({
 
   useSyncPublisher(activeSlide, overflow.slideCount);
 
-  const pageTitle = format('pageTitle', { title });
+  const pageTitle = m.browser_tab_title({ title });
   useEffect(() => {
     document.title = pageTitle;
   }, [pageTitle]);
@@ -109,7 +111,7 @@ export function Workspace({
     }
     // Every other shape the server can answer with is a sentence to show rather
     // than a deck to draw. The slideshow page shows the same sentences.
-    const state = describeSlidesMeta(meta.data, meta.error, format);
+    const state = describeSlidesMeta(meta.data, meta.error);
     if (!state) return null;
     return state.tone === 'hint' ? (
       <Hint message={state.message} />
@@ -146,12 +148,12 @@ export function Workspace({
           <Link
             href={`#/slideshow/${activeSlide}`}
             target="nfp-slideshow"
-            aria-label={format('openSlideshow')}
+            aria-label={m.open_slideshow_button_label()}
             className={TOOLBAR_BUTTON}
           >
             <PlayIcon size="1.25em" weight="duotone" />
           </Link>
-          <Tooltip>{format('openSlideshow')}</Tooltip>
+          <Tooltip>{m.open_slideshow_button_label()}</Tooltip>
         </TooltipTrigger>
         <TooltipTrigger>
           {/* aria-expanded, not aria-pressed: this shows and hides an adjacent
@@ -159,7 +161,7 @@ export function Workspace({
               claim it is a setting like "bold". */}
           <Button
             aria-expanded={listOpen}
-            aria-label={format('toggleSlideList')}
+            aria-label={m.toggle_slide_list_button_label()}
             onPress={() => {
               setListOpen(!listOpen);
             }}
@@ -167,12 +169,12 @@ export function Workspace({
           >
             <SidebarSimpleIcon size="1.25em" weight={listOpen ? 'duotone' : 'regular'} mirrored />
           </Button>
-          <Tooltip>{format('toggleSlideList')}</Tooltip>
+          <Tooltip>{m.toggle_slide_list_button_label()}</Tooltip>
         </TooltipTrigger>
       </div>
 
       <div className="[container-type:size] relative scroll-pt-4 overflow-auto overscroll-none">
-        {status === 'error' ? <ErrorOverlay message={format('loadError')} /> : outliner}
+        {status === 'error' ? <ErrorOverlay message={m.outline_load_failed_status()} /> : outliner}
       </div>
 
       {listOpen && (
@@ -187,7 +189,7 @@ export function Workspace({
 
       <div className="col-span-full flex border-t border-gray-200 bg-gray-50 px-4 py-1">
         <RadioGroup
-          aria-label={format('themeLabel')}
+          aria-label={m.theme_group_label()}
           // RAC defaults to vertical, which would have the group announce an
           // axis its own row layout contradicts.
           orientation="horizontal"
@@ -216,7 +218,7 @@ export function Workspace({
                       isFocusVisible && '[outline:auto] [outline:auto_-webkit-focus-ring-color]',
                     )}
                   />
-                  {format(label)}
+                  {label()}
                 </>
               )}
             </Radio>

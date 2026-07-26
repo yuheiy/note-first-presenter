@@ -1,5 +1,4 @@
 import { StrictMode } from 'react';
-import { I18nProvider } from 'react-aria-components';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { userEvent } from 'vite-plus/test/browser/context';
 import { render } from 'vitest-browser-react';
@@ -59,14 +58,12 @@ function savedTexts(outline: unknown): string[] {
 }
 
 async function renderEditor() {
+  // The locale is pinned for the whole browser project in vitest-setup.browser.ts
+  // — it is Paraglide's now, not a provider's, so it cannot be wrapped around a
+  // subtree. That is what lets the expectations below stay English literals.
   const screen = await render(
     <StrictMode>
-      {/* The app reads `navigator.language`; a real Chromium has no fixed one,
-          so the locale is pinned here and the expectations below are written in
-          English literals rather than read back out of the catalog (§8.6). */}
-      <I18nProvider locale="en-US">
-        <Editor />
-      </I18nProvider>
+      <Editor />
     </StrictMode>,
   );
   const outliner = screen.getByRole('textbox', { name: 'Outliner' });

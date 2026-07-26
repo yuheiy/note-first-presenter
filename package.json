@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp run demo#dev",
+    "dev": "vp run messages && vp run --filter client --filter demo --parallel dev",
     "test": "vp run test:unit && vp run test:integration && vp run test:e2e",
-    "test:unit": "vp run --filter './packages/*' test",
-    "test:integration": "vp test",
-    "test:e2e": "playwright install && playwright test",
+    "test:unit": "vp run messages && vp run --filter './packages/*' test",
+    "test:integration": "vp run messages && vp test",
+    "test:e2e": "vp run messages && playwright install && playwright test",
+    "messages": "vp run client#compile-messages",
     "prepare": "vp config"
   },
   "devDependencies": {

@@ -1,7 +1,9 @@
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import { I18nProvider } from 'react-aria-components';
 import { loadSlidesMeta } from './components/slides/slidesMeta';
 import { loadDb } from './components/workspace/db';
+import { getLocale } from './lib/paraglide/runtime.js';
 import './style.css';
 
 // The two pages are never navigated between inside one document: the slideshow
@@ -30,13 +32,27 @@ const Page = window.location.hash.startsWith('#/slideshow/') ? SlideshowPage : W
 void loadDb();
 void loadSlidesMeta();
 
+// Everything the app does with its locale, in one place above both pages. Read
+// once per document and never re-read, so a browser language change takes effect
+// on the next load rather than immediately (ADR-0016) — which is also why
+// `<html lang>` is a plain assignment here rather than an effect. Both pages are
+// served from the same index.html, so doing this once reaches both.
+const locale = getLocale();
+document.documentElement.lang = locale;
+
 const container = document.getElementById('root');
 if (!container) throw new Error('index.html is missing the #root mount point');
 
 createRoot(container).render(
   <StrictMode>
-    <Suspense fallback={null}>
-      <Page />
-    </Suspense>
+    {/* Hands RAC the locale Paraglide resolved, rather than letting it read
+        `navigator.language` on its own. Nothing RAC renders today is localized by
+        RAC, so this changes nothing on screen; it is here so that the day a Select
+        or a Table arrives, its strings cannot disagree with ours. */}
+    <I18nProvider locale={locale}>
+      <Suspense fallback={null}>
+        <Page />
+      </Suspense>
+    </I18nProvider>
   </StrictMode>,
 );
