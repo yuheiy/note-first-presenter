@@ -2,9 +2,9 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { loadNfpConfig } from '../config.ts';
-import { useTempCwd } from './helpers.ts';
+import { withTempCwd } from './helpers.ts';
 
-useTempCwd('nfp-config-');
+withTempCwd('nfp-config-');
 
 describe('loadNfpConfig', () => {
   it('returns null when no config file exists', async () => {

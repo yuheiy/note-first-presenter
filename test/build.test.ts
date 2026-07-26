@@ -27,16 +27,22 @@ afterAll(async () => {
 });
 
 describe('note-first-presenter build (bin integration)', () => {
-  it('emits spa shell with 200.html fallback', async () => {
-    await fs.access(path.join(tmp, 'dist', '200.html'));
+  // No 200.html any more: the pages route off location.hash, which never
+  // reaches the server, so index.html is the only document a static host needs.
+  it('emits the spa shell', async () => {
+    await fs.access(path.join(tmp, 'dist', 'index.html'));
   });
 
   // The former "no /api/ string in the bundle" marker for Editor dead-code
   // elimination was dropped here: both modes now read the same `/nfp-data/*`
   // URLs, and GET/PUT share `/nfp-data/db.json`, so no URL string can tell a
-  // read from a write. Editor DCE is therefore UNCOVERED until the static e2e
-  // project asserts it behaviourally (no non-GET request against the built
-  // site) — see plans/react-rewrite-spec.md §8.8, scheduled for R6.
+  // read from a write.
+  //
+  // What replaced it is narrower than what it claimed to be. The `static` e2e
+  // project asserts that the built site issues no non-GET request and cannot be
+  // typed into — the harm the marker was really standing in for. Elimination
+  // itself stays UNCOVERED, and deliberately so: §8.8 puts it outside G1〜G4,
+  // since a bundled-but-unreachable Editor costs bytes and nothing else.
 
   it('writes static nfp-data with resolved meta and slide images', async () => {
     const meta = JSON.parse(

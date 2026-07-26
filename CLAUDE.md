@@ -31,18 +31,22 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 
 ## Testing layers
 
-Four layers, keyed by filename. Client uses `test.projects` to split into `server` (Node) and `client` (browser/Chromium); nfp defines `test` directly; root defines integration via `test.include`. e2e runs under Playwright. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
+Four layers, keyed by filename. Client uses `test.projects` to split into `node` and `browser` (Chromium); nfp defines `test` directly; root defines integration via `test.include`. e2e runs under Playwright. Rationale: `docs/adr/0005-four-test-layers-keyed-by-filename.md`.
 
-| Pattern                                       | Layer                             | Vitest project  | Run with                  |
-| --------------------------------------------- | --------------------------------- | --------------- | ------------------------- |
-| `**/*.test.ts` (excluding `*.svelte.test.ts`) | server/unit (Node)                | `server`/`unit` | `vp run test:unit`        |
-| `packages/client/src/**/*.svelte.test.ts`     | client (vitest browser, Chromium) | `client`        | `vp run test:unit`        |
-| `test/*.test.ts`                              | CLI integration (source bin)      | —               | `vp run test:integration` |
-| `e2e/*.e2e.ts`                                | end-to-end (Playwright)           | —               | `vp run test:e2e`         |
+| Pattern                                              | Layer                        | Vitest project       | Run with                  |
+| ---------------------------------------------------- | ---------------------------- | -------------------- | ------------------------- |
+| `**/*.test.ts` (excluding `*.browser.test.{ts,tsx}`) | node                         | `node` (client only) | `vp run test:unit`        |
+| `packages/client/src/**/*.browser.test.{ts,tsx}`     | browser (vitest, Chromium)   | `browser`            | `vp run test:unit`        |
+| `test/*.test.ts`                                     | CLI integration (source bin) | —                    | `vp run test:integration` |
+| `e2e/**/*.e2e.ts`                                    | end-to-end (Playwright)      | —                    | `vp run test:e2e`         |
+
+The suffix, not the extension, is the key: needing a real browser does not imply JSX (`plugins/paste.ts` needs `DOMParser` and no React at all).
+
+e2e splits into two Playwright projects: `dev` (against the CLI dev server on 5173) and `static` (`e2e/static/`, against the emitted `dist/` on 4173, built by the `static-build` setup project). `--project=dev` skips the ~60s build.
 
 `vp run test` runs all layers: `test:unit` → `test:integration` → `test:e2e`.
 
-Run tests through `vp test` / `vp run test`. To run one layer, scope `vp test` (e.g. `vp test --project client <path>`). Since vite-plus 0.2.x the old bare-`vitest` breakage (second `@vitest/runner`: unit tests died, browser-mode tests hung silently) is gone — the catalog now pins stock `vitest` exactly at vp's bundled version. That exact pin is what keeps it safe: don't bump the `vitest` catalog entry independently of `vite-plus`; let `vp migrate` move them in lockstep.
+Run tests through `vp test` / `vp run test`. To run one layer, scope `vp test` (e.g. `vp test --project browser <path>`). Since vite-plus 0.2.x the old bare-`vitest` breakage (second `@vitest/runner`: unit tests died, browser-mode tests hung silently) is gone — the catalog now pins stock `vitest` exactly at vp's bundled version. That exact pin is what keeps it safe: don't bump the `vitest` catalog entry independently of `vite-plus`; let `vp migrate` move them in lockstep.
 
 ## CLI packaging
 

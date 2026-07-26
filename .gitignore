@@ -32,9 +32,6 @@ dist-ssr
 # AI agent worktrees
 .claude/worktrees/
 
-# SvelteKit
-.svelte-kit
-
 # Playwright
 playwright-report
 test-results

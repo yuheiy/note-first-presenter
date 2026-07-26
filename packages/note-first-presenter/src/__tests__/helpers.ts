@@ -9,7 +9,7 @@ import { afterEach, beforeEach } from 'vite-plus/test';
  * macOS `/tmp` → `/private/tmp` symlink so chdir'd `process.cwd()`
  * matches the returned path.
  */
-export function useTempCwd(prefix: string): void {
+export function withTempCwd(prefix: string): void {
   let originalCwd = '';
   let tmp = '';
   beforeEach(async () => {

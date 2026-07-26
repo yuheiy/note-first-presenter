@@ -2,11 +2,11 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { openSlides, resolveSlides } from '../slides.ts';
-import { useTempCwd } from './helpers.ts';
+import { withTempCwd } from './helpers.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
 
-useTempCwd('nfp-slides-');
+withTempCwd('nfp-slides-');
 
 describe('resolveSlides', () => {
   it('returns no-config-no-file when nothing exists', async () => {

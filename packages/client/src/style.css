@@ -1,0 +1,19 @@
+/* source('.') pins content detection to src/: the published CLI roots Vite
+   inside node_modules, which default detection skips. See docs/adr/0009. */
+@import 'tailwindcss' source('.');
+/* index.html sits outside that base, and it is the only place the `scheme-*`
+   class literals appear now that the theme store is gone — without this the
+   utilities are never generated and theming silently does nothing (ADR-0009
+   requires the literals to be reachable by the content scan). Naming the one
+   file rather than globbing keeps the .gitignore-blind directory walk that
+   ADR-0009 rejected out of it. */
+@source '../index.html';
+/* The Outliner styles the DOM ProseMirror generates, so it cannot use utility
+   classes. Its stylesheet joins the entry's @import graph rather than being
+   imported from JS, which keeps Oxfmt's single-stylesheet Tailwind sorting
+   (root vite.config.ts `fmt.sortTailwindcss`) pointed at one file. */
+@import './components/outliner/outliner.css';
+
+@theme {
+  --font-sans: sans-serif;
+}

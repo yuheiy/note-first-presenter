@@ -5,12 +5,12 @@ import { Readable } from 'node:stream';
 import { defaultDb } from '@note-first-presenter/client/dbSchema';
 import { afterAll, describe, expect, it, vi } from 'vite-plus/test';
 import { openSlides, type SlidesStatus } from '../../slides.ts';
-import { useTempCwd } from '../../__tests__/helpers.ts';
+import { withTempCwd } from '../../__tests__/helpers.ts';
 import { createNfpDataMiddleware, createSlidesContext } from '../plugin.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
 
-useTempCwd('nfp-plugin-');
+withTempCwd('nfp-plugin-');
 
 // ─── createSlidesContext ───────────────────────────────────────────────────
 

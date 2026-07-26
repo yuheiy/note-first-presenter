@@ -2,9 +2,9 @@ import { promises as fs } from 'node:fs';
 import { defaultDb } from '@note-first-presenter/client/dbSchema';
 import { describe, expect, it } from 'vite-plus/test';
 import { readDb, writeDb } from '../db.ts';
-import { useTempCwd } from './helpers.ts';
+import { withTempCwd } from './helpers.ts';
 
-useTempCwd('nfp-db-');
+withTempCwd('nfp-db-');
 
 describe('readDb / writeDb', () => {
   it('returns the client default when file missing', async () => {

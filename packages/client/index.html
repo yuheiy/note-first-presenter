@@ -1,0 +1,32 @@
+<!doctype html>
+
+<!-- scheme-light-dark is the system/no-JS default; the theme hook swaps it. See docs/adr/0009. -->
+<!-- dir is static: both catalogs (en/ja) are LTR, so nothing at runtime touches it.
+     lang is the one attribute the app does set at runtime, from the catalog's htmlLang. -->
+<html lang="en" dir="ltr" class="scheme-light-dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Note-first Presenter</title>
+    <script>
+      // Apply the saved scheme before first paint (avoid theme flash). try/catch:
+      // localStorage throws in storage-blocked contexts; the default class remains.
+      try {
+        const mode = localStorage.getItem('nfp:theme');
+        const cls =
+          mode === 'light' ? 'scheme-light' : mode === 'dark' ? 'scheme-dark' : 'scheme-light-dark';
+        const de = document.documentElement;
+        de.classList.remove('scheme-light', 'scheme-dark', 'scheme-light-dark');
+        de.classList.add(cls);
+      } catch {}
+    </script>
+  </head>
+
+  <body>
+    <!-- display:contents keeps the mount point out of the layout, so the page
+         component's own box is laid out directly against <body>. -->
+    <div id="root" style="display: contents"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

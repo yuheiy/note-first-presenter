@@ -13,7 +13,7 @@ export async function dev({ clientRoot, port, host, open }: DevInput): Promise<v
   process.chdir(clientRoot);
 
   const server = await createServer({
-    ...(await createViteConfig({ clientRoot, projectCwd })),
+    ...createViteConfig({ clientRoot, projectCwd }),
     server: {
       port,
       host,

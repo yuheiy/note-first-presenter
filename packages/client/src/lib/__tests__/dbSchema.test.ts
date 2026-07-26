@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import * as v from 'valibot';
-import { dbSchema, defaultDb } from '$lib/dbSchema';
+import { dbSchema, defaultDb } from '../dbSchema';
 
 describe('defaultDb', () => {
   it('returns an empty title and a single empty list_item', () => {

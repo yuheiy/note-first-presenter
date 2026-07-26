@@ -476,6 +476,8 @@ ICU コンパイラは 30+ ロケール・外部翻訳ベンダーへの JSON/XL
 
 ### 6.5 呼び出し形: `useLocalizedStringFormatter` を直に呼ぶ
 
+> **R2 の実測により、本節の第一案は成立せず退避案を採った(§6.6 の確定結果)。** 実装は `lib/intlMessages.ts` + `components/useMessages.ts` の2ファイル。以下は経緯として残す。
+
 **薄い hook `useMessages()` は作らない。** `useLocalizedStringFormatter` は辞書オブジェクトに対してジェネリックなので `.format(key)` のキー補完は素で効く見込み。
 
 ```tsx
@@ -499,7 +501,7 @@ export function useMessages() {
 }
 ```
 
-### 6.6 `useLocalizedStringFormatter` の入手元(R2 で確定する)
+### 6.6 `useLocalizedStringFormatter` の入手元(R2 で確定済み → 3 の退避案)
 
 **この1点だけは決定チケットが解像度不足のまま残っている。** #19 は「`useLocalizedStringFormatter` は umbrella の `react-aria` にしか無い」と調べ、#22 は「`@react-aria/i18n` の `useLocalizedStringFormatter` を直に呼ぶ」と書いた。追加調査(2026-07-26)では **react-aria の公式ドキュメントに `useLocalizedStringFormatter` のページが存在しない**(`useLocale` / `useCollator` / `useDateFormatter` / `useNumberFormatter` / `useFilter` にはある)。文書化された公開 API ではないので、R2 では次の順で確定する。
 
@@ -508,6 +510,12 @@ export function useMessages() {
 3. 同一バージョンに固定できない、または §6.5 のキー型付けが効かないなら、**§6.5 の退避案(自作 `useMessages()`)に落ちる**。react-aria 系の追加依存が不要になるので、この経路は常に成立する。
 
 **2 で完全一致を要求する理由**: `@react-aria/i18n` は `I18nContext` を持つ。2コピー入ると `useLocalizedStringFormatter` が内部で読む `I18nContext` が RAC 側の `I18nProvider` と別物になり、**§8.6 のテストのロケール固定が静かに効かなくなる**(アプリは `navigator.language` を読むだけなので実行時には露見せず、テストだけが不安定になる)。#19 が umbrella の `react-aria` を退けたのと同じ理由が、サブパッケージにもそのまま当てはまる。
+
+**R2 の確定結果(2026-07-26 実測、`react-aria-components@1.19.0`)**: 1・2 がともに不成立で **3 の退避案**を採った。
+
+1. RAC の公開 export に含まれるのは `I18nProvider` / `useLocale` / `isRTL` / `useFilter` のみで、`useLocalizedStringFormatter` は無い。
+2. `@react-aria/i18n@3.13.1` は `react-aria/*` サブパスへの**再 export シム**に変わっており、自身の依存が `react-aria: ^3.48.0`。対して RAC は `react-aria: 3.50.0` を完全一致でピンしている。**シム側のどのバージョンを固定しても react-aria の解決は固定できない**ため、react-aria 3.51 が出た時点で範囲とピンが分かれ、上段が言う2コピーが静かに入る(pnpm の `overrides` で押さえる手はあるが、2 が求めているのは保証であって現時点の偶然の一致ではない)。
+3. よって `lib/intlMessages.ts` + `components/useMessages.ts`。追加依存は `@internationalized/string` と、`useLocale` のための `react-aria-components` のみ(§6.9 のとおり umbrella の `react-aria` は入れていない)。§6.5 のキー型付けは退避案側で成立している — キー補完、パラメータ有無の過不足、引数の型不一致がいずれも型エラーになることを確認済み。
 
 ### 6.7 `<html lang>` / `dir`
 
@@ -931,27 +939,27 @@ Svelte→React の切り替えは原子的にしか起こせない(SvelteKit を
 
 ### 10.5 ツーリング項目の振り分け
 
-| #   | 項目                                                                                                                 | 割り当て | 根拠                                                                           |
-| --- | -------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
-| 1   | ADR-0013 起草(0002 supersede)                                                                                        | **P2**   | P2 = db 単一化 + ADR 改訂                                                      |
-| 2   | `packages/client/tsconfig.json` を自前で書き起こす                                                                   | **R1**   | これ無しに型検査が成立しない                                                   |
-| 3   | `packages/client/.svelte-kit/` 削除                                                                                  | **R1**   | 偽陽性の除去(付録 A)                                                           |
-| 4   | `packages/client/svelte.config.js` 削除                                                                              | **R1**   | SvelteKit 撤去と不可分                                                         |
-| 5   | client `package.json`: `prepare` スクリプト削除、svelte 系 devDeps・`svelte` 削除、`files` に `index.html` 追加      | **R1**   | 依存撤去と同時(`check` と `svelte-check` は #37 で消化済み)                    |
-| 6   | client `package.json`: `files` から `messages`/`project.inlang` 削除、`@inlang/paraglide-js` 撤去                    | **R2**   | i18n の担当範囲                                                                |
-| 7   | client `package.json`: `@ark-ui/svelte`/`phosphor-svelte` 撤去、`react-aria-components`/`@phosphor-icons/react` 追加 | **R5**   | UI 部品の担当範囲                                                              |
-| 8   | ~~root `vite.config.ts`: `staged` の `'*.svelte'` エントリ削除~~                                                     | ~~R1~~   | **#37 で消化済み**(§9.1)                                                       |
-| 9   | root `vite.config.ts`: `lint.plugins` に `react` 追加 + react ルール確定                                             | **R1**   | R2 以降の全コードが対象                                                        |
-| 10  | root `vite.config.ts`: `fmt.sortTailwindcss.stylesheet` を `packages/client/src/style.css` へ                        | **R1**   | Tailwind エントリ移動と同時                                                    |
-| 11  | nfp `package.json` / `createViteConfig`: kit・adapter-static・paraglide 撤去、`@vitejs/plugin-react` 追加            | **R1**   | §1.6 の決定そのもの                                                            |
-| 12  | `pnpm-workspace.yaml` catalog の svelte 系削除・react 系追加                                                         | **R1**   | 依存撤去と同時(`svelte-check` は #37 で消化済み)                               |
-| 13  | `pnpm-workspace.yaml` の `overrides.typescript` 再検討                                                               | **R7**   | 緑には影響しない                                                               |
-| 14  | `knip.json` の client エントリ書き換え・`svelte.config.js` 前提の解消                                                | **R7**   | knip は R7 集約                                                                |
-| 15  | `.gitignore` の `.svelte-kit` 節削除                                                                                 | **R7**   | 緑に無関係                                                                     |
-| 16  | `.mcp.json` を react-aria に差し替え / `.claude/settings.json` 削除 / `packages/client/CLAUDE.md` 削除               | **R7**   | 同上                                                                           |
-| 17  | root `CLAUDE.md` のテスト層の表を更新                                                                                | **R7**   | 同上                                                                           |
-| 18  | ADR-0014 / ADR-0015 起草、ADR-0005 追記                                                                              | **R7**   | 同上                                                                           |
-| 19  | `e2e/live-update.e2e.ts` / `e2e/outliner-range.e2e.ts` の camelCase 改名                                             | **R7**   | Playwright の `testMatch: '**/*.e2e.{ts,js}'` はパターン一致なので改名に非依存 |
+| #   | 項目                                                                                                                 | 割り当て                                    | 根拠                                                                                                                          |
+| --- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ADR-0013 起草(0002 supersede)                                                                                        | **P2**                                      | P2 = db 単一化 + ADR 改訂                                                                                                     |
+| 2   | `packages/client/tsconfig.json` を自前で書き起こす                                                                   | **R1**                                      | これ無しに型検査が成立しない                                                                                                  |
+| 3   | `packages/client/.svelte-kit/` 削除                                                                                  | **R1**                                      | 偽陽性の除去(付録 A)                                                                                                          |
+| 4   | `packages/client/svelte.config.js` 削除                                                                              | **R1**                                      | SvelteKit 撤去と不可分                                                                                                        |
+| 5   | client `package.json`: `prepare` スクリプト削除、svelte 系 devDeps・`svelte` 削除、`files` に `index.html` 追加      | **R1**                                      | 依存撤去と同時(`check` と `svelte-check` は #37 で消化済み)                                                                   |
+| 6   | client `package.json`: `files` から `messages`/`project.inlang` 削除、`@inlang/paraglide-js` 撤去                    | **R2**                                      | i18n の担当範囲                                                                                                               |
+| 7   | client `package.json`: `@ark-ui/svelte`/`phosphor-svelte` 撤去、`react-aria-components`/`@phosphor-icons/react` 追加 | **R5**(`react-aria-components` のみ **R2**) | UI 部品の担当範囲。ただし §6.6 の確定結果として R2 の `useMessages()` が `useLocale` を要るので、RAC の追加だけ R2 で済ませた |
+| 8   | ~~root `vite.config.ts`: `staged` の `'*.svelte'` エントリ削除~~                                                     | ~~R1~~                                      | **#37 で消化済み**(§9.1)                                                                                                      |
+| 9   | root `vite.config.ts`: `lint.plugins` に `react` 追加 + react ルール確定                                             | **R1**                                      | R2 以降の全コードが対象                                                                                                       |
+| 10  | root `vite.config.ts`: `fmt.sortTailwindcss.stylesheet` を `packages/client/src/style.css` へ                        | **R1**                                      | Tailwind エントリ移動と同時                                                                                                   |
+| 11  | nfp `package.json` / `createViteConfig`: kit・adapter-static・paraglide 撤去、`@vitejs/plugin-react` 追加            | **R1**                                      | §1.6 の決定そのもの                                                                                                           |
+| 12  | `pnpm-workspace.yaml` catalog の svelte 系削除・react 系追加                                                         | **R1**                                      | 依存撤去と同時(`svelte-check` は #37 で消化済み)                                                                              |
+| 13  | `pnpm-workspace.yaml` の `overrides.typescript` 再検討                                                               | **R7**                                      | 緑には影響しない                                                                                                              |
+| 14  | `knip.json` の client エントリ書き換え・`svelte.config.js` 前提の解消                                                | **R7**                                      | knip は R7 集約                                                                                                               |
+| 15  | `.gitignore` の `.svelte-kit` 節削除                                                                                 | **R7**                                      | 緑に無関係                                                                                                                    |
+| 16  | `.mcp.json` を react-aria に差し替え / `.claude/settings.json` 削除 / `packages/client/CLAUDE.md` 削除               | **R7**                                      | 同上                                                                                                                          |
+| 17  | root `CLAUDE.md` のテスト層の表を更新                                                                                | **R7**                                      | 同上                                                                                                                          |
+| 18  | ADR-0014 / ADR-0015 起草、ADR-0005 追記                                                                              | **R7**                                      | 同上                                                                                                                          |
+| 19  | `e2e/live-update.e2e.ts` / `e2e/outliner-range.e2e.ts` の camelCase 改名                                             | **R7**                                      | Playwright の `testMatch: '**/*.e2e.{ts,js}'` はパターン一致なので改名に非依存                                                |
 
 **client 外に漏れるパス参照は3箇所だけ**(洗い出し済み): root `vite.config.ts`(#10)、`knip.json`(#14)、root `CLAUDE.md`(#17)。`playwright.config.ts`(`testMatch: '**/*.e2e.{ts,js}'`)と root `package.json` の scripts(`vp run --filter './packages/*' test` 等)は**改名・移動に非依存**でグロブ/フィルタのみ。
 
