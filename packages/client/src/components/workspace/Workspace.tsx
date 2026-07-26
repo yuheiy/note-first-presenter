@@ -1,34 +1,23 @@
 import { PlayIcon } from '@phosphor-icons/react/dist/csr/Play';
 import { SidebarSimpleIcon } from '@phosphor-icons/react/dist/csr/SidebarSimple';
 import clsx from 'clsx';
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useAtomValue } from 'jotai';
+import { Suspense, useEffect, type CSSProperties, type ReactNode } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Button, Link, Radio, RadioGroup, TooltipTrigger } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
 import { slideshowHref } from '../../lib/routes';
-import { ErrorOverlay } from '../ErrorOverlay';
+import { ErrorOverlay, reason } from '../ErrorOverlay';
 import { Hint } from '../Hint';
-import { computeSlideOverflow } from '../slides/overflow';
-import { SlideList } from '../slides/SlideList';
-import { describeSlidesMeta, type SlidesMeta } from '../slides/slidesMeta';
-import { useSyncPublisher } from '../slides/sync';
+import { SlideCountPublisher } from '../slides/SlideCountPublisher';
+import { SlidePanel } from '../slides/SlidePanel';
+import { slideAspectAtom } from '../slides/slidesMeta';
 import { Tooltip } from '../Tooltip';
-import type { Resource, ResourceStatus } from '../useResource';
+import { titleAtom } from './db';
 import { useListOpen } from './listOpen';
 import { useTheme, type ThemeMode } from './theme';
 
 export interface WorkspaceProps {
-  /** The presentation's title, for the browser tab. Already defaulted by the caller. */
-  title: string;
-  /**
-   * Note groups in the outline. Half of the deck's length — the other half is
-   * the PDF's page count — and deliberately not the outline itself: this number
-   * only moves when a `---` is added or removed, so the slide list is spared a
-   * re-render per keystroke.
-   */
-  groupCount: number;
-  /** Where the stored document has got to. The outliner and the list wait on it. */
-  status: ResourceStatus;
-  meta: Resource<SlidesMeta>;
   activeSlide: number;
   onActiveSlideChange: (slide: number) => void;
   /**
@@ -37,7 +26,7 @@ export interface WorkspaceProps {
    * to hand back.
    */
   titleArea: ReactNode;
-  /** The outline editor, or nothing while the document is still loading. */
+  /** The outline editor. Suspends until the document lands; the shell does not. */
   outliner: ReactNode;
 }
 
@@ -68,10 +57,6 @@ const TOOLBAR_BUTTON =
  * slide count, and this is the one component holding both halves of it.
  */
 export function Workspace({
-  title,
-  groupCount,
-  status,
-  meta,
   activeSlide,
   onActiveSlideChange,
   titleArea,
@@ -80,46 +65,10 @@ export function Workspace({
   const [theme, setTheme] = useTheme();
   const [listOpen, setListOpen] = useListOpen();
 
-  const resolved = meta.data?.kind === 'resolved' ? meta.data : null;
-  const overflow = computeSlideOverflow(resolved?.pageCount ?? 0, groupCount);
-  // The deck's real aspect ratio once the meta lands, 16:9 until then. Drives
-  // both the overflow placeholders and --scroll-tail below.
-  const slideAspect =
-    resolved?.width && resolved.height ? resolved.width / resolved.height : 16 / 9;
-
-  useSyncPublisher(activeSlide, overflow.slideCount);
-
-  const pageTitle = m.browser_tab_title({ title });
-  useEffect(() => {
-    document.title = pageTitle;
-  }, [pageTitle]);
-
-  function slidePanel(): ReactNode {
-    // Neither half of the deck's length is known yet: the note-group count comes
-    // from the document, the page count from the metadata. Waiting on both is
-    // what puts the ellipsis here rather than an empty panel — `describeSlidesMeta`
-    // says nothing while a request is still in flight, by design.
-    if (status !== 'ready' || meta.status === 'loading') return <Hint message="…" />;
-    if (resolved) {
-      return (
-        <SlideList
-          hash={resolved.hash}
-          overflow={overflow}
-          activeSlide={activeSlide}
-          onActiveSlideChange={onActiveSlideChange}
-        />
-      );
-    }
-    // Every other shape the server can answer with is a sentence to show rather
-    // than a deck to draw. The slideshow page shows the same sentences.
-    const state = describeSlidesMeta(meta.data, meta.error);
-    if (!state) return null;
-    return state.tone === 'hint' ? (
-      <Hint message={state.message} />
-    ) : (
-      <ErrorOverlay message={state.message} />
-    );
-  }
+  // --slide-aspect has to live on the root grid, because both panels'
+  // --scroll-tail queries it. `slideAspectAtom` is shaped so that a read here
+  // can neither suspend nor throw; see its docblock for why that matters.
+  const slideAspect = useAtomValue(slideAspectAtom);
 
   return (
     // --scroll-tail: trailing scroll space below the slide list and the outliner so
@@ -140,6 +89,8 @@ export function Workspace({
       // the only way to hand one to the style attribute.
       style={{ '--slide-aspect': slideAspect } as CSSProperties}
     >
+      <BrowserTabTitle />
+
       <div className="col-span-full flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-1">
         {titleArea}
         <TooltipTrigger>
@@ -175,8 +126,25 @@ export function Workspace({
         </TooltipTrigger>
       </div>
 
+      {/* Publishes nothing until both halves of the deck's length are known, so
+          it sits behind its own boundaries rather than the shell's: a failed
+          request should silence the broadcast, not blank the workspace. */}
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <SlideCountPublisher activeSlide={activeSlide} />
+        </Suspense>
+      </ErrorBoundary>
+
       <div className="[container-type:size] relative scroll-pt-4 overflow-auto overscroll-none">
-        {status === 'error' ? <ErrorOverlay message={m.outline_load_failed_status()} /> : outliner}
+        {/* Both boundaries, not just the error one. A slot is still a child, so
+            without the Suspense here the outliner's wait would travel up to the
+            entry's boundary and blank the toolbar and the footer along with it —
+            measured, not assumed. Nothing is drawn while it waits, which is what
+            the shell did before, and one generic message if it fails: which of
+            the two requests broke is not something the reader can act on. */}
+        <ErrorBoundary fallback={<ErrorOverlay message={m.outline_load_failed_status()} />}>
+          <Suspense fallback={null}>{outliner}</Suspense>
+        </ErrorBoundary>
       </div>
 
       {listOpen && (
@@ -185,7 +153,17 @@ export function Workspace({
         // --scroll-tail queries and ErrorOverlay's `absolute inset-0` positions
         // against.
         <div className="[container-type:size] border-l border-gray-200 bg-gray-50">
-          {slidePanel()}
+          {/* The transport's own words rather than a catalog entry: a failure to
+              reach the server has no message of ours to show, which is what the
+              old `describeSlidesMeta(meta, error)` did with its second argument. */}
+          <ErrorBoundary fallbackRender={({ error }) => <ErrorOverlay message={reason(error)} />}>
+            {/* The ellipsis the panel used to show while it waited on both
+                requests. Now it is the boundary's business rather than a branch
+                inside the panel. */}
+            <Suspense fallback={<Hint message="…" />}>
+              <SlidePanel activeSlide={activeSlide} onActiveSlideChange={onActiveSlideChange} />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       )}
 
@@ -229,4 +207,21 @@ export function Workspace({
       </div>
     </div>
   );
+}
+
+/**
+ * Names the browser tab. Draws nothing.
+ *
+ * Reads the title itself rather than taking it as a prop so that a keystroke in
+ * the title field re-renders this and nothing else. As a prop it re-rendered the
+ * whole shell — the slide list included — per character, which is the cost the
+ * fine-grained selectors exist to avoid.
+ */
+function BrowserTabTitle() {
+  const title = useAtomValue(titleAtom) || m.untitled_title_placeholder();
+  const pageTitle = m.browser_tab_title({ title });
+  useEffect(() => {
+    document.title = pageTitle;
+  }, [pageTitle]);
+  return null;
 }

@@ -33,6 +33,7 @@
   "dependencies": {
     "@phosphor-icons/react": "catalog:",
     "clsx": "catalog:",
+    "jotai": "catalog:",
     "ofetch": "catalog:",
     "prosemirror-commands": "catalog:",
     "prosemirror-history": "catalog:",
@@ -45,6 +46,7 @@
     "react": "catalog:",
     "react-aria-components": "catalog:",
     "react-dom": "catalog:",
+    "react-error-boundary": "catalog:",
     "tailwindcss": "catalog:",
     "valibot": "catalog:"
   },

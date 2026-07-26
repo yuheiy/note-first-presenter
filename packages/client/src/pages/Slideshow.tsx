@@ -6,23 +6,58 @@
  * and there is no way back, which is why the two pages share no state and no
  * cache.
  */
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { Suspense, useEffect, useEffectEvent, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useActiveSlide } from '../lib/routes';
 import { computeSlideOverflow, stepSlide } from '../components/slides/overflow';
 import { SlideImage } from '../components/slides/SlideImage';
-import { describeSlidesMeta, useSlidesMeta } from '../components/slides/slidesMeta';
+import { describeSlidesMeta, slidesMetaAtom } from '../components/slides/slidesMeta';
 import { useSyncSubscriber } from '../components/slides/sync';
-import { useReadOnlyDb } from '../components/workspace/db';
+import { reason } from '../components/ErrorOverlay';
+import { useStoredDocument } from '../components/workspace/db';
 import { m } from '../lib/paraglide/messages.js';
 
+/**
+ * The page, which is only the black field and the boundaries around it.
+ *
+ * The stage below reads the metadata, so it can wait and it can fail; neither
+ * may reach the field itself, or a slideshow whose deck did not resolve would be
+ * a blank document rather than a black screen with a sentence on it.
+ */
 export default function Slideshow() {
-  const meta = useSlidesMeta();
-  // Only for the window's title, and read-only in the literal sense: the
-  // slideshow has nothing to save, in either mode. The ownership split gives
-  // this page only meta/activeSlide/subscribe, so this fetch is a
-  // deliberate addition to it — dropping it would leave the slideshow window
-  // nameless, and main.tsx already warms the request for both pages.
-  const db = useReadOnlyDb();
+  return (
+    <ErrorBoundary
+      fallbackRender={({ error }) => (
+        <div className="h-svh bg-black">
+          <SlideshowMessage message={reason(error)} />
+        </div>
+      )}
+    >
+      <Suspense fallback={<div className="h-svh bg-black" />}>
+        <SlideStage />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+/**
+ * The one sentence a slideshow with nothing to show has to offer.
+ *
+ * The black field is the caller's, not this component's: the stage already draws
+ * one and takes the click that advances the deck, while the boundary's fallback
+ * needs a field of its own.
+ */
+function SlideshowMessage({ message }: { message: string }) {
+  return (
+    <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
+      {message}
+    </div>
+  );
+}
+
+function SlideStage() {
+  const meta = useAtomValue(slidesMetaAtom);
   const [activeSlide, setActiveSlide] = useActiveSlide();
   const [syncedSlideCount, setSyncedSlideCount] = useState(0);
 
@@ -38,20 +73,11 @@ export default function Slideshow() {
     }
   });
 
-  const resolved = meta.data?.kind === 'resolved' ? meta.data : null;
+  const resolved = meta.kind === 'resolved' ? meta : null;
   // The count on the wire already accounts for note groups past the PDF's last
   // page, so this window can be asked to navigate further than its own meta
   // reports.
   const overflow = computeSlideOverflow(resolved?.pageCount ?? 0, syncedSlideCount);
-
-  // The presentation's own title, verbatim — not the workspace's "Presenter: …",
-  // because this window is the presentation. Left alone until the document
-  // lands, so the tab keeps index.html's title until there is something truer to
-  // say.
-  const title = db.status === 'ready' ? db.data.title : null;
-  useEffect(() => {
-    if (title !== null) document.title = title;
-  }, [title]);
 
   function step(delta: number) {
     // No guard against setting the slide it is already on: React drops a state
@@ -109,7 +135,7 @@ export default function Slideshow() {
   const fallbackMessage =
     resolved && overflowing
       ? m.slide_beyond_pdf_pages_label({ n: activeSlide })
-      : (describeSlidesMeta(meta.data, meta.error)?.message ?? null);
+      : (describeSlidesMeta(meta)?.message ?? null);
 
   return (
     // Click anywhere to advance, the way a slide remote's single button behaves.
@@ -120,16 +146,35 @@ export default function Slideshow() {
         step(1);
       }}
     >
+      {/* Its own boundaries, not the entry's. The title is the one thing on this
+          page that needs the stored document, and the slides must neither wait
+          on it nor fail with it: db.json carries the whole outline and is the
+          heavier of the two requests. */}
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <WindowTitle />
+        </Suspense>
+      </ErrorBoundary>
       {resolved && !overflowing ? (
         <SlideImage hash={resolved.hash} slide={activeSlide} />
       ) : (
-        fallbackMessage !== null && (
-          // The former SlideshowFallback, inlined: one caller.
-          <div className="grid h-full place-items-center p-8 text-center font-sans text-[1.25rem] text-white">
-            {fallbackMessage}
-          </div>
-        )
+        fallbackMessage !== null && <SlideshowMessage message={fallbackMessage} />
       )}
     </div>
   );
+}
+
+/**
+ * Names the window after the presentation. Draws nothing.
+ *
+ * The title is used verbatim — not the workspace's "Presenter: …" — because this
+ * window *is* the presentation. It waits on the stored document rather than the
+ * working one: this page never edits, and there is no second writer to follow.
+ */
+function WindowTitle() {
+  const { title } = useStoredDocument();
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+  return null;
 }

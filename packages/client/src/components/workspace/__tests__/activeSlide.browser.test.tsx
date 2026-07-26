@@ -1,3 +1,4 @@
+import { createStore, Provider } from 'jotai';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { userEvent } from 'vite-plus/test/browser/context';
@@ -74,9 +75,13 @@ function settle() {
 
 async function renderEditor() {
   // Locale pinned globally in vitest-setup.browser.ts; see the note there.
+  // A store per render, so a document fetched by one test cannot be what the
+  // next one asserts against. The app itself renders no Provider.
   const screen = await render(
     <StrictMode>
-      <Editor />
+      <Provider store={createStore()}>
+        <Editor />
+      </Provider>
     </StrictMode>,
   );
   await expect.element(screen.getByRole('textbox', { name: 'Outliner' })).toBeInTheDocument();

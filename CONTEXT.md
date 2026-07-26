@@ -8,6 +8,10 @@ A presentation tool where the user writes notes first in an outliner, then pairs
 The hierarchical document that the user edits in the Outliner. Stored as serialized JSON in the DB and passed across component boundaries as `unknown`.
 _Avoid_: doc (at the component/data boundary; `state.doc` inside ProseMirror internals is fine)
 
+**DB**:
+The presentation's stored form — its title and its Outline together — as the one document the CLI persists. Client-owned: the client is the sole author of its contents, and the CLI only validates and saves what it is handed.
+_Avoid_: database (it is one JSON document, not a store), save file, project file
+
 **Note**:
 An individual content item extracted from the outline for use in a presentation. Represented as `NoteNode`.
 _Avoid_: item, bullet
@@ -21,6 +25,10 @@ A top-level outline item whose text is three or more consecutive hyphens (`---`,
 **Slide**:
 A single screen in a presentation. Composed of a slide image (a rendered PDF page) and its corresponding note group.
 _Avoid_: page (refers to the PDF page, not the presentation unit)
+
+**Slides Metadata**:
+What the CLI knows about the deck: which PDF resolved, along with its page count and dimensions, or else why none resolved. Server-owned, and the mirror image of the DB — the client only ever reads it, and in the Editor the CLI pushes a new one whenever the watched PDF or config settles.
+_Avoid_: slide info, deck info, PDF info
 
 **Active Slide**:
 The slide the app is currently on — the one the slide list selects, the outliner keeps the caret inside, and the slideshow window shows. It is 1-based, and it is not routing: the app has two pages, the workspace and the slideshow, and the active slide is not one of the things that picks between them. It appears in the URL as the `?slide=` search param, where the first slide is written by leaving the param out. Owned by `useActiveSlide` (`packages/client/src/lib/routes.ts`): React state is the source of truth and the URL is a mirror, written with `replaceState` and read only for the initial value.
