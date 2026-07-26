@@ -48,6 +48,17 @@ e2e splits into two Playwright projects: `dev` (against the CLI dev server on 51
 
 Run tests through `vp test` / `vp run test`. To run one layer, scope `vp test` (e.g. `vp test --project browser <path>`). Since vite-plus 0.2.x the old bare-`vitest` breakage (second `@vitest/runner`: unit tests died, browser-mode tests hung silently) is gone — the catalog now pins stock `vitest` exactly at vp's bundled version. That exact pin is what keeps it safe: don't bump the `vitest` catalog entry independently of `vite-plus`; let `vp migrate` move them in lockstep.
 
+## Messages (i18n)
+
+Client UI strings live in `packages/client/messages/{en,ja}.json` and are compiled by Paraglide into `packages/client/src/lib/paraglide/`. Rationale and the full accounting of what the move cost: `docs/adr/0016-paraglide-for-client-i18n.md`.
+
+- **`src/lib/paraglide/` is generated and gitignored — never edit it.** Rebuild with **`vp run messages`**. Every `vp run` entry point (`dev`, `test:*`) chains it already, and the client's `prepare` covers installs and the published tarball; the task is cached, so it is free when current.
+- **`vp check` is the exception** — it is a built-in, not a `vp run` task, so it cannot chain. If `src/lib/paraglide/` is missing (cleaned tree, or CI that caches `node_modules`) it reports unresolved-import errors, and `vp install` will _not_ fix it because pnpm only runs `prepare` when it actually installs. Run `vp run messages` first.
+- **`vp run dev` starts a watcher alongside the server**, so editing a catalog recompiles and reaches the browser without a restart (the dev server itself has no Paraglide plugin). `vp run client#dev` runs the watcher alone. Note that `vp run` takes only one task name — `vp run --parallel client#dev demo#dev` silently passes `demo#dev` as an argument to the first task, so the two must be selected with a repeated `--filter` instead.
+- **Adding a message means editing both catalogs.** A missing translation is not a build error — Paraglide silently falls back to English. `src/__tests__/messageCatalogs.test.ts` is what catches it.
+- **Compiler options are CLI flags on the `compile-messages` script.** Paraglide has no config file; `project.inlang/settings.json` holds only locales and plugins. Each flag's reason is tabulated in ADR-0016.
+- Call messages as `m.some_key()` — never `m[key]()`, which defeats tree-shaking. Arguments are typed `NonNullable<unknown>`, so passing a string where a number is meant type-checks.
+
 ## CLI packaging
 
 The `note-first-presenter` CLI ships `.ts` source directly — no build step (Node `>=22.18` type-strips on import). Rationale and full rules: `docs/adr/0010-source-distribution-no-build-step.md`.

@@ -25,10 +25,12 @@
     "./dbSchema": "./src/lib/dbSchema.ts"
   },
   "scripts": {
-    "test": "vp test"
+    "test": "vp test",
+    "dev": "vp run compile-messages --watch",
+    "compile-messages": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy preferredLanguage baseLocale --emit-ts-declarations --no-emit-git-ignore --no-emit-prettier-ignore --no-emit-readme",
+    "prepare": "vp run compile-messages"
   },
   "dependencies": {
-    "@internationalized/string": "catalog:",
     "@phosphor-icons/react": "catalog:",
     "clsx": "catalog:",
     "ofetch": "catalog:",
@@ -47,6 +49,7 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@inlang/paraglide-js": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

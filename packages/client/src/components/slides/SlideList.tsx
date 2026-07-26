@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
 import { ListBox, ListBoxItem, type Selection } from 'react-aria-components';
-import { useMessages } from '../useMessages';
+import { m } from '../../lib/paraglide/messages.js';
 import { stepSlide, type SlideOverflow } from './overflow';
 import { SlideImage } from './SlideImage';
 
@@ -20,7 +20,6 @@ function slideElement(list: HTMLElement | null, slide: number) {
 }
 
 export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: SlideListProps) {
-  const format = useMessages();
   const listRef = useRef<HTMLDivElement>(null);
   const hasScrolled = useRef(false);
 
@@ -82,12 +81,12 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
         ref={listRef}
         // RAC's ListBox has no Label subcomponent, so the list is named here
         // rather than by a visually hidden element.
-        aria-label={format('slideListLabel')}
+        aria-label={m.slide_list_label()}
         items={items}
         // The item renderer closes over these, and RAC caches rendered items by
         // item identity — without this, a new deck of the same length would keep
         // the old thumbnails.
-        dependencies={[hash, overflow.overflowStart, format]}
+        dependencies={[hash, overflow.overflowStart]}
         selectionMode="single"
         // Move-selects, so arrowing through the list drives the editor as it goes.
         selectionBehavior="replace"
@@ -128,7 +127,7 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
                   </div>
                 ) : (
                   <div className="grid aspect-[var(--slide-aspect)] min-w-0 flex-1 place-items-center border border-dashed border-gray-200 text-sm text-gray-500">
-                    {format('overflowLabel', { n: slide })}
+                    {m.slide_beyond_pdf_pages_label({ n: slide })}
                   </div>
                 )}
                 <span

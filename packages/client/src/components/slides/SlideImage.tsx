@@ -1,5 +1,5 @@
 import { slideImageUrl } from '../../lib/slideFilename';
-import { useMessages } from '../useMessages';
+import { m } from '../../lib/paraglide/messages.js';
 
 export interface SlideImageProps {
   /** Identifies the rendered deck; part of the image URL. */
@@ -20,11 +20,10 @@ export interface SlideImageProps {
  * line away from a translated message.
  */
 export function SlideImage({ hash, slide }: SlideImageProps) {
-  const format = useMessages();
   return (
     <img
       src={slideImageUrl(hash, slide)}
-      alt={format('slideLabel', { n: slide })}
+      alt={m.slide_image_alt({ n: slide })}
       loading="lazy"
       className="h-full w-full object-contain"
     />

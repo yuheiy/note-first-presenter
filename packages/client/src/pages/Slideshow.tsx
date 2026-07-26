@@ -12,14 +12,10 @@ import { computeSlideOverflow, stepSlide } from '../components/slides/overflow';
 import { SlideImage } from '../components/slides/SlideImage';
 import { describeSlidesMeta, useSlidesMeta } from '../components/slides/slidesMeta';
 import { useSyncSubscriber } from '../components/slides/sync';
-import { useHtmlLang, useMessages } from '../components/useMessages';
 import { useReadOnlyDb } from '../components/workspace/db';
+import { m } from '../lib/paraglide/messages.js';
 
 export default function Slideshow() {
-  // Each page owns the call: the slideshow is its own document, so nothing the
-  // workspace does reaches this `<html>`.
-  useHtmlLang();
-  const format = useMessages();
   const meta = useSlidesMeta();
   // Only for the window's title, and read-only in the literal sense: the
   // slideshow has nothing to save, in either mode. §3.3's ownership diagram
@@ -113,8 +109,8 @@ export default function Slideshow() {
   // nothing to say a hint apart from an error with.
   const fallbackMessage =
     resolved && overflowing
-      ? format('overflowLabel', { n: activeSlide })
-      : (describeSlidesMeta(meta.data, meta.error, format)?.message ?? null);
+      ? m.slide_beyond_pdf_pages_label({ n: activeSlide })
+      : (describeSlidesMeta(meta.data, meta.error)?.message ?? null);
 
   return (
     // Click anywhere to advance, the way a slide remote's single button behaves.

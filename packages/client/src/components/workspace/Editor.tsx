@@ -1,10 +1,10 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { Input, TextField } from 'react-aria-components';
+import { m } from '../../lib/paraglide/messages.js';
 import { countNoteGroups } from '../outliner/noteGroups';
 import { Outliner } from '../outliner/Outliner';
 import { useActiveSlide } from '../slides/activeSlide';
 import { useSlidesMeta } from '../slides/slidesMeta';
-import { useMessages } from '../useMessages';
 import { useEditableDb } from './db';
 import { Workspace } from './Workspace';
 
@@ -17,7 +17,6 @@ import { Workspace } from './Workspace';
  * write-back. A prop would keep all of that in the Viewer's bundle (§3.4).
  */
 export function Editor() {
-  const format = useMessages();
   const db = useEditableDb();
   const meta = useSlidesMeta();
   const [activeSlide, setActiveSlide] = useActiveSlide();
@@ -37,7 +36,7 @@ export function Editor() {
   // render where the title is empty would make the field impossible to clear
   // while typing.
   function nameIfBlank() {
-    if (db.title === '') db.setTitle(format('titleDefault'));
+    if (db.title === '') db.setTitle(m.untitled_title_placeholder());
   }
 
   // The effect fires on the load transition alone, but has to read the title as
@@ -70,7 +69,7 @@ export function Editor() {
       titleArea={
         <>
           <TextField
-            aria-label={format('titleLabel')}
+            aria-label={m.title_field_label()}
             value={db.title}
             onChange={db.setTitle}
             // Layout belongs to the wrapper, looks to the input.
@@ -85,7 +84,7 @@ export function Editor() {
             // One generic message: what failed is a write to a local file, and
             // the edit itself is still on screen.
             <span role="alert" aria-live="polite" className="text-sm text-red-600">
-              {format('saveError')}
+              {m.save_failed_status()}
             </span>
           )}
         </>

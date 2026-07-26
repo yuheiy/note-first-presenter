@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/serverClient';
-import type { MessageFormatter } from '../useMessages';
+import { m } from '../../lib/paraglide/messages.js';
 import { createResourceLoader, useResource, type Resource } from '../useResource';
 
 /**
@@ -41,7 +41,6 @@ export interface SlidesMetaStatus {
 export function describeSlidesMeta(
   meta: SlidesMeta | null,
   error: string | null,
-  format: MessageFormatter,
 ): SlidesMetaStatus | null {
   if (meta === null) {
     // No metadata: either the request failed — in which case the message comes
@@ -57,16 +56,16 @@ export function describeSlidesMeta(
     case 'no-config-no-file':
       // Writing notes before there are slides is a normal way to start, so this
       // is guidance rather than a failure.
-      return { tone: 'hint', message: format('infoNoSlides') };
+      return { tone: 'hint', message: m.no_pdf_yet_hint() };
     case 'configured-but-missing':
       return {
         tone: 'error',
-        message: format('errorSlidesNotFound', { path: meta.configuredPath }),
+        message: m.configured_pdf_missing_error({ path: meta.configuredPath }),
       };
     case 'no-config-multiple-files':
       return {
         tone: 'error',
-        message: format('errorMultiplePdfs', { files: meta.candidates.join(', ') }),
+        message: m.multiple_pdfs_ambiguous_error({ files: meta.candidates.join(', ') }),
       };
   }
 }

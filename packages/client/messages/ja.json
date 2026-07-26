@@ -1,0 +1,20 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "title_field_label": "タイトル",
+  "untitled_title_placeholder": "名称未設定",
+  "theme_group_label": "テーマ",
+  "theme_option_system": "システム",
+  "theme_option_light": "ライト",
+  "theme_option_dark": "ダーク",
+  "save_failed_status": "保存に失敗しました",
+  "outline_load_failed_status": "読み込みに失敗しました。ページを再読み込みしてください。",
+  "open_slideshow_button_label": "スライドショーを再生",
+  "toggle_slide_list_button_label": "スライド一覧を開閉",
+  "slide_list_label": "スライド",
+  "configured_pdf_missing_error": "設定された PDF が見つかりません: {path}",
+  "multiple_pdfs_ambiguous_error": "PDF が複数見つかりました: {files}。note-first-presenter.config.ts で 1 つに指定してください。",
+  "no_pdf_yet_hint": "プロジェクト直下に PDF を追加するか、note-first-presenter.config.ts で slides を設定してください。",
+  "slide_image_alt": "スライド {n}",
+  "slide_beyond_pdf_pages_label": "スライド {n} (超過)",
+  "browser_tab_title": "プレゼンター: {title}"
+}

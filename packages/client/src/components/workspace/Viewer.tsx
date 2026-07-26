@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
+import { m } from '../../lib/paraglide/messages.js';
 import { countNoteGroups } from '../outliner/noteGroups';
 import { Outliner } from '../outliner/Outliner';
 import { useActiveSlide } from '../slides/activeSlide';
 import { useSlidesMeta } from '../slides/slidesMeta';
-import { useMessages } from '../useMessages';
 import { useReadOnlyDb } from './db';
 import { Workspace } from './Workspace';
 
@@ -14,7 +14,6 @@ import { Workspace } from './Workspace';
  * here can write, and nothing that writes is reachable from here (§3.4).
  */
 export function Viewer() {
-  const format = useMessages();
   const db = useReadOnlyDb();
   const meta = useSlidesMeta();
   const [activeSlide, setActiveSlide] = useActiveSlide();
@@ -23,7 +22,7 @@ export function Viewer() {
   // The outline never changes here, so this is one pass over the stored JSON
   // rather than the Editor's per-keystroke recount.
   const groupCount = useMemo(() => (loaded ? countNoteGroups(loaded.outline) : 0), [loaded]);
-  const title = loaded && loaded.title !== '' ? loaded.title : format('titleDefault');
+  const title = loaded && loaded.title !== '' ? loaded.title : m.untitled_title_placeholder();
 
   return (
     <Workspace

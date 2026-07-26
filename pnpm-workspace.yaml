@@ -15,7 +15,7 @@ catalog:
   react: ^19.2.8
   react-dom: ^19.2.8
   react-aria-components: ^1.19.0
-  '@internationalized/string': ^3.2.9
+  '@inlang/paraglide-js': ^2.22.0
   '@types/react': ^19.2.17
   '@types/react-dom': ^19.2.3
   '@vitejs/plugin-react': ^6.0.4
