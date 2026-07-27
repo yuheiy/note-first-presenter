@@ -35,6 +35,34 @@ import {
 
 const CONFIG_PATHS = new Set(CONFIG_FILENAMES.map((name) => path.resolve(name)));
 
+/**
+ * Waits until a watcher is actually watching something, not merely `ready`.
+ *
+ * Every path this file watches — the deck, the config files — is watched
+ * whether or not it exists yet, and for those `ready` is not the barrier it
+ * looks like. chokidar stats the path, gets ENOENT, emits `ready` immediately,
+ * and only then asynchronously falls back to watching the parent directory
+ * (`index.js`, the `.then` after `_addToNodeFs`). Measured on a Linux runner
+ * that gap is ~25ms, and a file created inside it is not reported late — it is
+ * never reported at all, because the ENOENT path already recorded the basename
+ * in the parent's entry list, so the fallback's own scan takes it for something
+ * it has seen. `ignoreInitial` is not what swallows it; the event does not
+ * exist. macOS happens to win the same race, which is why only CI ever saw this.
+ *
+ * `getWatched()` going non-empty is the one observable that separates the two
+ * states. The bound is for the case the code cannot fix anyway: a deck under a
+ * directory that does not exist either (`slides: 'assets/x.pdf'` with no
+ * `assets/`), where nothing is ever watched and waiting would just stall
+ * startup.
+ */
+async function awaitWatching(watcher: FSWatcher, closedPromise: Promise<void>): Promise<void> {
+  await Promise.race([once(watcher, 'ready'), closedPromise]);
+  const deadline = Date.now() + 500;
+  while (Object.keys(watcher.getWatched()).length === 0 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 export async function createSlidesContext(opts?: {
   onSettle?: () => void;
   onError?: (err: unknown) => void;
@@ -76,11 +104,13 @@ export async function createSlidesContext(opts?: {
     // PDF content changed at the same path).
     cached?.slides.invalidate();
     cached = null;
-    // The deck path is watched whether or not it exists — chokidar reports the
-    // `add` when a file appears at a path it is already watching, which is what
-    // replaced the old cwd-wide `*.pdf` watcher. The one case it cannot see is a
-    // deck under a directory that does not exist yet (`slides: 'assets/x.pdf'`
-    // with no `assets/`); that needs a dev restart.
+    // The deck path is watched whether or not it exists — chokidar falls back to
+    // the parent directory and reports the `add` when a file appears there,
+    // which is what replaced the old cwd-wide `*.pdf` watcher. That fallback is
+    // set up after `ready`, so setTargets waits for it rather than for `ready`
+    // (see awaitWatching). The one case it cannot see is a deck under a
+    // directory that does not exist yet (`slides: 'assets/x.pdf'` with no
+    // `assets/`); that needs a dev restart.
     //
     // The config file itself is already covered by configWatcher; only its
     // imported dependencies need the dynamic watcher.
@@ -122,9 +152,10 @@ export async function createSlidesContext(opts?: {
       })
       .on('all', trigger);
     dynamicWatcher = watcher;
-    // Same pre-ready suppression as the static watchers below: wait for the
-    // initial scan so a change right after this reload isn't missed.
-    await Promise.race([once(watcher, 'ready'), closedPromise]);
+    // Same barrier as the config watcher below, and for the same reason: the
+    // deck path is usually one that does not exist yet, so `ready` alone would
+    // return here before anything is being watched. See awaitWatching.
+    await awaitWatching(watcher, closedPromise);
   }
 
   async function runOnChange(): Promise<void> {
@@ -153,10 +184,10 @@ export async function createSlidesContext(opts?: {
     })
     .on('all', trigger);
 
-  // With ignoreInitial, events before the initial scan completes are
-  // swallowed; wait for 'ready' so files appearing right after startup are
-  // never silently missed.
-  await once(configWatcher, 'ready');
+  // With ignoreInitial, events before the initial scan completes are swallowed,
+  // so this has to be a barrier — but `ready` is not one for paths that do not
+  // exist yet, which a project without a config file is. See awaitWatching.
+  await awaitWatching(configWatcher, closedPromise);
 
   await runOnChange();
 
