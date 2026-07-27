@@ -25,8 +25,10 @@ export default defineConfig({
     options: { typeAware: true, typeCheck: true },
     overrides: [
       {
-        // The published CLI depends on `vite` (npm:@voidzero-dev/vite-plus-core),
-        // not the `vite-plus` toolchain, so it imports the runtime API from `vite`.
+        // The published CLI depends on plain `vite`, not the `vite-plus`
+        // toolchain, so it imports the runtime API from `vite`. Locally that
+        // specifier still lands on vite-plus-core — the workspace `overrides`
+        // pins it — but the two are interchangeable here (docs/adr/0020).
         files: ['packages/note-first-presenter/**'],
         rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
       },

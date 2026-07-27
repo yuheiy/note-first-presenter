@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch-path=../packages/note-first-presenter/dist --watch-preserve-output ../packages/note-first-presenter/bin/note-first-presenter.mjs",
     "build": "note-first-presenter build",
     "export": "note-first-presenter export"
   },

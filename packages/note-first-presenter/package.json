@@ -30,7 +30,7 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
-    "prepublishOnly": "vp run build"
+    "prepack": "vp run build"
   },
   "dependencies": {
     "@napi-rs/canvas": "catalog:",
@@ -41,7 +41,7 @@
     "eta": "catalog:",
     "pdfjs-dist": "catalog:",
     "valibot": "catalog:",
-    "vite": "catalog:",
+    "vite": "^8.0.0",
     "vitefu": "catalog:"
   },
   "devDependencies": {
