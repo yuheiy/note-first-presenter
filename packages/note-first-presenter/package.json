@@ -18,17 +18,19 @@
   },
   "files": [
     "bin",
-    "src",
-    "!src/**/__tests__"
+    "dist"
   ],
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
   "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
     "test": "vp test",
-    "check": "vp check"
+    "check": "vp check",
+    "prepack": "vp run build"
   },
   "dependencies": {
     "@napi-rs/canvas": "catalog:",
@@ -39,7 +41,7 @@
     "eta": "catalog:",
     "pdfjs-dist": "catalog:",
     "valibot": "catalog:",
-    "vite": "catalog:",
+    "vite": "^8.0.0",
     "vitefu": "catalog:"
   },
   "devDependencies": {

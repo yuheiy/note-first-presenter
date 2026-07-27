@@ -25,8 +25,10 @@ export default defineConfig({
     options: { typeAware: true, typeCheck: true },
     overrides: [
       {
-        // The published CLI depends on `vite` (npm:@voidzero-dev/vite-plus-core),
-        // not the `vite-plus` toolchain, so it imports the runtime API from `vite`.
+        // The published CLI depends on plain `vite`, not the `vite-plus`
+        // toolchain, so it imports the runtime API from `vite`. Locally that
+        // specifier still lands on vite-plus-core — the workspace `overrides`
+        // pins it — but the two are interchangeable here (docs/adr/0020).
         files: ['packages/note-first-presenter/**'],
         rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
       },
@@ -37,5 +39,21 @@ export default defineConfig({
   },
   run: {
     cache: true,
+    // Both layers reach the CLI through the `note-first-presenter` bin on PATH,
+    // and that bin forwards to `dist/` (docs/adr/0020) — so they need a build
+    // ahead of them or they run last commit's CLI. Declared rather than chained
+    // into the script so the cache can skip it when nothing under src/ moved.
+    // This is also what keeps a layer pointed at the shipped artifact: without
+    // it, nothing would exercise `dist/` until publish.
+    tasks: {
+      'test:integration': {
+        command: 'vp run messages && vp test',
+        dependsOn: ['note-first-presenter#build'],
+      },
+      'test:e2e': {
+        command: 'vp run messages && playwright install && playwright test',
+        dependsOn: ['note-first-presenter#build'],
+      },
+    },
   },
 });
