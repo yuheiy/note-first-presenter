@@ -4,14 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon -w ../packages/note-first-presenter/dist -e mjs --exec note-first-presenter",
+    "dev": "node --watch-path=../packages/note-first-presenter/dist --watch-preserve-output ../packages/note-first-presenter/bin/note-first-presenter.mjs",
     "build": "note-first-presenter build",
     "export": "note-first-presenter export"
   },
   "dependencies": {
     "note-first-presenter": "workspace:"
-  },
-  "devDependencies": {
-    "nodemon": "catalog:"
   }
 }
