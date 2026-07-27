@@ -9,13 +9,20 @@ cleanupUnusedCatalogs: true
 catalog:
   '@types/node': ^22.20.1
   typescript: ^7.0.2
+  # The next three are packages vite-plus depends on directly, pinned exactly at
+  # the versions it bundles. They are not independently bumpable: a stale pin
+  # here puts a second copy of one of them in node_modules, and the two copies
+  # never see each other. Move them with vite-plus, which is what `vp migrate`
+  # does — bumping vite-plus by hand does not. Both halves have already cost a
+  # release: vitest left `vp test` and a bare `vitest` on two copies of
+  # @vitest/runner (unit tests dead, browser tests hung silently), and `vite` —
+  # spelled as an alias onto @voidzero-dev/vite-plus-core, the package vite-plus
+  # is itself built on — left node_modules/vite one patch behind what vite-plus
+  # ran internally, which made `Plugin` two different types and failed
+  # `vp check` on packages/client/vite.config.ts (#46).
   vite: npm:@voidzero-dev/vite-plus-core@0.2.6
-  # Pinned exactly at the version vite-plus bundles, so that `vp test` and a bare
-  # `vitest` cannot resolve two copies of @vitest/runner (which killed the unit
-  # tests and hung the browser ones silently). Never bump this independently of
-  # vite-plus — let `vp migrate` move them in lockstep. Same for
-  # @vitest/browser-playwright below.
   vitest: 4.1.10
+  '@vitest/browser-playwright': 4.1.10
   vite-plus: 0.2.6
   react: ^19.2.8
   react-dom: ^19.2.8
@@ -36,7 +43,6 @@ catalog:
   pdfjs-dist: ^6.1.200
   '@napi-rs/canvas': ^1.0.2
   chokidar: ^5.0.0
-  '@vitest/browser-playwright': 4.1.10
   vitest-browser-react: ^2.2.0
   playwright: ^1.62.0
   '@playwright/test': ^1.62.0
