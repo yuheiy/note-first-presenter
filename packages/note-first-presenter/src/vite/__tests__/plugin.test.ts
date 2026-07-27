@@ -4,27 +4,35 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { defaultDb } from '@note-first-presenter/client/dbSchema';
 import { afterAll, describe, expect, it, vi } from 'vite-plus/test';
-import { openSlides, type SlidesStatus } from '../../slides.ts';
+import { DEFAULT_SLIDES_PATH, openSlides, type SlidesStatus } from '../../slides.ts';
 import { withTempCwd } from '../../__tests__/helpers.ts';
 import { createNfpDataMiddleware, createSlidesContext, ViteNfpPlugin } from '../plugin.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
+
+/**
+ * What `resolveSlides` reports for an unconfigured project with no deck on disk.
+ * A function, not a constant: `withTempCwd` swaps the cwd after this module is
+ * imported, so resolving at import time would name the wrong directory.
+ */
+const missingDefault = () =>
+  ({ kind: 'missing', path: path.resolve(DEFAULT_SLIDES_PATH) }) as const;
 
 withTempCwd('nfp-plugin-');
 
 // ─── createSlidesContext ───────────────────────────────────────────────────
 
 describe('createSlidesContext', () => {
-  it('resolves to no-config-no-file when nothing exists', async () => {
+  it('reports the default path as missing when nothing exists', async () => {
     const ctx = await createSlidesContext();
     try {
-      expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+      expect(ctx.getSlidesStatus()).toEqual(missingDefault());
     } finally {
       await ctx.close();
     }
   });
 
-  it('resolves a single PDF in cwd', async () => {
+  it('resolves the default filename in cwd', async () => {
     await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
     const ctx = await createSlidesContext();
     try {
@@ -59,7 +67,7 @@ describe('createSlidesContext', () => {
     }
   });
 
-  it('reports a failed reload via onError instead of rejecting, and degrades to no-config-no-file', async () => {
+  it('reports a failed reload via onError instead of rejecting, and degrades to missing', async () => {
     // A config whose default export throws on load makes loadNfpConfig reject.
     await fs.writeFile('note-first-presenter.config.ts', 'throw new Error("boom");');
     const onSettle = vi.fn();
@@ -68,7 +76,7 @@ describe('createSlidesContext', () => {
     try {
       expect(onError).toHaveBeenCalledTimes(1);
       expect(onSettle).not.toHaveBeenCalled();
-      expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+      expect(ctx.getSlidesStatus()).toEqual(missingDefault());
     } finally {
       await ctx.close();
     }
@@ -79,10 +87,12 @@ describe('createSlidesContext', () => {
     await expect(ctx.close()).resolves.toBeUndefined();
   });
 
-  it('detects a PDF added to cwd after startup', { timeout: 10_000 }, async () => {
+  // The watcher is pointed at a path that does not exist yet; chokidar still
+  // reports the `add`. This is what replaced the old cwd-wide `*.pdf` watcher.
+  it('detects the deck appearing after startup', { timeout: 10_000 }, async () => {
     const ctx = await createSlidesContext();
     try {
-      expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+      expect(ctx.getSlidesStatus()).toEqual(missingDefault());
       await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
       await vi.waitFor(
         () => {
@@ -118,7 +128,7 @@ describe('createSlidesContext', () => {
     }
   });
 
-  it('detects a PDF removed from cwd', { timeout: 10_000 }, async () => {
+  it('detects the deck being removed', { timeout: 10_000 }, async () => {
     await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
     const ctx = await createSlidesContext();
     try {
@@ -129,10 +139,40 @@ describe('createSlidesContext', () => {
       await fs.rm(path.resolve('slides.pdf'));
       await vi.waitFor(
         () => {
-          expect(ctx.getSlidesStatus()).toEqual({ kind: 'no-config-no-file' });
+          expect(ctx.getSlidesStatus()).toEqual(missingDefault());
         },
         { timeout: 5000 },
       );
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // The behaviour the old cwd-wide glob would have gotten wrong: a PDF that is
+  // not the configured one is not a deck (docs/adr/0019).
+  it('leaves the deck missing when a differently-named PDF appears', async () => {
+    await fs.copyFile(SAMPLE_PDF, path.resolve('deck.pdf'));
+    const ctx = await createSlidesContext();
+    try {
+      expect(ctx.getSlidesStatus()).toEqual(missingDefault());
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  it('follows the path named by the config', async () => {
+    await fs.mkdir('assets', { recursive: true });
+    await fs.copyFile(SAMPLE_PDF, path.resolve('assets/deck.pdf'));
+    await fs.writeFile(
+      'note-first-presenter.config.ts',
+      'export default { slides: "assets/deck.pdf" };',
+    );
+    const ctx = await createSlidesContext();
+    try {
+      expect(ctx.getSlidesStatus()).toEqual({
+        kind: 'resolved',
+        path: path.resolve('assets/deck.pdf'),
+      });
     } finally {
       await ctx.close();
     }
@@ -186,11 +226,12 @@ function asRes(res: MockResponse) {
   return res as unknown as Parameters<ReturnType<typeof createNfpDataMiddleware>>[1];
 }
 
-const NO_SLIDES: SlidesStatus = { kind: 'no-config-no-file' };
+/** Resolved per call, for the same reason `missingDefault` is a function. */
+const noSlides = (): SlidesStatus => ({ kind: 'missing', path: path.resolve('assets/deck.pdf') });
 
 describe('createNfpDataMiddleware', () => {
   const mw = createNfpDataMiddleware({
-    getSlidesStatus: () => NO_SLIDES,
+    getSlidesStatus: noSlides,
     getSlides: () => {
       throw new Error('getSlides should not be called when slides are unresolved');
     },
@@ -241,14 +282,19 @@ describe('createNfpDataMiddleware', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('GET /nfp-data/meta.json with unresolved slides returns 200 with the status body', async () => {
+  // 200, and with a cwd-relative path: the absolute one the status carries is
+  // for the watcher, not for a browser that may be someone else's.
+  it('GET /nfp-data/meta.json with a missing deck returns 200 and a relative path', async () => {
     const res = createMockRes();
     mw(createMockReq('GET', '/nfp-data/meta.json'), asRes(res), () => {
       throw new Error('next should not be called');
     });
     await res.done;
     expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body!.toString())).toEqual(NO_SLIDES);
+    expect(JSON.parse(res.body!.toString())).toEqual({
+      kind: 'missing',
+      path: path.join('assets', 'deck.pdf'),
+    });
   });
 
   it('calls next for a path outside /nfp-data/', async () => {
@@ -412,7 +458,7 @@ describe('createNfpDataMiddleware slide images', () => {
 
   it('GET a slide image when slides are unresolved returns 404', async () => {
     const unresolvedMw = createNfpDataMiddleware({
-      getSlidesStatus: () => NO_SLIDES,
+      getSlidesStatus: noSlides,
       getSlides: () => {
         throw new Error('getSlides should not be called when slides are unresolved');
       },

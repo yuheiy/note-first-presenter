@@ -11,9 +11,7 @@
   "open_slideshow_button_label": "Play slideshow",
   "toggle_slide_list_button_label": "Toggle slide list",
   "slide_list_label": "Slides",
-  "configured_pdf_missing_error": "Configured PDF not found: {path}",
-  "multiple_pdfs_ambiguous_error": "Multiple PDFs found: {files}. Specify one in note-first-presenter.config.ts.",
-  "no_pdf_yet_hint": "Add a PDF to the project root or set slides in note-first-presenter.config.ts.",
+  "slides_missing_hint": "No slide deck at {path}. Add the file, or set slides in note-first-presenter.config.ts.",
   "slide_image_alt": "Slide {n}",
   "slide_beyond_pdf_pages_label": "Slide {n} (overflow)",
   "browser_tab_title": "Presenter: {title}"

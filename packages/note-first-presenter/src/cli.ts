@@ -10,7 +10,7 @@ import {
   type NoteFirstPresenterConfig,
   type RouterMode,
 } from './config.ts';
-import { resolveSlides } from './slides.ts';
+import { resolveSlides, slidesNotFoundMessage } from './slides.ts';
 
 async function resolveClientRoot(): Promise<string> {
   const clientPkgJsonStart = path.dirname(
@@ -80,11 +80,8 @@ const build = defineCommand({
   meta: { name: 'build', description: 'Generate a static read-only site' },
   args: { 'out-dir': { type: 'string' }, ...sharedRouteArgs },
   async run({ args }) {
-    const { config, filePath } = await loadNfpConfig('build');
-    const slidesStatus = await resolveSlides({
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
+    const { config } = await loadNfpConfig('build');
+    const slidesStatus = resolveSlides(config?.slides);
     const outDir = path.resolve(args['out-dir'] ?? config?.build?.outDir ?? 'dist');
     const clientRoot = await resolveClientRoot();
 
@@ -105,13 +102,10 @@ const export_ = defineCommand({
     'assets-dir': { type: 'string' },
   },
   async run({ args }) {
-    const { config, filePath } = await loadNfpConfig('build');
-    const slidesStatus = await resolveSlides({
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
+    const { config } = await loadNfpConfig('build');
+    const slidesStatus = resolveSlides(config?.slides);
     if (slidesStatus.kind !== 'resolved') {
-      throw new Error(`slides not available: ${slidesStatus.kind}`);
+      throw new Error(slidesNotFoundMessage(slidesStatus));
     }
     const exportCfg = config?.export;
     const filename = exportCfg?.filename ?? 'index.html';

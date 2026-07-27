@@ -3,7 +3,12 @@ import path from 'node:path';
 import { Eta } from 'eta';
 import { readDb } from '../db.ts';
 import { splitNoteGroups, type NoteNode } from '../notes.ts';
-import { openSlides, type RenderAllResult, type SlidesStatus } from '../slides.ts';
+import {
+  openSlides,
+  slidesNotFoundMessage,
+  type RenderAllResult,
+  type SlidesStatus,
+} from '../slides.ts';
 
 interface ExportSlide {
   number: number;
@@ -117,7 +122,7 @@ export async function exportAsPage({
   filename,
 }: ExportAsPageInput): Promise<void> {
   if (slidesStatus.kind !== 'resolved') {
-    throw new Error(`slides not available: ${slidesStatus.kind}`);
+    throw new Error(slidesNotFoundMessage(slidesStatus));
   }
   const rendered = await openSlides(slidesStatus.path).renderAll(assetsDir);
   const db = await readDb();

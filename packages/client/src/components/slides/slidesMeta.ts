@@ -8,57 +8,43 @@ import { dataUrl } from '../../lib/routes';
 /**
  * What the CLI knows about the slide deck.
  *
- * Every arm of this union is data, not an error: `no-config-no-file` is the
- * ordinary state of a fresh project and is drawn as a hint. Both modes answer
- * with the same 200 JSON — dev from the CLI middleware, the static build from
- * the file `build` wrote — so only a transport or server fault is an error.
+ * Both arms are data, not an error: `missing` is the ordinary state of a fresh
+ * project and is drawn as a hint. Both modes answer with the same 200 JSON —
+ * dev from the CLI middleware, the static build from the file `build` wrote —
+ * so only a transport or server fault is an error.
+ *
+ * `path` on `missing` is cwd-relative, as the CLI wrote it: it reads like the
+ * value in the config file rather than naming the author's home directory.
  */
 export type SlidesMeta =
   | { kind: 'resolved'; hash: string; pageCount: number; width?: number; height?: number }
-  | { kind: 'configured-but-missing'; configuredPath: string }
-  | { kind: 'no-config-no-file' }
-  | { kind: 'no-config-multiple-files'; candidates: string[] };
-
-/** What to tell the reader about the deck, when there is no deck to draw. */
-export interface SlidesMetaStatus {
-  /** `hint` is an ordinary state to explain; `error` is something that went wrong. */
-  tone: 'hint' | 'error';
-  message: string;
-}
+  | { kind: 'missing'; path: string };
 
 /**
- * Turns the fetched metadata into the one sentence the reader needs, or `null`
- * when the deck resolved and the slides speak for themselves.
+ * The one sentence the reader needs, or `null` when the deck resolved and the
+ * slides speak for themselves.
  *
- * Both pages call this. The workspace draws `hint` and `error` differently; the
- * slideshow ignores `tone` and shows the message on its black field. Keeping the
- * four arms here rather than in two components is what stops the three that
- * agree from drifting apart, and it keeps them reachable from a Node test.
+ * Both pages call this — the workspace draws it as a hint, the slideshow on its
+ * black field — and keeping the wording here rather than in two components is
+ * what stops them drifting apart, besides keeping it reachable from a Node test.
  *
- * It takes no transport failure any more: that is a thrown error now, and the
+ * There is no severity to report. A missing deck used to come in three shapes,
+ * two of which were drawn as errors; since the deck is whatever the config names
+ * and nothing else (`docs/adr/0019`), one shape is left, and writing notes
+ * before there are slides is a normal way to start rather than a failure.
+ *
+ * It takes no transport failure either: that is a thrown error now, and the
  * ErrorBoundary around each caller draws it (`docs/adr/0018`). Every *shape* the
  * server can answer with is data, and this function only ever sees those.
  */
-export function describeSlidesMeta(meta: SlidesMeta): SlidesMetaStatus | null {
-  // No `default` arm on purpose: a fifth `SlidesMeta` kind should fail type-check
+export function describeSlidesMeta(meta: SlidesMeta): string | null {
+  // No `default` arm on purpose: a third `SlidesMeta` kind should fail type-check
   // here rather than quietly fall through to silence.
   switch (meta.kind) {
     case 'resolved':
       return null;
-    case 'no-config-no-file':
-      // Writing notes before there are slides is a normal way to start, so this
-      // is guidance rather than a failure.
-      return { tone: 'hint', message: m.no_pdf_yet_hint() };
-    case 'configured-but-missing':
-      return {
-        tone: 'error',
-        message: m.configured_pdf_missing_error({ path: meta.configuredPath }),
-      };
-    case 'no-config-multiple-files':
-      return {
-        tone: 'error',
-        message: m.multiple_pdfs_ambiguous_error({ files: meta.candidates.join(', ') }),
-      };
+    case 'missing':
+      return m.slides_missing_hint({ path: meta.path });
   }
 }
 

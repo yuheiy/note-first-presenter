@@ -121,11 +121,11 @@ browser 層で `<I18nProvider locale="en-US">` を各 render に巻く形は使�
 
 ### `describeSlidesMeta` の `format` 引数を落とす
 
-React 非依存モジュールを node テストするための注入 seam だったが、Paraglide のメッセージは React 非依存の素の関数なので直接 import できる。テストは文言をハードコードせず `m.no_pdf_yet_hint()` のように**メッセージ関数同士で比較**する——一見トートロジーだが、検証しているのは「どのキーを選んだか」で、旧スタブと同じ検証力を持ちつつ文言変更で壊れない（§8.1 N3 の「コピーはテスト対象外」を維持）。プレースホルダ補間だけは別ケースで、異なる path が異なる文になることを見る。
+React 非依存モジュールを node テストするための注入 seam だったが、Paraglide のメッセージは React 非依存の素の関数なので直接 import できる。テストは文言をハードコードせず `m.no_pdf_yet_hint()`（このキーは ADR-0019 で `slides_missing_hint` に統合された）のように**メッセージ関数同士で比較**する——一見トートロジーだが、検証しているのは「どのキーを選んだか」で、旧スタブと同じ検証力を持ちつつ文言変更で壊れない（§8.1 N3 の「コピーはテスト対象外」を維持）。プレースホルダ補間だけは別ケースで、異なる path が異なる文になることを見る。
 
 ### キーは snake_case で、doc コメントの情報を名前に吸収させる
 
-`titleLabel` → `title_field_label`、`infoNoSlides` → `no_pdf_yet_hint`（`hint` が「エラーではなく正常状態の案内」という判断を担い、`describeSlidesMeta` が返す `tone: 'hint'` とも揃う）、`overflowLabel` → `slide_beyond_pdf_pages_label` など。
+`titleLabel` → `title_field_label`、`infoNoSlides` → `no_pdf_yet_hint`（`hint` が「エラーではなく正常状態の案内」という判断を担い、当時 `describeSlidesMeta` が返していた `tone: 'hint'` とも揃う。`tone` は ADR-0019 で不要になり削除されたが、キー名が判断を担うという原則自体は後継の `slides_missing_hint` にも生きている）、`overflowLabel` → `slide_beyond_pdf_pages_label` など。
 
 `Workspace.tsx` のテーマ選択肢テーブルは、キー文字列ではなく**メッセージ関数そのもの**を持つ（`label: m.theme_option_system`）。`m[key]()` という動的アクセスは木揺すりを殺す。
 

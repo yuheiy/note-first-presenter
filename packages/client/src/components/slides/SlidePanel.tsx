@@ -1,4 +1,3 @@
-import { ErrorOverlay } from '../ErrorOverlay';
 import { Hint } from '../Hint';
 import { useDeck } from './deck';
 import { SlideList } from './SlideList';
@@ -32,13 +31,9 @@ export function SlidePanel({ activeSlide, onActiveSlideChange }: SlidePanelProps
     );
   }
 
-  // Every other shape the server can answer with is a sentence to show rather
-  // than a deck to draw. The slideshow page shows the same sentences.
-  const state = describeSlidesMeta(meta);
-  if (!state) return null;
-  return state.tone === 'hint' ? (
-    <Hint message={state.message} />
-  ) : (
-    <ErrorOverlay message={state.message} />
-  );
+  // A deck that is not there yet is a sentence to show rather than a failure to
+  // report. The slideshow page shows the same sentence.
+  const message = describeSlidesMeta(meta);
+  if (!message) return null;
+  return <Hint message={message} />;
 }

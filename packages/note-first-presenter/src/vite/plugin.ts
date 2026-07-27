@@ -7,23 +7,24 @@ import * as v from 'valibot';
 import { CONFIG_FILENAMES, loadNfpConfig } from '../config.ts';
 import { readDb, writeDb } from '../db.ts';
 import {
+  DEFAULT_SLIDES_PATH,
+  missingSlidesMeta,
   openSlides,
   PageOutOfRangeError,
   resolveSlides,
   slideFilename,
-  SLIDES_EXTENSIONS,
   type Slides,
   type SlidesStatus,
 } from '../slides.ts';
 
 // ─── Slides context ────────────────────────────────────────────────────────
 // Owns the slides domain in dev: resolves SlidesStatus from disk + config,
-// caches per-PDF Slides instances, watches the cwd `*.pdf` glob, the config
-// files, and the config's dependencies. On any change, re-resolves
-// (single-flight, coalesced) and calls `onSettle` once the loop settles; a
-// reload that throws (e.g. a malformed config) is reported via `onError`
-// without crashing the loop, and leaves the last good `slidesStatus` in place
-// (or `no-config-no-file` if the very first reload failed).
+// caches per-PDF Slides instances, and watches the deck path, the config files,
+// and the config's dependencies. On any change, re-resolves (single-flight,
+// coalesced) and calls `onSettle` once the loop settles; a reload that throws
+// (e.g. a malformed config) is reported via `onError` without crashing the
+// loop, and leaves the last good `slidesStatus` in place (or the default path,
+// missing, if the very first reload failed).
 //
 // That tolerance is for config files edited *while dev runs* — half-typed states
 // are normal there, and `onError` is loud enough (server log plus the browser's
@@ -45,9 +46,16 @@ export async function createSlidesContext(opts?: {
   const onSettle = opts?.onSettle;
   const onError = opts?.onError;
 
-  // Defaults to no-config-no-file so a failed initial reload degrades to a
-  // renderable "no slides" meta rather than leaving the getter undefined.
-  let slidesStatus: SlidesStatus = { kind: 'no-config-no-file' };
+  // A failed initial reload has to leave the getter something renderable rather
+  // than undefined, and this is the only honest thing to say: the reload failed,
+  // so which deck the config wanted is exactly what is not known. Deliberately
+  // not `resolveSlides(undefined)` — that would claim a `slides.pdf` sitting in
+  // the cwd as the deck, which is a guess, and the wrong one for any project
+  // whose (unreadable) config named something else.
+  let slidesStatus: SlidesStatus = {
+    kind: 'missing',
+    path: path.resolve(DEFAULT_SLIDES_PATH),
+  };
 
   // Per-path cache: openSlides returns a fresh closure each call, so reusing
   // the same Slides instance preserves its internal pdf-parse memoization
@@ -62,21 +70,21 @@ export async function createSlidesContext(opts?: {
   }
 
   async function reload(): Promise<string[]> {
-    const { config, filePath, dependencies } = await loadNfpConfig('dev');
-    slidesStatus = await resolveSlides({
-      configuredSlides: config?.slides,
-      configFile: filePath,
-    });
+    const { config, dependencies } = await loadNfpConfig('dev');
+    slidesStatus = resolveSlides(config?.slides);
     // Drop cached Slides so the next request re-opens (and re-parses if the
     // PDF content changed at the same path).
     cached?.slides.invalidate();
     cached = null;
+    // The deck path is watched whether or not it exists — chokidar reports the
+    // `add` when a file appears at a path it is already watching, which is what
+    // replaced the old cwd-wide `*.pdf` watcher. The one case it cannot see is a
+    // deck under a directory that does not exist yet (`slides: 'assets/x.pdf'`
+    // with no `assets/`); that needs a dev restart.
+    //
     // The config file itself is already covered by configWatcher; only its
     // imported dependencies need the dynamic watcher.
-    return [
-      ...(slidesStatus.kind === 'resolved' ? [slidesStatus.path] : []),
-      ...dependencies.filter((dep) => !CONFIG_PATHS.has(dep)),
-    ];
+    return [slidesStatus.path, ...dependencies.filter((dep) => !CONFIG_PATHS.has(dep))];
   }
 
   let dynamicWatcher: FSWatcher | null = null;
@@ -138,20 +146,6 @@ export async function createSlidesContext(opts?: {
     }
   }
 
-  // Auto-detect PDFs added/removed in cwd (only meaningful when config doesn't
-  // pin a specific path). 'change' events go through the dynamic watcher
-  // instead, which has awaitWriteFinish. chokidar v4 dropped glob support, so
-  // watch the cwd itself and filter by extension; the filter also keeps
-  // unrelated files (editor temp files, the db file) from triggering reloads.
-  const onRootEvent = (eventPath: string): void => {
-    if (!SLIDES_EXTENSIONS.some((ext) => eventPath.endsWith(`.${ext}`))) return;
-    trigger();
-  };
-  const rootWatcher = chokidar
-    .watch('.', { depth: 0, ignoreInitial: true })
-    .on('add', onRootEvent)
-    .on('unlink', onRootEvent);
-
   const configWatcher = chokidar
     .watch([...CONFIG_FILENAMES], {
       awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
@@ -162,7 +156,7 @@ export async function createSlidesContext(opts?: {
   // With ignoreInitial, events before the initial scan completes are
   // swallowed; wait for 'ready' so files appearing right after startup are
   // never silently missed.
-  await Promise.all([once(rootWatcher, 'ready'), once(configWatcher, 'ready')]);
+  await once(configWatcher, 'ready');
 
   await runOnChange();
 
@@ -176,7 +170,7 @@ export async function createSlidesContext(opts?: {
       dynamicWatcher = null;
       cached?.slides.invalidate();
       cached = null;
-      await Promise.all([rootWatcher.close(), configWatcher.close(), dynamic?.close()]);
+      await Promise.all([configWatcher.close(), dynamic?.close()]);
     },
   };
 }
@@ -257,12 +251,12 @@ export function createNfpDataMiddleware(opts: {
         }
 
         case url === '/nfp-data/meta.json' && method === 'GET': {
-          // Always 200: the unresolved kinds are ordinary domain values the
-          // client renders as hints, not failures. Only a real fault (500)
-          // is an error. The static build writes the same union to
+          // Always 200: a deck that is not there yet is an ordinary domain
+          // value the client renders as a hint, not a failure. Only a real
+          // fault (500) is an error. The static build writes the same shape to
           // `nfp-data/meta.json`.
           if (slidesStatus.kind !== 'resolved') {
-            json(200, slidesStatus);
+            json(200, missingSlidesMeta(slidesStatus));
             return;
           }
           const meta = await getSlides(slidesStatus.path).meta();

@@ -26,8 +26,12 @@ A top-level outline item whose text is three or more consecutive hyphens (`---`,
 A single screen in a presentation. Composed of a slide image (a rendered PDF page) and its corresponding note group.
 _Avoid_: page (refers to the PDF page, not the presentation unit)
 
+**Deck**:
+The single source file the slides are rendered from — today always a PDF. A project has exactly one, and it is the file the config names (`slides.pdf` when it names none); a PDF sitting elsewhere in the project is not a candidate for it.
+_Avoid_: deck as a synonym for the presentation as a whole (that is the DB plus this), slides (the config key spelled `slides` names this file, but the word on its own means the screens)
+
 **Slides Metadata**:
-What the CLI knows about the deck: which PDF resolved, along with its page count and dimensions, or else why none resolved. Server-owned, and the mirror image of the DB — the client only ever reads it, and in the Editor the CLI pushes a new one whenever the watched PDF or config settles.
+What the CLI knows about the deck: that it resolved, along with its page count and dimensions, or else that it is not there and where it was looked for. Server-owned, and the mirror image of the DB — the client only ever reads it, and in the Editor the CLI pushes a new one whenever the watched deck or config settles.
 _Avoid_: slide info, deck info, PDF info
 
 **Active Slide**:

@@ -41,7 +41,8 @@ const server = vi.hoisted(() => {
   return {
     puts,
     api: (url: string, options?: { method?: string; body?: unknown }) => {
-      if (url !== '/nfp-data/db.json') return Promise.resolve({ kind: 'no-config-no-file' });
+      if (url !== '/nfp-data/db.json')
+        return Promise.resolve({ kind: 'missing', path: 'slides.pdf' });
       if (options?.method !== 'PUT') return Promise.resolve(stored);
       puts.push(options.body as { title: string; outline: unknown });
       return Promise.resolve(undefined);
