@@ -45,6 +45,10 @@ catalog:
   prosemirror-schema-list: ^1.5.1
   eta: ^4.6.0
   knip: ^6.27.0
+  # Restarts the demo when `vp pack --watch` rewrites the CLI's dist. Only the
+  # client half of a dev session hot-reloads; the CLI is a process, so touching
+  # it means relaunching one.
+  nodemon: ^3.1.11
   '@tailwindcss/vite': ^4.3.3
   tailwindcss: ^4.3.3
   '@phosphor-icons/react': ^2.1.10

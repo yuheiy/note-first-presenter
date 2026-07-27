@@ -9,7 +9,7 @@
       "ignoreDependencies": ["vite"]
     },
     "packages/note-first-presenter": {
-      "entry": ["src/cli.ts"],
+      "entry": ["src/cli.ts", "src/index.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/client": {

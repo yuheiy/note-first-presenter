@@ -1,5 +1,9 @@
 # CLI を `vp pack` せず `.ts` ソースのまま配信する
 
+Superseded by: ADR-0020
+
+**この決定は公開経路で成立しない。** Node は `node_modules` 配下の `.ts` を型ストリップしないため、ここで配信可能としたものは `npm i` した時点で起動しない（issue #38）。以下は当時の記録であり、現行の方式は ADR-0020 を参照。
+
 `note-first-presenter`（CLI）は `vp pack` で `dist/` にバンドルしてから配信していたが、同じモノレポの `@note-first-presenter/client` は既に `src/` を無ビルドで配信しており（ADR 0002）、CLI だけがビルドを挟んで配信方式が不一致だった。Node 22.18 で TypeScript の type stripping が unflagged になったため、CLI もビルドステップを撤廃し `src/` の `.ts` をそのまま配信して、client と方式を統一する。副次的に、`vp pack` が未宣言 import を絶対パスで焼き込み publish 不能にする罠（全依存が `node_modules` 解決になることで）も消える。
 
 ## Consequences

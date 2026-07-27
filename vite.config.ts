@@ -37,5 +37,21 @@ export default defineConfig({
   },
   run: {
     cache: true,
+    // Both layers reach the CLI through the `note-first-presenter` bin on PATH,
+    // and that bin forwards to `dist/` (docs/adr/0020) — so they need a build
+    // ahead of them or they run last commit's CLI. Declared rather than chained
+    // into the script so the cache can skip it when nothing under src/ moved.
+    // This is also what keeps a layer pointed at the shipped artifact: without
+    // it, nothing would exercise `dist/` until publish.
+    tasks: {
+      'test:integration': {
+        command: 'vp run messages && vp test',
+        dependsOn: ['note-first-presenter#build'],
+      },
+      'test:e2e': {
+        command: 'vp run messages && playwright install && playwright test',
+        dependsOn: ['note-first-presenter#build'],
+      },
+    },
   },
 });
