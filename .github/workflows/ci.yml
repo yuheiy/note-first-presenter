@@ -71,7 +71,7 @@ jobs:
       - name: chokidar probe
         working-directory: packages/note-first-presenter
         run: |
-          cat > /tmp/probe.mjs <<'PROBE'
+          cat > probe.mjs <<'PROBE'
           import { once } from 'node:events';
           import { mkdtemp, writeFile } from 'node:fs/promises';
           import { tmpdir } from 'node:os';
@@ -128,7 +128,8 @@ jobs:
           await run('D immediate, ignoreInitial:false', { ignoreInitial: false });
           await run('E wait-for-getWatched-then-write', { waitForWatch: true });
           PROBE
-          node /tmp/probe.mjs
+          node probe.mjs
+          rm probe.mjs
 
       # The browser unit project drives a real Chromium through Playwright
       # (packages/client/vite.config.ts). The repo's only `playwright install`
