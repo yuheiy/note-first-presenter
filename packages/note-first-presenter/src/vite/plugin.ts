@@ -31,7 +31,7 @@ import {
 // error overlay) without taking the server down. It is not the startup
 // contract: since routerMode/base arrived, `cli.ts` parses the config itself
 // before this plugin exists, so a malformed config never gets this far — dev
-// exits, the same as build (docs/adr/0017, test/config.test.ts).
+// exits, the same as build (docs/adr/0017, commands/__tests__/cliCommands.test.ts).
 
 const CONFIG_PATHS = new Set(CONFIG_FILENAMES.map((name) => path.resolve(name)));
 

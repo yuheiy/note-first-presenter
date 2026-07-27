@@ -4,6 +4,8 @@
 
 > **Note (ADR 0014 により部分更新)**: React 書き直しで **鍵の綴り・client の project 名・e2e の project 数**の3点が変わった。詳細は末尾の追記（2026-07-26）を読むこと。中核判断（4層構成・root 配置・ファイル名キー）はここでも存続する。
 
+> **Note (ADR 0021 により部分更新)**: **タイトルの「4層構成」だけが取り消された。** integration 層（`test/*.test.ts`）は廃止され、`test/` ごと消えた。その層だけが果たしていた「実 CLI を叩く」役割は、公開形態を実インストールして起動する `verify:package` タスクが引き取っている——テスト層としてではなく、CI と `prepublishOnly` が呼ぶ1つのタスクとして。**「層をファイル名と位置で一意に決める」の方は生きており、むしろ純化した**: 「位置で決まる層」が消えたので、残る3層は接尾辞キーだけで判定できる。root 配置の判断（e2e）も、下記の追記 (a)(c) も、そのまま有効である。
+
 vitest/Playwright の2層構成では境界が曖昧で、無規約な第3形態（`*-integration.test.ts`）が実 CLI を起動して `vp test` のフィードバックを遅らせていた。これを4層に整理する: server/unit（`**/*.test.ts`、Node）、client（`**/*.svelte.test.ts`、vitest browser/Chromium）、cli-integration（`test/*.test.ts`、packed bin を起動）、e2e（`e2e/*.e2e.ts`、Playwright）。**層はファイル名だけで判定**し、重い CLI 統合層をデフォルトの `vp test` から分離する。
 
 CLI integration と e2e はいずれもパッケージ横断の結合テストであり（CLI の `build` コマンドは内部で client の SPA をバンドルする）、ルート直下に配置する（`test/`・`e2e/`）。パッケージ内に置かない理由は、テストのスコープがパッケージ単体ではなくリポジトリ全体にまたがるため。

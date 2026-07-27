@@ -1,4 +1,8 @@
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { expect, test } from '@playwright/test';
+
+const DIST = path.resolve(import.meta.dirname, '../fixtures/basic/dist');
 
 // The static tree is where the router and the unified /nfp-data/* URLs are most
 // likely to break, because nothing serves them dynamically — whatever the build
@@ -18,10 +22,22 @@ test('serves the slideshow off the same index.html', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Slide 1' })).toBeVisible();
 });
 
-// The 404.html fallback is asserted one layer down, in test/build.test.ts:
-// emitting it is a `copyFile` in the CLI's build command, and nothing here could
-// add to that — `vite preview` falls back to index.html on its own, so no
-// request over this connection ever reaches the fallback document.
+// The 404.html fallback is read off disk rather than requested. `vite preview`
+// falls back to index.html on its own, so no request over this connection ever
+// reaches the fallback document — but the file is what a static host serves
+// when it cannot rewrite, and in history mode that is what keeps a fresh
+// `GET /slideshow` from 404ing on GitHub Pages (docs/adr/0017). The build this
+// project depends on has already run, so `dist/` here is this commit's output
+// and not the copy that happens to be committed.
+test('emits the 404 fallback as a copy of the shell, and no other document', async () => {
+  const shell = await fs.readFile(path.join(DIST, 'index.html'), 'utf8');
+  expect(await fs.readFile(path.join(DIST, '404.html'), 'utf8')).toBe(shell);
+  const entries = await fs.readdir(DIST);
+  expect(entries.filter((entry) => entry.endsWith('.html')).sort()).toEqual([
+    '404.html',
+    'index.html',
+  ]);
+});
 
 test('emits the slide data next to the shell', async ({ page }) => {
   const meta = await page.request.get('/nfp-data/meta.json');

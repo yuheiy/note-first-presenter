@@ -66,6 +66,14 @@ Paraglide 側に受け皿は**無い**。`@inlang/paraglide-js-react` はメッ�
 
 vite plugin を CLI の `createViteConfig` に入れる案は退けた。`clientRoot` は公開ユーザーの `node_modules/@note-first-presenter/client` に解決されるので、**他人のパッケージディレクトリにコード生成する**ことになる。read-only FS（Docker の CI で `build`）で落ち、`pnpm install` のたびに消えて再生成される。
 
+### 追記（2026-07-28）: この規則は Vite の `cacheDir` にも及ぶ
+
+**上の一段落は、明示的に何かを置く判断だけでなく、既定値にも適用されるべきものだった。** Vite は `cacheDir` を `<root>/node_modules/.vite` から導き、`root` は `createViteConfig` では `clientRoot` である（ADR-0014 が `index.html` を client パッケージに置いた帰結）。つまり `dev` は `optimizeDeps` の出力を、まさにここが禁じた場所——公開ユーザーの `node_modules` の中、pnpm なら仮想ストアの中——に書いていた。名指しされている失敗様態（read-only FS、`pnpm install` で消える）もそのまま当てはまる。
+
+見つけたのは ADR-0021 のゲートで、隔離インストールに `dev` を起動して `.vite` の落ち先を見たときである。**書いてある規則の違反を、それを書いた本人が2年分のテストを通しても見なかった**ということで、公開形態を踏む層が無いことの代償がここにも出ていた。
+
+`cacheDir` は `projectCwd` 側の `node_modules/.note-first-presenter/vite` に移した。`slides/pdf.ts` がスライド画像のキャッシュに使っている根と同じで、**プロジェクトの中であって依存の中ではない**。`build` は `projectCwd` を渡さず、実際にこのディレクトリを作らないので（実測）、dev 限定の設定である。
+
 ### 出力先は `src/lib/paraglide/`
 
 `src/lib/` は React に依存しないモジュールの置き場（`dbSchema.ts` / `serverClient.ts` / `slideFilename.ts`）であり、Paraglide の出力はまさにそれ——素の関数とモジュールスコープのロケール状態だけで、React を一切知らない。`src/paraglide/` として `src` 直下に置くと、`components/` と `pages/` と `lib/` が並ぶ層に生成物が4つ目として割り込むことになる。

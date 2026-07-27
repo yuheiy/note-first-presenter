@@ -1,3 +1,4 @@
+import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig } from 'vite';
@@ -45,6 +46,21 @@ export function createViteConfig({
     // adapter-static this replaces did clear it (builder.rimraf), so
     // emptyOutDir keeps stale assets from surviving a rebuild.
     ...(outDir === undefined ? {} : { build: { outDir, emptyOutDir: true } }),
+    // Vite derives cacheDir from `root`, and `root` here is the client package —
+    // which for anyone who installed nfp is a directory inside their
+    // node_modules, in pnpm's case inside the virtual store. Left alone, dev
+    // writes its optimizeDeps output into somebody else's package. ADR-0016
+    // already refused to generate into `clientRoot` for exactly this reason, and
+    // named the ways it goes wrong: a read-only filesystem, and a `pnpm install`
+    // that wipes it. That rule reaches here too; Vite's default was slipping
+    // past it. The destination is the root the CLI already caches under
+    // (slides/pdf.ts), which is in the project rather than in a dependency.
+    //
+    // Only dev supplies `projectCwd`, and only dev needs this: a build never
+    // creates the directory (measured against an installed package).
+    ...(projectCwd === undefined
+      ? {}
+      : { cacheDir: path.join(projectCwd, 'node_modules', '.note-first-presenter', 'vite') }),
     plugins: [tailwindcss(), react(), ViteNfpPlugin({ cwd: projectCwd })],
   };
 }

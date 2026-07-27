@@ -1,6 +1,10 @@
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
+import { withTempCwd } from '../../__tests__/helpers.ts';
 import type { NoteNode } from '../../notes.ts';
-import { buildExportContext, toHtml, toMarkdown } from '../export.ts';
+import { resolveSlides } from '../../slides.ts';
+import { buildExportContext, exportAsPage, toHtml, toMarkdown } from '../export.ts';
 
 const notes: NoteNode[] = [
   { text: 'parent', children: [{ text: 'child', children: [] }] },
@@ -66,5 +70,62 @@ describe('buildExportContext', () => {
     expect(ctx.slides).toHaveLength(2);
     expect(ctx.slides[1].notes).toEqual([]);
     expect(ctx.slides[1].image).toBe('assets/0002.webp');
+  });
+});
+
+// The two cases that used to run the packed bin in a child process. What they
+// were really asserting is that the *config* reaches the output — which
+// template gets rendered and what the file is called — and that lives in
+// exportAsPage rather than in any pure function under it, so there is no seam
+// to test instead (docs/adr/0021). Calling it directly is the same coverage
+// without a 20-second timeout: it takes a resolved deck, reads the db from the
+// cwd, and writes. slides.test.ts already covers renderAll writing the images.
+describe('exportAsPage', () => {
+  withTempCwd('nfp-export-');
+
+  const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
+
+  async function project(title: string): Promise<void> {
+    await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+    await fs.writeFile(
+      path.resolve('.note-first-presenter.json'),
+      JSON.stringify({ version: 1, title, outline: { type: 'doc', content: [] } }),
+    );
+  }
+
+  function inputs(overrides: { template?: string | null; filename?: string } = {}) {
+    return {
+      slidesStatus: resolveSlides(undefined),
+      outDir: path.resolve('export'),
+      assetsDir: path.resolve('export', 'assets'),
+      assetsRelDir: 'assets',
+      template: null,
+      filename: 'index.html',
+      ...overrides,
+    };
+  }
+
+  it('renders the built-in HTML template when the config names none', async () => {
+    await project('Deck');
+    await exportAsPage(inputs());
+    const out = await fs.readFile(path.resolve('export', 'index.html'), 'utf8');
+    expect(out).toContain('<!DOCTYPE html>');
+    expect(out).toContain('<h1>Deck</h1>');
+    expect(out).toContain('<img src="assets/0001.webp"');
+  });
+
+  it('renders a configured template string into the configured filename', async () => {
+    await project('Tmpl Deck');
+    await exportAsPage(
+      inputs({
+        template:
+          '# <%= it.title %>\n<% it.slides.forEach(function (s) { %>![](<%= s.image %>)\n<% }) %>',
+        filename: 'index.md',
+      }),
+    );
+    const out = await fs.readFile(path.resolve('export', 'index.md'), 'utf8');
+    expect(out).toContain('# Tmpl Deck');
+    expect(out).toContain('![](assets/0001.webp)');
+    expect(out).not.toContain('<!DOCTYPE html>');
   });
 });
