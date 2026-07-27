@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import * as v from 'valibot';
 import { loadConfigFromFile } from 'vite';
+import { SLIDES_EXTENSIONS } from './slides.ts';
 
 /**
  * Where the route lives in the URL. Named and valued after Slidev's headmatter
@@ -13,7 +14,20 @@ export type RouterMode = (typeof ROUTER_MODES)[number];
 export const DEFAULT_ROUTER_MODE: RouterMode = 'history';
 
 const configSchema = v.strictObject({
-  slides: v.optional(v.string()),
+  // Checked here rather than at resolve time on purpose: an extension nothing
+  // can render is a wrong *setting*, not a state of the filesystem, so it takes
+  // the same route as a bad `routerMode` — exit 1 at startup, and the Vite error
+  // overlay when a running dev server's config is edited into this shape.
+  // Without it the failure surfaces as a pdfjs parse error naming nothing.
+  slides: v.optional(
+    v.pipe(
+      v.string(),
+      v.check(
+        (value) => SLIDES_EXTENSIONS.some((ext) => value.toLowerCase().endsWith(`.${ext}`)),
+        `slides must name a file ending in ${SLIDES_EXTENSIONS.map((ext) => `.${ext}`).join(' or ')}`,
+      ),
+    ),
+  ),
   // Both of these reach dev and build alike, which is why they sit at the top
   // level rather than under `build`.
   routerMode: v.optional(v.picklist(ROUTER_MODES)),

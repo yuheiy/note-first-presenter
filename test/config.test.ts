@@ -86,4 +86,15 @@ describe('note-first-presenter config validation (bin integration)', () => {
     expect(killed).toBe(false);
     expect(status).toBe(1);
   }, 60_000);
+
+  // Caught as a bad *setting* rather than left to fail as a bad file: without
+  // the schema check this reaches pdfjs, which fails with a parse error naming
+  // nothing the author can act on (docs/adr/0019).
+  it('refuses a slides path whose extension nothing can render', async () => {
+    const cwd = await projectWith(`export default { slides: 'deck.key' };\n`);
+    const { status, killed, stderr } = runExpectingFailure(cwd, ['build']);
+    expect(killed).toBe(false);
+    expect(status).toBe(1);
+    expect(stderr).toContain('.pdf');
+  }, 60_000);
 });

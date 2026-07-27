@@ -3,7 +3,7 @@ import path from 'node:path';
 import { build as viteBuild } from 'vite';
 import type { RouterMode } from '../config.ts';
 import { readDb } from '../db.ts';
-import { openSlides, type SlidesStatus } from '../slides.ts';
+import { missingSlidesMeta, openSlides, type SlidesStatus } from '../slides.ts';
 import { createViteConfig } from '../vite/index.ts';
 
 export interface BuildInput {
@@ -51,7 +51,13 @@ export async function build({
   await writeFile(path.join(dataDir, 'db.json'), JSON.stringify(db), 'utf8');
 
   if (slidesStatus.kind !== 'resolved') {
-    await writeFile(path.join(dataDir, 'meta.json'), JSON.stringify(slidesStatus), 'utf8');
+    // Not an error: a site can be built before its deck exists, and the client
+    // draws the same hint the dev server would.
+    await writeFile(
+      path.join(dataDir, 'meta.json'),
+      JSON.stringify(missingSlidesMeta(slidesStatus)),
+      'utf8',
+    );
     return;
   }
 

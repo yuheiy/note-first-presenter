@@ -36,7 +36,6 @@ catalog:
   pdfjs-dist: ^6.1.200
   '@napi-rs/canvas': ^1.0.2
   chokidar: ^5.0.0
-  tinyglobby: ^0.2.16
   '@vitest/browser-playwright': 4.1.10
   vitest-browser-react: ^2.2.0
   playwright: ^1.61.1

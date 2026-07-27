@@ -3,9 +3,9 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { focusEditor, resetDb } from './helpers.ts';
 
-// The dev server watches this PDF (auto-detected as the sole *.pdf in the
-// fixture cwd). Mutating it on disk is what exercises the chokidar -> HMR ws ->
-// client partial-update path end to end.
+// The dev server watches this PDF: the fixture sets no `slides`, so it is the
+// default `slides.pdf` (docs/adr/0019). Mutating it on disk is what exercises
+// the chokidar -> HMR ws -> client partial-update path end to end.
 const pdfPath = fileURLToPath(new URL('./fixtures/basic/slides.pdf', import.meta.url));
 
 type ReloadProbe = Window & { __nfpReloaded?: boolean };

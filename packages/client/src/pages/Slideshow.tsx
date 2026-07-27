@@ -129,13 +129,12 @@ function SlideStage() {
   const overflowing = activeSlide >= overflow.overflowStart;
   // Overflow is decided here rather than in `describeSlidesMeta`: it depends on
   // which slide is showing, which is this page's business, and it applies even
-  // though the deck resolved. Everything else is the sentence the
-  // workspace's slide panel would have shown, minus the tone — a black field has
-  // nothing to say a hint apart from an error with.
+  // though the deck resolved. Everything else is the same sentence the
+  // workspace's slide panel would have shown.
   const fallbackMessage =
     resolved && overflowing
       ? m.slide_beyond_pdf_pages_label({ n: activeSlide })
-      : (describeSlidesMeta(meta)?.message ?? null);
+      : describeSlidesMeta(meta);
 
   return (
     // Click anywhere to advance, the way a slide remote's single button behaves.

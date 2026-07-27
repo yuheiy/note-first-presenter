@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
-import { openSlides, resolveSlides } from '../slides.ts';
+import { DEFAULT_SLIDES_PATH, missingSlidesMeta, openSlides, resolveSlides } from '../slides.ts';
 import { withTempCwd } from './helpers.ts';
 
 const SAMPLE_PDF = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
@@ -9,40 +9,55 @@ const SAMPLE_PDF = path.resolve(import.meta.dirname, 'fixtures/sample.pdf');
 withTempCwd('nfp-slides-');
 
 describe('resolveSlides', () => {
-  it('returns no-config-no-file when nothing exists', async () => {
-    const result = await resolveSlides({ configuredSlides: undefined, configFile: null });
-    expect(result.kind).toBe('no-config-no-file');
-  });
-
-  it('returns resolved when a single PDF exists', async () => {
-    await fs.writeFile('slides.pdf', '%PDF-1.4');
-    const result = await resolveSlides({ configuredSlides: undefined, configFile: null });
-    expect(result).toEqual({ kind: 'resolved', path: path.resolve('slides.pdf') });
-  });
-
-  it('returns no-config-multiple-files when many', async () => {
-    await fs.writeFile('a.pdf', '%PDF-1.4');
-    await fs.writeFile('b.pdf', '%PDF-1.4');
-    const result = await resolveSlides({ configuredSlides: undefined, configFile: null });
-    expect(result.kind).toBe('no-config-multiple-files');
-  });
-
-  it('returns configured-but-missing when path does not exist', async () => {
-    const result = await resolveSlides({
-      configuredSlides: './missing.pdf',
-      configFile: path.resolve('note-first-presenter.config.ts'),
+  it('falls back to the default filename when the config says nothing', async () => {
+    await fs.writeFile(DEFAULT_SLIDES_PATH, '%PDF-1.4');
+    expect(resolveSlides(undefined)).toEqual({
+      kind: 'resolved',
+      path: path.resolve(DEFAULT_SLIDES_PATH),
     });
-    expect(result.kind).toBe('configured-but-missing');
   });
 
-  it('resolves configured path relative to config file directory', async () => {
+  it('reports missing when the default filename is absent', () => {
+    expect(resolveSlides(undefined)).toEqual({
+      kind: 'missing',
+      path: path.resolve(DEFAULT_SLIDES_PATH),
+    });
+  });
+
+  // The point of the whole rule: a PDF sitting in the project is not a deck
+  // unless it is the one the config names (docs/adr/0019).
+  it('ignores another PDF in the cwd rather than adopting it', async () => {
+    await fs.writeFile('deck.pdf', '%PDF-1.4');
+    expect(resolveSlides(undefined)).toEqual({
+      kind: 'missing',
+      path: path.resolve(DEFAULT_SLIDES_PATH),
+    });
+  });
+
+  it('resolves a configured path against the cwd', async () => {
     await fs.mkdir('docs', { recursive: true });
     await fs.writeFile('docs/main.pdf', '%PDF-1.4');
-    const result = await resolveSlides({
-      configuredSlides: './docs/main.pdf',
-      configFile: path.resolve('note-first-presenter.config.ts'),
+    expect(resolveSlides('./docs/main.pdf')).toEqual({
+      kind: 'resolved',
+      path: path.resolve('docs', 'main.pdf'),
     });
-    expect(result).toEqual({ kind: 'resolved', path: path.resolve('docs', 'main.pdf') });
+  });
+
+  it('reports missing with the resolved path when the configured file is absent', () => {
+    expect(resolveSlides('docs/main.pdf')).toEqual({
+      kind: 'missing',
+      path: path.resolve('docs', 'main.pdf'),
+    });
+  });
+});
+
+describe('missingSlidesMeta', () => {
+  it('relativises the path so the browser never shows the author’s home directory', () => {
+    const status = resolveSlides('docs/main.pdf');
+    expect(missingSlidesMeta(status as Extract<typeof status, { kind: 'missing' }>)).toEqual({
+      kind: 'missing',
+      path: path.join('docs', 'main.pdf'),
+    });
   });
 });
 

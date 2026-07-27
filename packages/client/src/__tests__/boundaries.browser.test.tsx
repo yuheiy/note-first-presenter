@@ -53,7 +53,7 @@ const server = vi.hoisted(() => {
     api: async (url: string, options?: { method?: string; body?: unknown }) => {
       if (url === '/nfp-data/meta.json') {
         if (server.failMeta) throw new Error('Network request failed');
-        return { kind: 'no-config-no-file' };
+        return { kind: 'missing', path: 'slides.pdf' };
       }
       if (options?.method === 'PUT') {
         puts.push(options.body);
