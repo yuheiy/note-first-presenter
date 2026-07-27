@@ -9,24 +9,24 @@ cleanupUnusedCatalogs: true
 catalog:
   '@types/node': ^22.20.1
   typescript: ^7.0.2
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.5
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.6
   # Pinned exactly at the version vite-plus bundles, so that `vp test` and a bare
   # `vitest` cannot resolve two copies of @vitest/runner (which killed the unit
   # tests and hung the browser ones silently). Never bump this independently of
   # vite-plus — let `vp migrate` move them in lockstep. Same for
   # @vitest/browser-playwright below.
   vitest: 4.1.10
-  vite-plus: 0.2.5
+  vite-plus: 0.2.6
   react: ^19.2.8
   react-dom: ^19.2.8
   react-aria-components: ^1.19.0
-  '@inlang/paraglide-js': ^2.22.0
+  '@inlang/paraglide-js': ^2.23.0
   '@types/react': ^19.2.17
   '@types/react-dom': ^19.2.3
   '@vitejs/plugin-react': ^6.0.4
   prosemirror-model: ^1.25.11
   prosemirror-state: ^1.4.4
-  prosemirror-view: ^1.42.1
+  prosemirror-view: ^1.42.2
   prosemirror-transform: ^1.12.0
   prosemirror-commands: ^1.7.1
   prosemirror-history: ^1.5.0
@@ -38,13 +38,13 @@ catalog:
   chokidar: ^5.0.0
   '@vitest/browser-playwright': 4.1.10
   vitest-browser-react: ^2.2.0
-  playwright: ^1.61.1
-  '@playwright/test': ^1.61.1
+  playwright: ^1.62.0
+  '@playwright/test': ^1.62.0
   citty: ^0.2.2
   vitefu: ^1.1.3
   prosemirror-schema-list: ^1.5.1
   eta: ^4.6.0
-  knip: ^6.27.0
+  knip: ^6.29.0
   '@tailwindcss/vite': ^4.3.3
   tailwindcss: ^4.3.3
   '@phosphor-icons/react': ^2.1.10
