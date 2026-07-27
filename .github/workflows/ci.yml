@@ -43,7 +43,7 @@ jobs:
         node: ['22.18.0', '24']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: voidzero-dev/setup-vp@v1
         with:
@@ -74,3 +74,31 @@ jobs:
       - run: vp exec playwright install --with-deps chromium
 
       - run: vp run test
+
+  # Separate from `test` so a red check names the diagnosis. "The published form
+  # is broken" and "a test failed" are different problems with different fixes,
+  # and the same reasoning already split e2e into dev/static projects
+  # (docs/adr/0005, 2026-07-26 addendum). It also skips the browser download,
+  # which this needs nothing from.
+  #
+  # On the same Node matrix as `test`, and this is where the floor earns the
+  # most: it is the only job that runs the CLI as an installed package, so it is
+  # the only place `engines` is checked against what a published user actually
+  # gets rather than against the workspace.
+  verify-package:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.18.0', '24']
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: ${{ matrix.node }}
+          cache: true
+
+      - run: vp install
+      - run: vp run -w verify:package

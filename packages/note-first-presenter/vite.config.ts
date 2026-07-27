@@ -8,6 +8,12 @@ export default defineConfig({
     },
     // `cli` is an entry so the bin has something to import, not an API. Excluding
     // it keeps it out of the generated `exports` while still emitting dist/cli.mjs.
+    //
+    // Generated is the word: `package.json`'s `exports` is tsdown's output, not
+    // something to edit. Hand-adding a `types` condition there survives exactly
+    // until the next build, which rewrites the field without one — measured.
+    // Types resolve anyway, because `moduleResolution: nodenext` finds the
+    // `.d.mts` beside the `.mjs`.
     exports: {
       exclude: ['cli'],
     },

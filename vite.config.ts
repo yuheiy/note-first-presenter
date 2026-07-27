@@ -34,25 +34,31 @@ export default defineConfig({
       },
     ],
   },
-  test: {
-    include: ['test/**/*.{test,spec}.{js,ts}'],
-  },
   run: {
     cache: true,
-    // Both layers reach the CLI through the `note-first-presenter` bin on PATH,
-    // and that bin forwards to `dist/` (docs/adr/0020) — so they need a build
-    // ahead of them or they run last commit's CLI. Declared rather than chained
-    // into the script so the cache can skip it when nothing under src/ moved.
-    // This is also what keeps a layer pointed at the shipped artifact: without
-    // it, nothing would exercise `dist/` until publish.
     tasks: {
-      'test:integration': {
-        command: 'vp run messages && vp test',
-        dependsOn: ['note-first-presenter#build'],
-      },
+      // e2e reaches the CLI through the `note-first-presenter` bin on PATH, and
+      // that bin forwards to `dist/` (docs/adr/0020) — so it needs a build ahead
+      // of it or it runs last commit's CLI. Declared rather than chained into
+      // the script so the cache can skip it when nothing under src/ moved.
       'test:e2e': {
         command: 'vp run messages && playwright install && playwright test',
         dependsOn: ['note-first-presenter#build'],
+      },
+      // The published form, verified by installing it (docs/adr/0021). Not a
+      // test layer: it is nobody's `*.test.ts`, and `vp run test` does not
+      // reach it. CI runs it on every change and `prepublishOnly` runs it on
+      // the way out.
+      //
+      // No `dependsOn` and no cache, both on purpose. The script packs, and
+      // packing fires `prepack`, so the build is guaranteed by the thing being
+      // measured rather than by a declaration beside it — a gate that trusted
+      // the task cache to tell it the artifact was current would be trusting
+      // the one thing it exists to check. It runs rarely enough that a cache
+      // would save nothing anyway.
+      'verify:package': {
+        command: 'node scripts/verify-package.ts',
+        cache: false,
       },
     },
   },

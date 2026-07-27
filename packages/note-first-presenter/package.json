@@ -30,7 +30,8 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
-    "prepack": "vp run build"
+    "prepack": "vp run build",
+    "prepublishOnly": "vp run -w verify:package"
   },
   "dependencies": {
     "@napi-rs/canvas": "catalog:",

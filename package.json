@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vp run messages && vp run --filter client --filter demo --filter note-first-presenter --parallel dev",
-    "test": "vp run test:unit && vp run test:integration && vp run test:e2e",
+    "test": "vp run test:unit && vp run test:e2e",
     "test:unit": "vp run messages && vp run --filter './packages/*' test",
     "messages": "vp run client#compile-messages",
     "prepare": "vp config"

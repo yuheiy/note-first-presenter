@@ -5,7 +5,7 @@
   },
   "workspaces": {
     ".": {
-      "entry": ["test/**/*.test.ts"],
+      "entry": ["scripts/*.ts"],
       "ignoreDependencies": ["vite"]
     },
     "packages/note-first-presenter": {
