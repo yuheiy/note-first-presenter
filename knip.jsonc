@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/knip/schema-jsonc.json",
+  "rules": {
+    "catalog": "off",
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.ts"],
+      "ignoreDependencies": ["vite"],
+    },
+    "packages/note-first-presenter": {
+      "entry": ["src/cli.ts", "src/index.ts"],
+      // There is no .css in this package. The extension is listed only to
+      // silence knip's "Compiled extension excluded by project" hint, which it
+      // emits for every workspace whose `project` excludes a compiled
+      // extension, empty or not. Turning the CSS compiler off is not an option:
+      // `compilers` is rejected per workspace (`unrecognized_keys`) and does not
+      // exist at the root of knip's schema.
+      "project": ["src/**/*.{ts,css}"],
+    },
+    "packages/client": {
+      // `css` here is load-bearing, not cosmetic, and it is why this workspace
+      // carries no `ignoreDependencies`. It lets knip follow
+      // main.tsx -> style.css -> outliner.css, and `@import 'tailwindcss'` on
+      // line 3 of style.css is the only thing in the repo that marks tailwindcss
+      // as used — every other reference is Tailwind scanning source, which knip
+      // does not see. Drop `css` and knip reports tailwindcss as an unused
+      // dependency. The two move together or not at all.
+      "project": ["src/**/*.{ts,tsx,css}"],
+    },
+    "demo": {
+      "entry": [],
+    },
+    "e2e/fixtures/*": {
+      "entry": [],
+      "ignoreDependencies": ["note-first-presenter"],
+    },
+  },
+}

@@ -1,6 +1,11 @@
-# The first automated trigger this repo has had. Until now the only thing that
-# ran without being asked was the `vp check --fix` commit hook (`staged` in the
-# root vite.config.ts), which sees one commit's staged files and nothing else.
+# The first automated trigger this repo has had that outlives the machine it
+# was typed on. Two git hooks already ran without being asked: `vp staged` on
+# pre-commit (the `vp check --fix` configured as `staged` in the root
+# vite.config.ts), which sees one commit's staged files and nothing else, and
+# `knip` on pre-push (.vite-hooks/pre-push). Both are local and `--no-verify`
+# skips both, so neither gates what reaches main. knip stays that way on
+# purpose: it is not a step below, and its absence is a decision rather than an
+# oversight.
 #
 # No ADR covers this file: introducing CI is neither hard to reverse nor
 # surprising. The choices that a reader might question are explained inline,
