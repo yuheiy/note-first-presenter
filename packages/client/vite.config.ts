@@ -10,12 +10,12 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   // The define is repeated from the CLI's createViteConfig, which is the source
   // of truth for the app build; without it every test that imports
-  // lib/routes.ts dies on an undefined global (docs/adr/0017).
+  // lib/urls.ts dies on an undefined global (docs/adr/0017).
   //
   // The *value* is this file's own choice — the mode the test suite runs in —
-  // and deliberately does not track the CLI's default. lib/routes.ts takes the
-  // mode as a parameter wherever it branches, so both modes are covered by
-  // routes.test.ts regardless of which one is compiled in here.
+  // and deliberately does not track the CLI's default. lib/urls.ts and App.tsx
+  // take the mode as a parameter wherever it branches, so both modes are
+  // covered by the tests regardless of which one is compiled in here.
   define: { __NFP_ROUTER_MODE__: JSON.stringify('history') },
   test: {
     // Unlike the repo root — where the bare built-in `vp test` finds no browser

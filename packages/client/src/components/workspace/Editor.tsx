@@ -1,9 +1,9 @@
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useEffect, useEffectEvent } from 'react';
 import { Input, TextField } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
 import { Outliner } from '../outliner/Outliner';
-import { useActiveSlide } from '../../lib/routes';
+import { activeSlideAtom } from '../slides/activeSlide';
 import { titleAtom } from './db';
 import { useDbEditing, useStoredDocument, type DbEditing } from './useDb';
 import { Workspace } from './Workspace';
@@ -20,17 +20,16 @@ import { Workspace } from './Workspace';
  * handed to the shell as a slot and suspends on its own, so a slow or failed
  * request never reaches the toolbar or the theme footer.
  *
- * `useActiveSlide` is called here and nowhere else below: it owns React state,
- * so a second call would be a second slide rather than the same one.
+ * The active slide is read here only to wire the Outliner, which stays a
+ * controlled component at the ProseMirror boundary; everything in the shell
+ * that needs the slide reads `activeSlideAtom` itself.
  */
 export function Editor() {
-  const [activeSlide, setActiveSlide] = useActiveSlide();
+  const [activeSlide, setActiveSlide] = useAtom(activeSlideAtom);
   const editing = useDbEditing();
 
   return (
     <Workspace
-      activeSlide={activeSlide}
-      onActiveSlideChange={setActiveSlide}
       titleArea={<TitleField editing={editing} />}
       outliner={
         <EditableOutline

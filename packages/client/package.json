@@ -49,7 +49,8 @@
     "react-dom": "catalog:",
     "react-error-boundary": "catalog:",
     "tailwindcss": "catalog:",
-    "valibot": "catalog:"
+    "valibot": "catalog:",
+    "wouter": "catalog:"
   },
   "devDependencies": {
     "@inlang/paraglide-js": "catalog:",

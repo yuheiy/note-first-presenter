@@ -1,7 +1,7 @@
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { m } from '../../lib/paraglide/messages.js';
 import { Outliner } from '../outliner/Outliner';
-import { useActiveSlide } from '../../lib/routes';
+import { activeSlideAtom } from '../slides/activeSlide';
 import { titleAtom } from './db';
 import { useStoredDocument } from './useDb';
 import { Workspace } from './Workspace';
@@ -13,15 +13,13 @@ import { Workspace } from './Workspace';
  * here can write, and nothing that writes is reachable from here.
  */
 export function Viewer() {
-  const [activeSlide, setActiveSlide] = useActiveSlide();
+  const [activeSlide, setActiveSlide] = useAtom(activeSlideAtom);
   // Synchronous and defaulted, so the toolbar draws before the document lands
   // rather than waiting with it. Only the outline pane below waits.
   const title = useAtomValue(titleAtom) || m.untitled_title_placeholder();
 
   return (
     <Workspace
-      activeSlide={activeSlide}
-      onActiveSlideChange={setActiveSlide}
       titleArea={
         <h1 className="mr-auto flex min-h-7 items-center text-sm text-gray-800">{title}</h1>
       }

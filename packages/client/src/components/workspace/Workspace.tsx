@@ -6,8 +6,9 @@ import { Suspense, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Button, Link, Radio, RadioGroup, TooltipTrigger } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
-import { slideshowHref } from '../../lib/routes';
+import { slideshowHref } from '../../lib/urls';
 import { ErrorOverlay, reason } from '../ErrorOverlay';
+import { activeSlideAtom } from '../slides/activeSlide';
 import { Hint } from '../Hint';
 import { SlideCountPublisher } from '../slides/SlideCountPublisher';
 import { SlidePanel } from '../slides/SlidePanel';
@@ -18,8 +19,6 @@ import { useListOpen } from './listOpen';
 import { useTheme, type ThemeMode } from './theme';
 
 export interface WorkspaceProps {
-  activeSlide: number;
-  onActiveSlideChange: (slide: number) => void;
   /**
    * The toolbar's leading area: an editable field in the Editor, a heading in
    * the Viewer. A `ReactNode` rather than a render prop — the shell has nothing
@@ -45,19 +44,12 @@ const SCROLL_TAIL_CLASS =
  * The workspace shell: toolbar, outliner panel, slide list, theme footer.
  *
  * Everything it owns is something that stops here — the colour scheme, whether
- * the list is showing, and the broadcast the slideshow window follows. Anything
- * two pages need is owned by the page above and arrives as a prop, so there is
- * no context anywhere in the tree.
- *
- * It broadcasts rather than owns `activeSlide`: publishing needs the effective
- * slide count, and this is the one component holding both halves of it.
+ * the list is showing, and the broadcast the slideshow window follows. The
+ * active slide is nobody's prop: it is `activeSlideAtom`, read by exactly the
+ * components that render or write it, so the shell never re-renders for a
+ * slide change it does not draw.
  */
-export function Workspace({
-  activeSlide,
-  onActiveSlideChange,
-  titleArea,
-  outliner,
-}: WorkspaceProps) {
+export function Workspace({ titleArea, outliner }: WorkspaceProps) {
   const [listOpen, setListOpen] = useListOpen();
 
   // --slide-aspect has to live on the root grid, because both panels'
@@ -80,7 +72,6 @@ export function Workspace({
 
       <Toolbar
         titleArea={titleArea}
-        activeSlide={activeSlide}
         listOpen={listOpen}
         onToggleList={() => {
           setListOpen(!listOpen);
@@ -92,15 +83,13 @@ export function Workspace({
           request should silence the broadcast, not blank the workspace. */}
       <ErrorBoundary fallback={null}>
         <Suspense fallback={null}>
-          <SlideCountPublisher activeSlide={activeSlide} />
+          <SlideCountPublisher />
         </Suspense>
       </ErrorBoundary>
 
       <OutlinerPane>{outliner}</OutlinerPane>
 
-      {listOpen && (
-        <SlideListPane activeSlide={activeSlide} onActiveSlideChange={onActiveSlideChange} />
-      )}
+      {listOpen && <SlideListPane />}
 
       <ThemeFooter />
     </div>
@@ -112,7 +101,6 @@ const TOOLBAR_BUTTON =
 
 interface ToolbarProps {
   titleArea: ReactNode;
-  activeSlide: number;
   listOpen: boolean;
   onToggleList: () => void;
 }
@@ -123,15 +111,19 @@ interface ToolbarProps {
  * ArrowLeft/Right with no exception for text inputs, which would break caret
  * movement in the title TextField sitting in `titleArea` (docs/adr/0015).
  */
-function Toolbar({ titleArea, activeSlide, listOpen, onToggleList }: ToolbarProps) {
+function Toolbar({ titleArea, listOpen, onToggleList }: ToolbarProps) {
+  const activeSlide = useAtomValue(activeSlideAtom);
+
   return (
     <div className="col-span-full flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-1">
       {titleArea}
       <TooltipTrigger>
-        {/* A real document load, not an in-app transition: the href knows the
-            router mode and the base, which lib/routes.ts is the only place to
-            know. The named target is what makes the slideshow reuse its own
-            window rather than pile up new ones. */}
+        {/* A real document load, not an in-app transition — RAC's Link, never
+            wouter's, whose click handler navigates in-document regardless of
+            `target` (ADR-0017). The href knows the router mode and the base,
+            which lib/urls.ts is the only place to know. The named target is
+            what makes the slideshow reuse its own window rather than pile up
+            new ones. */}
         <Link
           href={slideshowHref(activeSlide)}
           target="nfp-slideshow"
@@ -178,11 +170,6 @@ function OutlinerPane({ children }: { children: ReactNode }) {
   );
 }
 
-interface SlideListPaneProps {
-  activeSlide: number;
-  onActiveSlideChange: (slide: number) => void;
-}
-
 /**
  * The slide list's pane. Scrolling and padding belong to the ListBox inside;
  * what stays here is the panel's chrome and its `container-type: size`, which
@@ -192,12 +179,12 @@ interface SlideListPaneProps {
  * The error fallback shows the transport's own words rather than a catalog
  * entry: a failure to reach the server has no message of ours to show.
  */
-function SlideListPane({ activeSlide, onActiveSlideChange }: SlideListPaneProps) {
+function SlideListPane() {
   return (
     <div className="[container-type:size] border-l border-gray-200 bg-gray-50">
       <ErrorBoundary fallbackRender={({ error }) => <ErrorOverlay message={reason(error)} />}>
         <Suspense fallback={<Hint message="…" />}>
-          <SlidePanel activeSlide={activeSlide} onActiveSlideChange={onActiveSlideChange} />
+          <SlidePanel />
         </Suspense>
       </ErrorBoundary>
     </div>

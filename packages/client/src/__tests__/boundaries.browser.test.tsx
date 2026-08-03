@@ -18,7 +18,7 @@ import { render } from 'vitest-browser-react';
 import { fakeServer } from '../lib/__mocks__/serverClient';
 import { SAVE_DEBOUNCE_MS } from '../components/workspace/dbSaver';
 import { Editor } from '../components/workspace/Editor';
-import Slideshow from '../pages/Slideshow';
+import Slideshow from '../routes/slideshow';
 
 vi.mock('../lib/serverClient');
 

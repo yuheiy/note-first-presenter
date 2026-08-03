@@ -1,3 +1,5 @@
+import { useAtomValue } from 'jotai';
+import { activeSlideAtom } from './activeSlide';
 import { useDeck } from './deck';
 import { useSyncPublisher } from './sync';
 
@@ -9,7 +11,8 @@ import { useSyncPublisher } from './sync';
  * The invariant: a count of 0 is never broadcast while the requests are still
  * in flight — publishing waits until there is something true to say.
  */
-export function SlideCountPublisher({ activeSlide }: { activeSlide: number }) {
+export function SlideCountPublisher() {
+  const activeSlide = useAtomValue(activeSlideAtom);
   const { overflow } = useDeck();
   useSyncPublisher(activeSlide, overflow.slideCount);
   return null;

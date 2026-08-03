@@ -62,6 +62,7 @@ catalog:
   clsx: ^2.1.1
   jotai: ^2.20.2
   react-error-boundary: ^6.1.2
+  wouter: ^3.10.0
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'

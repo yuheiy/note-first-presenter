@@ -51,7 +51,7 @@ test('emits the slide data next to the shell', async ({ page }) => {
 // behaviour — nothing writes, nothing is editable — which no amount of
 // minification or refactoring can fake. It does *not* check that the Editor was
 // dead-code-eliminated: `import.meta.env.DEV` is false at runtime in a built
-// site too, so pages/Workspace.tsx would render the Viewer, and this test would
+// site too, so routes/index.tsx would render the Viewer, and this test would
 // pass, even with the whole Editor still sitting in the bundle. That gap is
 // accepted on purpose: dead-code elimination is not one of the guarantees this
 // suite makes, its only cost being bundle weight. Confirming elimination means
