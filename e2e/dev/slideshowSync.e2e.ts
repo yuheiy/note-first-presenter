@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { resetDb } from './helpers.ts';
+import { resetDb } from '../helpers.ts';
 
 test('slideshow image src follows presenter active slide via BroadcastChannel', async ({
   browser,
@@ -19,10 +19,7 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
   const presenterOptions = presenter.getByRole('option');
   await expect(presenterOptions).toHaveCount(3);
 
-  // Click slide 2 in presenter
   await presenterOptions.nth(1).click();
-
-  // Slideshow image src should update to slide 2 path
   await expect
     .poll(
       async () => {
@@ -33,7 +30,6 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
     )
     .toMatch(/\/0002\.webp$/);
 
-  // Click slide 3
   await presenterOptions.nth(2).click();
   await expect
     .poll(
@@ -46,25 +42,4 @@ test('slideshow image src follows presenter active slide via BroadcastChannel', 
     .toMatch(/\/0003\.webp$/);
 
   await context.close();
-});
-
-test('slide image endpoint serves a webp image', async ({ page }) => {
-  await page.goto('/');
-  let meta: any;
-  await expect
-    .poll(
-      async () => {
-        const res = await page.request.get('/nfp-data/meta.json');
-        if (!res.ok()) return null;
-        meta = await res.json();
-        return meta.kind;
-      },
-      { timeout: 10_000 },
-    )
-    .toBe('resolved');
-  const res = await page.request.get(`/nfp-data/slides/${meta.hash}/0001.webp`);
-  expect(res.status()).toBe(200);
-  expect(res.headers()['content-type']).toBe('image/webp');
-  const body = await res.body();
-  expect(body.byteLength).toBeGreaterThan(0);
 });

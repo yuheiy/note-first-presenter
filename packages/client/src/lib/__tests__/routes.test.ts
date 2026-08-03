@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { composeSlideshowHref, parseSlideParam, resolveRoutePath, slideSearch } from '../routes';
+import { composeSlideshowHref, parseSlideParam, resolveRoutePath } from '../routes';
 
 // Only one mode gets built at a time (`__NFP_ROUTER_MODE__` is a literal), and
 // only `history` is exercised end to end — the e2e budget goes to `--base`,
@@ -25,17 +25,8 @@ describe('slide param', () => {
     expect(parseSlideParam('3.7')).toBe(3);
   });
 
-  it('writes no parameter at all for the first slide', () => {
-    expect(slideSearch(1)).toBe('');
-  });
-
-  it('writes the parameter for every other slide', () => {
-    expect(slideSearch(5)).toBe('?slide=5');
-  });
-
-  it('round-trips', () => {
-    expect(parseSlideParam(new URLSearchParams(slideSearch(9)).get('slide'))).toBe(9);
-  });
+  // How the slide is *written* is asserted through `composeSlideshowHref`
+  // below — the query builder is not part of the module's surface.
 });
 
 // The URL shapes below are the ones the browser really produces — they were read

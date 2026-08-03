@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
-import { withTempCwd } from '../../__tests__/helpers.ts';
+import { freshTempDir } from '../../__tests__/helpers.ts';
 import type { NoteNode } from '../../notes.ts';
 import { resolveSlides } from '../../slides.ts';
 import { buildExportContext, exportAsPage, toHtml, toMarkdown } from '../export.ts';
@@ -14,8 +14,6 @@ const notes: NoteNode[] = [
 describe('toMarkdown', () => {
   it('renders nested bullets with 2-space indent', () => {
     expect(toMarkdown(notes)).toBe('- parent\n  - child\n- second');
-  });
-  it('returns empty string for no notes', () => {
     expect(toMarkdown([])).toBe('');
   });
 });
@@ -23,14 +21,12 @@ describe('toMarkdown', () => {
 describe('toHtml', () => {
   it('renders nested <ul><li> structure', () => {
     expect(toHtml(notes)).toBe('<ul><li>parent<ul><li>child</li></ul></li><li>second</li></ul>');
+    expect(toHtml([])).toBe('');
   });
   it('escapes HTML special characters', () => {
     expect(toHtml([{ text: '<b> & "x"', children: [] }])).toBe(
       '<ul><li>&lt;b&gt; &amp; &quot;x&quot;</li></ul>',
     );
-  });
-  it('returns empty string for no notes', () => {
-    expect(toHtml([])).toBe('');
   });
 });
 
@@ -73,31 +69,30 @@ describe('buildExportContext', () => {
   });
 });
 
-// The two cases that used to run the packed bin in a child process. What they
-// were really asserting is that the *config* reaches the output — which
-// template gets rendered and what the file is called — and that lives in
-// exportAsPage rather than in any pure function under it, so there is no seam
-// to test instead (docs/adr/0021). Calling it directly is the same coverage
-// without a 20-second timeout: it takes a resolved deck, reads the db from the
-// cwd, and writes. slides.test.ts already covers renderAll writing the images.
+// What these assert is that the *config* reaches the output — which template
+// gets rendered and what the file is called — and that lives in exportAsPage
+// rather than in any pure function under it, so there is no seam to test
+// instead (docs/adr/0021). It takes a resolved deck, reads the db from the
+// given cwd, and writes. slides.test.ts covers renderAll writing the images.
 describe('exportAsPage', () => {
-  withTempCwd('nfp-export-');
+  const cwd = freshTempDir('nfp-export-');
 
   const SAMPLE_PDF = path.resolve(import.meta.dirname, '../../__tests__/fixtures/sample.pdf');
 
   async function project(title: string): Promise<void> {
-    await fs.copyFile(SAMPLE_PDF, path.resolve('slides.pdf'));
+    await fs.copyFile(SAMPLE_PDF, path.join(cwd(), 'slides.pdf'));
     await fs.writeFile(
-      path.resolve('.note-first-presenter.json'),
+      path.join(cwd(), '.note-first-presenter.json'),
       JSON.stringify({ version: 1, title, outline: { type: 'doc', content: [] } }),
     );
   }
 
   function inputs(overrides: { template?: string | null; filename?: string } = {}) {
     return {
-      slidesStatus: resolveSlides(undefined),
-      outDir: path.resolve('export'),
-      assetsDir: path.resolve('export', 'assets'),
+      cwd: cwd(),
+      slidesStatus: resolveSlides(cwd(), undefined),
+      outDir: path.join(cwd(), 'export'),
+      assetsDir: path.join(cwd(), 'export', 'assets'),
       assetsRelDir: 'assets',
       template: null,
       filename: 'index.html',
@@ -108,7 +103,7 @@ describe('exportAsPage', () => {
   it('renders the built-in HTML template when the config names none', async () => {
     await project('Deck');
     await exportAsPage(inputs());
-    const out = await fs.readFile(path.resolve('export', 'index.html'), 'utf8');
+    const out = await fs.readFile(path.join(cwd(), 'export', 'index.html'), 'utf8');
     expect(out).toContain('<!DOCTYPE html>');
     expect(out).toContain('<h1>Deck</h1>');
     expect(out).toContain('<img src="assets/0001.webp"');
@@ -123,7 +118,7 @@ describe('exportAsPage', () => {
         filename: 'index.md',
       }),
     );
-    const out = await fs.readFile(path.resolve('export', 'index.md'), 'utf8');
+    const out = await fs.readFile(path.join(cwd(), 'export', 'index.md'), 'utf8');
     expect(out).toContain('# Tmpl Deck');
     expect(out).toContain('![](assets/0001.webp)');
     expect(out).not.toContain('<!DOCTYPE html>');

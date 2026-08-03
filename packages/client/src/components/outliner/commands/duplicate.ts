@@ -1,24 +1,18 @@
-import { Fragment, type Node, type ResolvedPos } from 'prosemirror-model';
-import { type Command, type EditorState } from 'prosemirror-state';
+import { Fragment, type Node } from 'prosemirror-model';
+import { type Command } from 'prosemirror-state';
+import { LIST_ITEM } from '../model/nodes';
+import { findListItemDepth } from '../model/position';
 import {
   collectAllSelectedItemPositions,
   createNodeRangeSelection,
   isNodeRangeSelection,
 } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
-
-function findListItemDepth($pos: ResolvedPos): number | null {
-  let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
-  return depth === 0 ? null : depth;
-}
+import { rangeAware } from './rangeAware';
 
 // Duplicate every selected list_item (primary range + additionalItems) and
 // insert the copies right after the rearmost selected item, all sharing the
 // rearmost's parent bullet_list. Selection is updated to cover the new copies.
-function duplicateNodeRange(state: EditorState, dispatch: Parameters<Command>[1]): boolean {
+const duplicateNodeRange: Command = (state, dispatch) => {
   const sel = state.selection;
   if (!isNodeRangeSelection(sel)) return false;
   const positions = collectAllSelectedItemPositions(sel);
@@ -47,11 +41,9 @@ function duplicateNodeRange(state: EditorState, dispatch: Parameters<Command>[1]
 
   if (dispatch) dispatch(tr.scrollIntoView());
   return true;
-}
+};
 
-export const duplicateItem: Command = (state, dispatch) => {
-  if (isNodeRangeSelection(state.selection)) return duplicateNodeRange(state, dispatch);
-
+const duplicateSingle: Command = (state, dispatch) => {
   const { $from } = state.selection;
   const depth = findListItemDepth($from);
   if (depth === null) return false;
@@ -61,3 +53,5 @@ export const duplicateItem: Command = (state, dispatch) => {
   if (dispatch) dispatch(tr.scrollIntoView());
   return true;
 };
+
+export const duplicateItem = rangeAware(duplicateNodeRange, duplicateSingle);

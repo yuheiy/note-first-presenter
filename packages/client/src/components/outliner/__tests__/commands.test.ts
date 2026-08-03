@@ -2,30 +2,15 @@ import { EditorState, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { duplicateItem } from '../commands/duplicate';
 import { moveItemDown, moveItemUp } from '../commands/move';
-import { outlinerSchema } from '../schema';
+import { docOf, item, itemPos, makeDoc, topTexts } from './fixtures';
 
 function makeState(texts: string[], caretInItemIndex = 0) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  const doc = outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-  let pos = 1; // inside bullet_list opening
-  for (let i = 0; i < caretInItemIndex; i++) pos += items[i].nodeSize;
-  // move into the item (paragraph start)
-  pos += 2;
-  return EditorState.create({ doc, selection: TextSelection.create(doc, pos) });
-}
-
-function topItemTexts(state: EditorState) {
-  const list = state.doc.firstChild;
-  if (!list) return [];
-  const out: string[] = [];
-  list.forEach((it) => {
-    out.push(it.firstChild?.textContent ?? '');
+  const doc = makeDoc(texts);
+  // caret at the start of the item's paragraph
+  return EditorState.create({
+    doc,
+    selection: TextSelection.create(doc, itemPos(doc, caretInItemIndex) + 2),
   });
-  return out;
 }
 
 describe('moveItemUp', () => {
@@ -36,7 +21,7 @@ describe('moveItemUp', () => {
       next = state.apply(tr);
     });
     expect(next).not.toBeNull();
-    expect(topItemTexts(next!)).toEqual(['b', 'a', 'c']);
+    expect(topTexts(next!.doc)).toEqual(['b', 'a', 'c']);
   });
 
   it('returns false at the top of the list', () => {
@@ -53,7 +38,7 @@ describe('moveItemDown', () => {
       next = state.apply(tr);
     });
     expect(next).not.toBeNull();
-    expect(topItemTexts(next!)).toEqual(['a', 'c', 'b']);
+    expect(topTexts(next!.doc)).toEqual(['a', 'c', 'b']);
   });
 
   it('returns false at the bottom of the list', () => {
@@ -70,20 +55,11 @@ describe('duplicateItem', () => {
       next = state.apply(tr);
     });
     expect(next).not.toBeNull();
-    expect(topItemTexts(next!)).toEqual(['a', 'a', 'b']);
+    expect(topTexts(next!.doc)).toEqual(['a', 'a', 'b']);
   });
 
   it('clones nested children too', () => {
-    const child = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('child')]),
-    ]);
-    const parent = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('parent')]),
-      outlinerSchema.node('bullet_list', null, [child]),
-    ]);
-    const doc = outlinerSchema.node('doc', null, [
-      outlinerSchema.node('bullet_list', null, [parent]),
-    ]);
+    const doc = docOf([item('parent', [item('child')])]);
     const state = EditorState.create({ doc, selection: TextSelection.create(doc, 3) });
     let next: EditorState | null = null;
     duplicateItem(state, (tr) => {

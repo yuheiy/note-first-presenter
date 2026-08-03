@@ -1,11 +1,11 @@
-import { createStore, Provider } from 'jotai';
-import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { userEvent } from 'vite-plus/test/browser/context';
-import { render } from 'vitest-browser-react';
+import { renderEditor } from '../../../__tests__/renderEditor';
+import { fakeServer } from '../../../lib/__mocks__/serverClient';
 import { docToItems } from '../../outliner/jsonDoc';
-import { SAVE_DEBOUNCE_MS } from '../db';
-import { Editor } from '../Editor';
+import { SAVE_DEBOUNCE_MS } from '../dbSaver';
+
+vi.mock('../../../lib/serverClient');
 
 /**
  * G1 — "the manuscript survives" — as it looks once React is holding the wires:
@@ -18,40 +18,6 @@ import { Editor } from '../Editor';
  * half of what is under test here.
  */
 
-// One db's worth of bytes, handed to a fresh store per test — see
-// `renderEditor`. A non-empty title keeps the Editor's fill-in-the-blank-title
-// save out of the counts.
-const server = vi.hoisted(() => {
-  const stored = {
-    version: 1,
-    title: 'Deck',
-    outline: {
-      type: 'doc',
-      content: [
-        {
-          type: 'bullet_list',
-          content: [
-            { type: 'list_item', attrs: { collapsed: false }, content: [{ type: 'paragraph' }] },
-          ],
-        },
-      ],
-    },
-  };
-  const puts: { title: string; outline: unknown }[] = [];
-  return {
-    puts,
-    api: (url: string, options?: { method?: string; body?: unknown }) => {
-      if (url !== '/nfp-data/db.json')
-        return Promise.resolve({ kind: 'missing', path: 'slides.pdf' });
-      if (options?.method !== 'PUT') return Promise.resolve(stored);
-      puts.push(options.body as { title: string; outline: unknown });
-      return Promise.resolve(undefined);
-    },
-  };
-});
-
-vi.mock('../../../lib/serverClient', () => ({ api: server.api }));
-
 /** The text of each top-level outline item, read out of a saved PUT body. */
 function savedTexts(outline: unknown): string[] {
   return docToItems(outline).map((item) =>
@@ -59,48 +25,32 @@ function savedTexts(outline: unknown): string[] {
   );
 }
 
-async function renderEditor() {
-  // The locale is pinned for the whole browser project in vitest-setup.browser.ts
-  // — it is Paraglide's now, not a provider's, so it cannot be wrapped around a
-  // subtree. That is what lets the expectations below stay English literals.
-  // A store of this test's own. The app renders no Provider, so it reads jotai's
-  // default store; injecting one here is what keeps a document fetched by one
-  // test out of the next. Without it every test in the file would share the one
-  // cached request, which is what the module-level loader used to force.
-  //
-  const screen = await render(
-    <StrictMode>
-      <Provider store={createStore()}>
-        <Editor />
-      </Provider>
-    </StrictMode>,
-  );
+async function renderAndFocus() {
+  const screen = await renderEditor();
   const outliner = screen.getByRole('textbox', { name: 'Outliner' });
-  // The editor is mounted only once the document has landed.
-  await expect.element(outliner).toBeInTheDocument();
   await userEvent.click(outliner);
   return outliner;
 }
 
 describe('Editor', () => {
   beforeEach(() => {
-    server.puts.length = 0;
+    fakeServer.puts.length = 0;
   });
 
   it('saves what was typed, once, when the debounce elapses', async () => {
-    await renderEditor();
+    await renderAndFocus();
 
     await userEvent.keyboard('hello world');
 
-    await expect.poll(() => server.puts.length, { timeout: 5000 }).toBe(1);
+    await expect.poll(() => fakeServer.puts.length, { timeout: 5000 }).toBe(1);
     // Exactly one, not merely at least one: StrictMode mounts the tree twice, so
     // a save pipeline built without a guard would be built twice over and write
     // every edit twice.
-    expect(savedTexts(server.puts[0]?.outline)).toEqual(['hello world']);
+    expect(savedTexts(fakeServer.puts[0]?.outline)).toEqual(['hello world']);
   });
 
   it('keeps saving after an edit re-renders the shell', async () => {
-    await renderEditor();
+    await renderAndFocus();
 
     // A separator adds a note group, and that number is state the Workspace
     // renders — so this edit goes out through the shell and back, which the
@@ -115,12 +65,12 @@ describe('Editor', () => {
     await userEvent.keyboard('one{Enter}---{Enter}two');
 
     await expect
-      .poll(() => savedTexts(server.puts.at(-1)?.outline), { timeout: 5000 })
+      .poll(() => savedTexts(fakeServer.puts.at(-1)?.outline), { timeout: 5000 })
       .toEqual(['one', '---', 'two']);
   });
 
   it('flushes a pending edit when the page goes away', async () => {
-    await renderEditor();
+    await renderAndFocus();
     await userEvent.keyboard('unsaved');
 
     window.dispatchEvent(new Event('pagehide'));
@@ -128,8 +78,8 @@ describe('Editor', () => {
     // Deliberately shorter than the debounce: waiting past it would pass whether
     // pagehide flushed or the timer simply came round.
     await expect
-      .poll(() => server.puts.length, { timeout: SAVE_DEBOUNCE_MS / 2, interval: 10 })
+      .poll(() => fakeServer.puts.length, { timeout: SAVE_DEBOUNCE_MS / 2, interval: 10 })
       .toBe(1);
-    expect(savedTexts(server.puts[0]?.outline)).toEqual(['unsaved']);
+    expect(savedTexts(fakeServer.puts[0]?.outline)).toEqual(['unsaved']);
   });
 });

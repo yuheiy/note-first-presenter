@@ -4,6 +4,7 @@ import { Eta } from 'eta';
 import { readDb } from '../db.ts';
 import { splitNoteGroups, type NoteNode } from '../notes.ts';
 import {
+  nfpCacheRoot,
   openSlides,
   slidesNotFoundMessage,
   type RenderAllResult,
@@ -62,6 +63,8 @@ export interface BuildContextOptions {
 
 export function buildExportContext(opts: BuildContextOptions): ExportContext {
   const { rendered, groups, assetsRelDir } = opts;
+  // The note groups may outgrow the deck: every slide keeps its notes, and the
+  // surplus groups still export, as slides with no image.
   const count = Math.max(rendered.slides.length, groups.length);
   const slides: ExportSlide[] = [];
   for (let i = 0; i < count; i++) {
@@ -73,12 +76,8 @@ export function buildExportContext(opts: BuildContextOptions): ExportContext {
       width: rs?.width ?? 0,
       height: rs?.height ?? 0,
       notes,
-      get notesMarkdown() {
-        return toMarkdown(notes);
-      },
-      get notesHtml() {
-        return toHtml(notes);
-      },
+      notesMarkdown: toMarkdown(notes),
+      notesHtml: toHtml(notes),
     });
   }
   return { title: opts.title, slides };
@@ -105,6 +104,7 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 `;
 
 export interface ExportAsPageInput {
+  cwd: string;
   slidesStatus: SlidesStatus;
   outDir: string;
   assetsDir: string;
@@ -114,6 +114,7 @@ export interface ExportAsPageInput {
 }
 
 export async function exportAsPage({
+  cwd,
   slidesStatus,
   outDir,
   assetsDir,
@@ -122,10 +123,12 @@ export async function exportAsPage({
   filename,
 }: ExportAsPageInput): Promise<void> {
   if (slidesStatus.kind !== 'resolved') {
-    throw new Error(slidesNotFoundMessage(slidesStatus));
+    throw new Error(slidesNotFoundMessage(cwd, slidesStatus));
   }
-  const rendered = await openSlides(slidesStatus.path).renderAll(assetsDir);
-  const db = await readDb();
+  const rendered = await openSlides(slidesStatus.path, {
+    cacheRoot: nfpCacheRoot(cwd),
+  }).renderAll(assetsDir);
+  const db = await readDb(cwd);
   const groups = splitNoteGroups(db.outline);
   const context = buildExportContext({
     title: db.title,

@@ -4,6 +4,10 @@ import type { Page } from '@playwright/test';
 
 const FIXTURE = path.resolve(import.meta.dirname, 'fixtures/basic');
 
+// Every spec here reaches the CLI through the `note-first-presenter` bin, which
+// forwards to dist/ — the root vite.config.ts `test:e2e` task's dependsOn is
+// what guarantees that build is current.
+
 /**
  * Refreshes an artifact one of the static preview servers is serving.
  *

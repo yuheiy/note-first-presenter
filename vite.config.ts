@@ -25,10 +25,9 @@ export default defineConfig({
     options: { typeAware: true, typeCheck: true },
     overrides: [
       {
-        // The published CLI depends on plain `vite`, not the `vite-plus`
-        // toolchain, so it imports the runtime API from `vite`. Locally that
-        // specifier still lands on vite-plus-core — the workspace `overrides`
-        // pins it — but the two are interchangeable here (docs/adr/0020).
+        // The published CLI depends on plain `vite`, so it imports the runtime
+        // API from `vite` — locally the same code anyway; see the catalog notes
+        // in pnpm-workspace.yaml (docs/adr/0020).
         files: ['packages/note-first-presenter/**'],
         rules: { 'vite-plus/prefer-vite-plus-imports': 'off' },
       },

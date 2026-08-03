@@ -3,6 +3,7 @@ import type { RouterMode } from '../config.ts';
 import { createViteConfig } from '../vite/index.ts';
 
 export interface DevInput {
+  cwd: string;
   clientRoot: string;
   port: number;
   host: string;
@@ -12,6 +13,7 @@ export interface DevInput {
 }
 
 export async function dev({
+  cwd,
   clientRoot,
   port,
   host,
@@ -19,11 +21,8 @@ export async function dev({
   routerMode,
   base,
 }: DevInput): Promise<void> {
-  const projectCwd = process.cwd();
-  process.chdir(clientRoot);
-
   const server = await createServer({
-    ...createViteConfig({ clientRoot, projectCwd, routerMode, base }),
+    ...createViteConfig({ clientRoot, projectCwd: cwd, routerMode, base }),
     server: {
       port,
       host,

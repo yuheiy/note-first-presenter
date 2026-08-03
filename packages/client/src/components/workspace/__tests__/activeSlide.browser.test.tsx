@@ -1,9 +1,9 @@
-import { createStore, Provider } from 'jotai';
-import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { userEvent } from 'vite-plus/test/browser/context';
-import { render } from 'vitest-browser-react';
-import { Editor } from '../Editor';
+import { renderEditor } from '../../../__tests__/renderEditor';
+import { fakeServer, storedDb } from '../../../lib/__mocks__/serverClient';
+
+vi.mock('../../../lib/serverClient');
 
 /**
  * G3 — the correspondence between note groups and slides — as wiring: picking a
@@ -15,40 +15,11 @@ import { Editor } from '../Editor';
  * The outline opens with a separator, which is what makes the third test
  * possible — group 1 is then empty, the case the suppression exists for.
  */
-
-const server = vi.hoisted(() => {
-  const items = ['---', 'alpha', '---', 'beta'];
-  const stored = {
-    version: 1,
-    title: 'Deck',
-    outline: {
-      type: 'doc',
-      content: [
-        {
-          type: 'bullet_list',
-          content: items.map((text) => ({
-            type: 'list_item',
-            attrs: { collapsed: false },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
-          })),
-        },
-      ],
-    },
-  };
-  return {
-    api: (url: string, options?: { method?: string }) => {
-      if (url === '/nfp-data/db.json') {
-        return options?.method === 'PUT' ? Promise.resolve(undefined) : Promise.resolve(stored);
-      }
-      // `pageCount: 0` still resolves the deck, so the slide list renders — with
-      // every row an overflow placeholder rather than an <img> pointing at a
-      // slide image this test has no server for.
-      return Promise.resolve({ kind: 'resolved', hash: 'testhash', pageCount: 0 });
-    },
-  };
-});
-
-vi.mock('../../../lib/serverClient', () => ({ api: server.api }));
+fakeServer.db = storedDb(['---', 'alpha', '---', 'beta']);
+// `pageCount: 0` still resolves the deck, so the slide list renders — with
+// every row an overflow placeholder rather than an <img> pointing at a slide
+// image this test has no server for.
+fakeServer.meta = () => ({ kind: 'resolved', hash: 'testhash', pageCount: 0 });
 
 /** The outline items the editor is currently marking as the active slide's. */
 function highlightedItems(): string[] {
@@ -71,21 +42,6 @@ function selectedSlides(): string[] {
  */
 function settle() {
   return new Promise((resolve) => setTimeout(resolve, 100));
-}
-
-async function renderEditor() {
-  // Locale pinned globally in vitest-setup.browser.ts; see the note there.
-  // A store per render, so a document fetched by one test cannot be what the
-  // next one asserts against. The app itself renders no Provider.
-  const screen = await render(
-    <StrictMode>
-      <Provider store={createStore()}>
-        <Editor />
-      </Provider>
-    </StrictMode>,
-  );
-  await expect.element(screen.getByRole('textbox', { name: 'Outliner' })).toBeInTheDocument();
-  return screen;
 }
 
 describe('active slide', () => {

@@ -3,10 +3,11 @@ import path from 'node:path';
 import { build as viteBuild } from 'vite';
 import type { RouterMode } from '../config.ts';
 import { readDb } from '../db.ts';
-import { missingSlidesMeta, openSlides, type SlidesStatus } from '../slides.ts';
+import { missingSlidesMeta, nfpCacheRoot, openSlides, type SlidesStatus } from '../slides.ts';
 import { createViteConfig } from '../vite/index.ts';
 
 export interface BuildInput {
+  cwd: string;
   slidesStatus: SlidesStatus;
   clientRoot: string;
   outDir: string;
@@ -15,23 +16,21 @@ export interface BuildInput {
 }
 
 export async function build({
+  cwd,
   slidesStatus,
   clientRoot,
   outDir,
   routerMode,
   base,
 }: BuildInput): Promise<void> {
-  const previousCwd = process.cwd();
   const previousNodeEnv = process.env.NODE_ENV;
   // Vite derives import.meta.env.DEV from an inherited NODE_ENV, so a caller
   // environment like NODE_ENV=test would silently ship the Editor (db writes,
   // live-reload) in the static artifact.
   process.env.NODE_ENV = 'production';
-  process.chdir(clientRoot);
   try {
     await viteBuild(createViteConfig({ clientRoot, outDir, routerMode, base }));
   } finally {
-    process.chdir(previousCwd);
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousNodeEnv;
   }
@@ -44,7 +43,7 @@ export async function build({
   // and making its presence depend on the mode buys nothing.
   await copyFile(path.join(outDir, 'index.html'), path.join(outDir, '404.html'));
 
-  const db = await readDb();
+  const db = await readDb(cwd);
 
   const dataDir = path.join(outDir, 'nfp-data');
   await mkdir(dataDir, { recursive: true });
@@ -55,13 +54,13 @@ export async function build({
     // draws the same hint the dev server would.
     await writeFile(
       path.join(dataDir, 'meta.json'),
-      JSON.stringify(missingSlidesMeta(slidesStatus)),
+      JSON.stringify(missingSlidesMeta(cwd, slidesStatus)),
       'utf8',
     );
     return;
   }
 
-  const slides = openSlides(slidesStatus.path);
+  const slides = openSlides(slidesStatus.path, { cacheRoot: nfpCacheRoot(cwd) });
   const { hash } = await slides.meta();
   const slidesDir = path.join(dataDir, 'slides', hash);
   await rm(slidesDir, { recursive: true, force: true });

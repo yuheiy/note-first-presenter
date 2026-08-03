@@ -54,7 +54,10 @@ export const CONFIG_FILENAMES = [
   'note-first-presenter.config.js',
 ] as const;
 
-export async function loadNfpConfig(command: 'dev' | 'build'): Promise<{
+export async function loadNfpConfig(
+  cwd: string,
+  command: 'dev' | 'build',
+): Promise<{
   config: NoteFirstPresenterConfig | null;
   filePath: string | null;
   dependencies: string[];
@@ -64,13 +67,15 @@ export async function loadNfpConfig(command: 'dev' | 'build'): Promise<{
       ? ({ command: 'serve', mode: 'development' } as const)
       : ({ command: 'build', mode: 'production' } as const);
   for (const name of CONFIG_FILENAMES) {
-    if (!existsSync(name)) continue;
-    const filePath = path.resolve(name);
+    const filePath = path.resolve(cwd, name);
+    if (!existsSync(filePath)) continue;
     const loaded = await loadConfigFromFile(env, filePath);
     if (!loaded) continue;
     return {
       config: v.parse(configSchema, loaded.config),
       filePath,
+      // Vite reports these relative to the *process* cwd (esbuild's metafile
+      // is written against it), so they resolve against that, not `cwd`.
       dependencies: loaded.dependencies.map((d) => path.resolve(d)),
     };
   }

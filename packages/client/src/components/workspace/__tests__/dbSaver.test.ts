@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { defaultDb, type DbV1 } from '../../../lib/dbSchema';
-import { createDbSaver, SAVE_DEBOUNCE_MS, SAVE_RETRY_MS, type SaveStatus } from '../db';
+import { createDbSaver, SAVE_DEBOUNCE_MS, SAVE_RETRY_MS, type SaveStatus } from '../dbSaver';
 
 function doc(title: string): DbV1 {
   return { ...defaultDb(), title };

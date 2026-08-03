@@ -20,6 +20,12 @@ catalog:
   # is itself built on — left node_modules/vite one patch behind what vite-plus
   # ran internally, which made `Plugin` two different types and failed
   # `vp check` on packages/client/vite.config.ts (#46).
+  #
+  # The alias is also why packages/note-first-presenter declares `vite` with a
+  # plain semver range instead of `catalog:`: pnpm bakes the catalog value into
+  # the manifest at pack time, and a published CLI must depend on real vite,
+  # never on this alias. Locally the two spellings meet anyway — the
+  # `overrides` below rewrite every `vite` dependency to the catalog entry.
   vite: npm:@voidzero-dev/vite-plus-core@0.2.7
   vitest: 4.1.10
   '@vitest/browser-playwright': 4.1.10
@@ -47,7 +53,6 @@ catalog:
   playwright: ^1.62.1
   '@playwright/test': ^1.62.1
   citty: ^0.2.2
-  vitefu: ^1.1.3
   prosemirror-schema-list: ^1.5.1
   eta: ^4.6.0
   knip: ^6.31.0

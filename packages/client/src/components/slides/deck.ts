@@ -1,7 +1,8 @@
 import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { countNoteGroups } from '../outliner/noteGroups';
-import { outlineAtom, useStoredDocument } from '../workspace/db';
+import { outlineAtom } from '../workspace/db';
+import { useStoredDocument } from '../workspace/useDb';
 import { computeSlideOverflow, type SlideOverflow } from './overflow';
 import { slidesMetaAtom, type SlidesMeta } from './slidesMeta';
 
@@ -9,11 +10,11 @@ import { slidesMetaAtom, type SlidesMeta } from './slidesMeta';
  * Half of the deck's length — the other half is the PDF's page count.
  *
  * Recomputed whenever the outline moves, but compared with `Object.is`, so the
- * slide list is spared a re-render unless a `---` was added or removed. This
- * replaces a hand-written guard in the Editor that existed because React's
- * bail-out on an equal value lapses whenever the fiber already has another
- * update pending; a `selectAtom` that never bumps its own epoch has no such
- * lapse.
+ * slide list is spared a re-render unless a `---` was added or removed. The
+ * comparison lives in the atom rather than in a component guard because
+ * React's own bail-out on an equal value lapses whenever the fiber already has
+ * another update pending; a `selectAtom` that never bumps its own epoch has no
+ * such lapse.
  *
  * Hangs off `outlineAtom` rather than the document, so a title keystroke does
  * not walk the outline.

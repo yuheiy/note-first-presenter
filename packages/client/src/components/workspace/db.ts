@@ -1,6 +1,5 @@
-import { atom, useAtomValue, useSetAtom } from 'jotai';
+import { atom } from 'jotai';
 import { selectAtom, unwrap } from 'jotai/utils';
-import { useEffect, useState } from 'react';
 import { type DbV1 } from '../../lib/dbSchema';
 import { dataUrl } from '../../lib/routes';
 import { api } from '../../lib/serverClient';
@@ -10,93 +9,10 @@ import { api } from '../../lib/serverClient';
 // document, whose static representation is a file".
 const DB_URL = dataUrl('nfp-data/db.json');
 
-export const SAVE_DEBOUNCE_MS = 500;
-export const SAVE_RETRY_MS = 5000;
-
-export type SaveStatus = 'idle' | 'saving' | 'error';
-
-export interface DbSaverOptions {
-  save: (db: DbV1) => Promise<void>;
-  onStatusChange?: (status: SaveStatus) => void;
-}
-
-export interface DbSaver {
-  /** Queue `db` to be saved; rapid edits coalesce into one request. */
-  schedule: (db: DbV1) => void;
-  /** Send whatever is queued right now, for teardown paths that cannot wait. */
-  flush: () => Promise<void>;
-}
-
-/**
- * The save pipeline: debounce, coalesce, retry — with no React in it.
- *
- * It holds no document of its own. Callers hand it the whole db each time, which
- * is what keeps it outside the atom graph — testable without a store, and absent
- * from the Viewer's bundle (`docs/adr/0018`).
- * There is no `lastError`: the only reader was a test, and the UI shows one
- * generic message off `saveStatus === 'error'`.
- */
-export function createDbSaver({ save, onStatusChange }: DbSaverOptions): DbSaver {
-  let pending: DbV1 | null = null;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let inflight = false;
-  let status: SaveStatus = 'idle';
-
-  function setStatus(next: SaveStatus) {
-    if (next === status) return;
-    status = next;
-    onStatusChange?.(next);
-  }
-
-  function armTimer(delay: number) {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => void flush(), delay);
-  }
-
-  async function flush(): Promise<void> {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-    // A flush during an in-flight save needs no timer of its own: the loop below
-    // picks up whatever was queued meanwhile before it settles.
-    if (inflight || !pending) return;
-    inflight = true;
-    try {
-      while (pending) {
-        const db = pending;
-        pending = null;
-        setStatus('saving');
-        try {
-          await save(db);
-        } catch {
-          // Put the document back unless a newer one arrived while this one was
-          // failing, then retry on a timer. The next edit re-arms it sooner.
-          pending ??= db;
-          setStatus('error');
-          armTimer(SAVE_RETRY_MS);
-          return;
-        }
-      }
-      setStatus('idle');
-    } finally {
-      inflight = false;
-    }
-  }
-
-  return {
-    schedule(db) {
-      pending = db;
-      armTimer(SAVE_DEBOUNCE_MS);
-    },
-    flush,
-  };
-}
-
 /**
  * The stored document, fetched once.
  *
- * Reading it suspends, so only the gate below does. `main.tsx` reads it off
+ * Reading it suspends, so only whoever waits on it does. `main.tsx` reads it off
  * React so the request overlaps the page chunk's download instead of queueing
  * behind it.
  *
@@ -115,15 +31,10 @@ const editsAtom = /*#__PURE__*/ atom<DbV1 | null>(null);
 /**
  * The working document — what would be saved.
  *
- * Deliberately synchronous, which is the whole reason the stored document is a
- * separate atom: `selectAtom` hands its selector whatever `get` returns, and
- * `get` does not resolve promises, so a slice of an async atom is `undefined`
- * (`docs/adr/0018`). Everything fine-grained below therefore hangs off this one.
- *
- * `unwrap` is what makes the stored half readable synchronously — it answers
- * `undefined` until the request lands rather than suspending. So this is `null`
- * only in that window, and the gate below is what keeps the outline from being
- * drawn in it.
+ * Deliberately synchronous: a slice of an async atom is `undefined`, so
+ * everything fine-grained below hangs off this one (`docs/adr/0018`). `unwrap`
+ * makes the stored half readable synchronously — it answers `undefined` until
+ * the request lands — so this is `null` only in that window.
  *
  * The fallback is spelled here, in the graph, rather than seeded from the entry
  * point. An entry that forgot to seed would leave every reader looking at an
@@ -132,16 +43,16 @@ const editsAtom = /*#__PURE__*/ atom<DbV1 | null>(null);
  *
  * Not exported: outside this file the document is only ever read a slice at a
  * time, through the selectors below, and only ever written through
- * `useDbEditing`. Handing it out whole would make it possible to subscribe to
- * every keystroke by accident.
+ * `editDocumentAtom`. Handing it out whole would make it possible to subscribe
+ * to every keystroke by accident.
  *
  * The writer takes a patch and answers the merged document, or nothing if there
  * was none to merge into. Both halves belong here rather than in the hook: it
  * makes "the working document is never composed out of `null`" a property of the
- * graph rather than of whoever remembers to check. Spreading `null` is neither a
- * type error nor a runtime one — it yields `{ ...patch }` — so without the guard
- * a title typed before the load would PUT a document with no `version` and no
- * `outline` over the real one.
+ * graph rather than of whoever remembers to check. Spreading `null` is neither
+ * a type error nor a runtime one — it yields `{ ...patch }` — so without the
+ * guard a title typed before the load would PUT a document with no `version`
+ * and no `outline` over the real one.
  */
 const documentAtom = /*#__PURE__*/ atom(
   (get) => get(editsAtom) ?? get(settledStoredDbAtom) ?? null,
@@ -152,6 +63,16 @@ const documentAtom = /*#__PURE__*/ atom(
     set(editsAtom, next);
     return next;
   },
+);
+
+/**
+ * The working document's write half, and nothing else. Write-only on purpose:
+ * reading it is an error, so exporting it — which the hooks module needs —
+ * still hands nobody a way to subscribe to the document whole.
+ */
+export const editDocumentAtom = /*#__PURE__*/ atom(
+  null,
+  (get, set, patch: Partial<DbV1>): DbV1 | undefined => set(documentAtom, patch),
 );
 
 /** The presentation's title. Moves only when the title does, not on every keystroke. */
@@ -168,83 +89,7 @@ export const titleAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) => db?.titl
  */
 export const outlineAtom = /*#__PURE__*/ selectAtom(documentAtom, (db) => db?.outline ?? null);
 
-async function saveDb(db: DbV1): Promise<void> {
+export async function saveDb(db: DbV1): Promise<void> {
   // keepalive so a save started on pagehide outlives the document.
   await api(DB_URL, { method: 'PUT', body: db, keepalive: true });
-}
-
-/**
- * Suspends until the stored document has landed, then hands it over.
- *
- * The one way to wait, and the reason the `status === 'ready'` guard that used to
- * be repeated at every call site is gone. It answers the *stored* document
- * rather than the working one on purpose — callers either read the outline once
- * and own it from then on, or want the suspension and not the value. Subscribing
- * to the working document here would re-render every one of them per keystroke.
- */
-export function useStoredDocument(): DbV1 {
-  return useAtomValue(storedDbAtom);
-}
-
-export interface DbEditing {
-  saveStatus: SaveStatus;
-  setTitle: (title: string) => void;
-  setOutline: (outline: unknown) => void;
-}
-
-/**
- * The Editor's write half: hand edits to the saver, and report how that went.
- *
- * Wiring only — the debounce, the retry and the coalescing all live in
- * `createDbSaver`, which stays outside the atom graph so that it remains
- * testable without a store and so that the Viewer's bundle never reaches it
- * (`docs/adr/0018`). Static builds drop this entire path, because the Editor
- * that calls it is behind `import.meta.env.DEV` in a component the Viewer never
- * renders.
- *
- * `setTitle` can be called before the document lands — the toolbar draws with the
- * shell, ahead of the panes — which is what `documentAtom`'s writer guards.
- */
-export function useDbEditing(): DbEditing {
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  // `useSetAtom`, not `useAtomValue`: this hook writes the document on every
-  // keystroke and must not subscribe to it, or the Editor would re-render for
-  // each one — which is the cost the old `savedRef` existed to avoid.
-  const editDocument = useSetAtom(documentAtom);
-  const [saver] = useState(() => createDbSaver({ save: saveDb, onStatusChange: setSaveStatus }));
-
-  // Flush before the page goes away, so an edit made inside the debounce window
-  // is not lost. visibilitychange covers the mobile/background case that
-  // pagehide misses.
-  useEffect(() => {
-    const flush = () => {
-      void saver.flush();
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') flush();
-    };
-    window.addEventListener('pagehide', flush);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('pagehide', flush);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [saver]);
-
-  // Nothing to save when the atom answers nothing: the title can be typed into
-  // before the document lands, and that edit is dropped rather than merged.
-  const edit = (patch: Partial<DbV1>) => {
-    const next = editDocument(patch);
-    if (next) saver.schedule(next);
-  };
-
-  return {
-    saveStatus,
-    setTitle: (title) => {
-      edit({ title });
-    },
-    setOutline: (outline) => {
-      edit({ outline });
-    },
-  };
 }

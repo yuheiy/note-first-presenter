@@ -1,38 +1,27 @@
 import { type Node } from 'prosemirror-model';
 import { type Command, type EditorState, NodeSelection, TextSelection } from 'prosemirror-state';
-import { findListItemAncestor } from '../plugins/textSelectionClamp';
+import { BULLET_LIST, LIST_ITEM, PARAGRAPH } from '../model/nodes';
+import {
+  childItemPos,
+  findListItemAncestor,
+  paragraphEndOf,
+  paragraphStartOf,
+} from '../model/position';
 import {
   isNodeRangeSelection,
   type LiftedFrom,
   NodeRangeSelection,
+  resolveSharedBulletList,
 } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
-const BULLET_LIST = outlinerSchema.nodes.bullet_list;
 
 type Dispatch = Parameters<Command>[1];
 
-function siblingItemPos(parent: Node, parentStart: number, index: number): number {
-  let pos = parentStart;
-  for (let i = 0; i < index; i++) pos += parent.child(i).nodeSize;
-  return pos;
-}
-
 function restoreLifted(state: EditorState, lifted: LiftedFrom): NodeRangeSelection | null {
-  try {
-    const $a = state.doc.resolve(lifted.anchor);
-    const $h = state.doc.resolve(lifted.head);
-    if ($a.depth !== $h.depth) return null;
-    const parent = $a.node($a.depth);
-    if (parent.type !== BULLET_LIST) return null;
-    if (parent !== $h.node($h.depth)) return null;
-    // Peel one layer of the lift chain: the restored selection carries any
-    // remaining ancestors so the user can keep going in the reverse direction.
-    return new NodeRangeSelection($a, $h, lifted.previous);
-  } catch {
-    return null;
-  }
+  const shared = resolveSharedBulletList(state.doc, lifted.anchor, lifted.head);
+  if (!shared) return null;
+  // Peel one layer of the lift chain: the restored selection carries any
+  // remaining ancestors so the user can keep going in the reverse direction.
+  return new NodeRangeSelection(shared.$anchor, shared.$head, lifted.previous);
 }
 
 // When a NodeRangeSelection hits the boundary of its bullet_list, promote it
@@ -80,7 +69,7 @@ function promoteOnBoundary(state: EditorState, direction: -1 | 1): NodeRangeSele
       nextIndex < outerBulletList.childCount &&
       outerBulletList.child(nextIndex).type === LIST_ITEM
     ) {
-      const nextItemPos = siblingItemPos(outerBulletList, outerStart, nextIndex);
+      const nextItemPos = childItemPos(outerBulletList, outerStart, nextIndex);
       const $pos = state.doc.resolve(nextItemPos);
       return new NodeRangeSelection($pos, $pos, lifted);
     }
@@ -119,7 +108,7 @@ function tryExtendTextSelectionToEdge(
 ): boolean {
   const sel = state.selection;
   if (!(sel instanceof TextSelection)) return false;
-  if (sel.$head.parent.type !== outlinerSchema.nodes.paragraph) return false;
+  if (sel.$head.parent.type !== PARAGRAPH) return false;
   const ancestor = findListItemAncestor(sel.$head);
   if (!ancestor) return false;
 
@@ -128,7 +117,7 @@ function tryExtendTextSelectionToEdge(
   if (direction === -1 && atStart) return false;
   if (direction === 1 && atEnd) return false;
 
-  const paragraphInner = ancestor.itemPos + 2;
+  const paragraphInner = paragraphStartOf(ancestor.itemPos);
   const headPos =
     direction === -1 ? paragraphInner : paragraphInner + sel.$head.parent.content.size;
   const next = TextSelection.create(state.doc, sel.$anchor.pos, headPos);
@@ -136,26 +125,29 @@ function tryExtendTextSelectionToEdge(
   return true;
 }
 
-interface ExtendContext {
-  parent: Node;
-  parentStart: number;
-  anchorIndex: number;
-  headIndex: number;
-  // True when this press transitioned a TextSelection into range mode rather
-  // than moving the head; we shouldn't try to advance further this press.
-  firstPress: boolean;
-}
+// Where the range lives, and whether this press only *enters* range mode: a
+// TextSelection at the paragraph edge collapses into a single-item range
+// without moving, everything else already carries a head to advance.
+type ExtendContext =
+  | {
+      kind: 'in-range';
+      parent: Node;
+      parentStart: number;
+      anchorIndex: number;
+      headIndex: number;
+    }
+  | { kind: 'enter-range'; parent: Node; parentStart: number; anchorIndex: number };
 
 function resolveExtendContext(state: EditorState): ExtendContext | null {
   const sel = state.selection;
 
   if (isNodeRangeSelection(sel)) {
     return {
+      kind: 'in-range',
       parent: sel.parentList,
       parentStart: sel.parentListPos,
       anchorIndex: sel.anchorIndex,
       headIndex: sel.headIndex,
-      firstPress: false,
     };
   }
 
@@ -164,11 +156,11 @@ function resolveExtendContext(state: EditorState): ExtendContext | null {
     if ($pos.parent.type !== BULLET_LIST) return null;
     const index = $pos.index();
     return {
+      kind: 'in-range',
       parent: $pos.parent,
       parentStart: $pos.start(),
       anchorIndex: index,
       headIndex: index,
-      firstPress: false,
     };
   }
 
@@ -176,11 +168,10 @@ function resolveExtendContext(state: EditorState): ExtendContext | null {
     const ancestor = findListItemAncestor(sel.$head);
     if (!ancestor) return null;
     return {
+      kind: 'enter-range',
       parent: ancestor.parent,
       parentStart: ancestor.parentPos,
       anchorIndex: ancestor.index,
-      headIndex: ancestor.index,
-      firstPress: true,
     };
   }
 
@@ -192,17 +183,16 @@ function resolveExtendContext(state: EditorState): ExtendContext | null {
 // caller should fall back to promote / no-op.
 function tryAdvanceHead(
   state: EditorState,
-  ctx: ExtendContext,
+  ctx: Extract<ExtendContext, { kind: 'in-range' }>,
   direction: -1 | 1,
   dispatch: Dispatch,
 ): boolean {
-  if (ctx.firstPress) return false;
   const nextHead = ctx.headIndex + direction;
   if (nextHead < 0 || nextHead >= ctx.parent.childCount) return false;
   if (ctx.parent.child(nextHead).type !== LIST_ITEM) return false;
 
-  const anchorPos = siblingItemPos(ctx.parent, ctx.parentStart, ctx.anchorIndex);
-  const headPos = siblingItemPos(ctx.parent, ctx.parentStart, nextHead);
+  const anchorPos = childItemPos(ctx.parent, ctx.parentStart, ctx.anchorIndex);
+  const headPos = childItemPos(ctx.parent, ctx.parentStart, nextHead);
   // Preserve any lifted-from chain so the opposite direction can still peel.
   const lifted = isNodeRangeSelection(state.selection) ? state.selection.liftedFrom : null;
   const sel = new NodeRangeSelection(
@@ -210,16 +200,6 @@ function tryAdvanceHead(
     state.doc.resolve(headPos),
     lifted,
   );
-  if (dispatch) dispatch(state.tr.setSelection(sel).scrollIntoView());
-  return true;
-}
-
-// firstPress means "TextSelection just collapsed into a single-item range":
-// dispatch that range without moving the head.
-function dispatchFirstPress(state: EditorState, ctx: ExtendContext, dispatch: Dispatch): boolean {
-  const pos = siblingItemPos(ctx.parent, ctx.parentStart, ctx.anchorIndex);
-  const $pos = state.doc.resolve(pos);
-  const sel = new NodeRangeSelection($pos, $pos, null);
   if (dispatch) dispatch(state.tr.setSelection(sel).scrollIntoView());
   return true;
 }
@@ -238,7 +218,13 @@ function extend(direction: -1 | 1): Command {
 
     // 4a. First press from a TextSelection at the paragraph edge: enter
     //     range mode on the current item without moving.
-    if (ctx.firstPress) return dispatchFirstPress(state, ctx, dispatch);
+    if (ctx.kind === 'enter-range') {
+      const pos = childItemPos(ctx.parent, ctx.parentStart, ctx.anchorIndex);
+      const $pos = state.doc.resolve(pos);
+      const sel = new NodeRangeSelection($pos, $pos, null);
+      if (dispatch) dispatch(state.tr.setSelection(sel).scrollIntoView());
+      return true;
+    }
 
     // 4b. Advance the head one item in `direction` if possible.
     if (tryAdvanceHead(state, ctx, direction, dispatch)) return true;
@@ -266,14 +252,8 @@ export const exitRangeSelection: Command = (state, dispatch) => {
   if (!isNodeRangeSelection(selection) && !(selection instanceof NodeSelection)) return false;
   if (selection instanceof NodeSelection && selection.node.type !== LIST_ITEM) return false;
 
-  const firstItemPos = isNodeRangeSelection(selection)
-    ? selection.from
-    : (selection as NodeSelection).from;
-  const item = state.doc.nodeAt(firstItemPos);
-  if (!item) return false;
-  const paragraph = item.firstChild;
-  if (!paragraph) return false;
-  const caret = firstItemPos + 2 + paragraph.content.size;
+  const caret = paragraphEndOf(state.doc, selection.from);
+  if (caret === null) return false;
   if (dispatch) {
     dispatch(state.tr.setSelection(TextSelection.create(state.doc, caret)).scrollIntoView());
   }

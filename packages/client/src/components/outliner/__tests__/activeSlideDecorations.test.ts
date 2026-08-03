@@ -1,34 +1,11 @@
 import { EditorState, TextSelection } from 'prosemirror-state';
-import type { DecorationSet } from 'prosemirror-view';
 import { describe, expect, it } from 'vite-plus/test';
-import { activeSlideDecorations } from '../plugins/activeSlideDecorations';
-import { outlinerSchema } from '../schema';
-
-function makeDoc(texts: string[]) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemPos(doc: ReturnType<typeof makeDoc>, index: number) {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
+import { buildActiveSlideDecorations } from '../plugins/activeSlideDecorations';
+import { itemPos, makeDoc } from './fixtures';
 
 function activeItemsFor(doc: ReturnType<typeof makeDoc>, caret: number) {
-  const state = EditorState.create({
-    doc,
-    selection: TextSelection.create(doc, caret),
-    plugins: [activeSlideDecorations],
-  });
-  const fn = activeSlideDecorations.props.decorations!;
-  const set = fn.call(activeSlideDecorations, state) as DecorationSet;
-  return set
+  const state = EditorState.create({ doc, selection: TextSelection.create(doc, caret) });
+  return buildActiveSlideDecorations(state)
     .find()
     .map((d) => d.from)
     .sort((a, b) => a - b);

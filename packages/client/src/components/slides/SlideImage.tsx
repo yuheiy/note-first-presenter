@@ -15,9 +15,8 @@ export interface SlideImageProps {
  * to offer here. The URL comes from `slideFilename.ts`, the single source
  * for it in both modes.
  *
- * The alt text is not a prop. Every caller can say only the same thing — which
- * slide this is — and both of them had been saying it in hardcoded English, one
- * line away from a translated message.
+ * The alt text is not a prop: every caller can say only the same thing — which
+ * slide this is — so it is said here, as a translated message.
  */
 export function SlideImage({ hash, slide }: SlideImageProps) {
   return (

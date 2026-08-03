@@ -15,7 +15,7 @@ import { SlideImage } from '../components/slides/SlideImage';
 import { describeSlidesMeta, slidesMetaAtom } from '../components/slides/slidesMeta';
 import { useSyncSubscriber } from '../components/slides/sync';
 import { reason } from '../components/ErrorOverlay';
-import { useStoredDocument } from '../components/workspace/db';
+import { useStoredDocument } from '../components/workspace/useDb';
 import { m } from '../lib/paraglide/messages.js';
 
 /**
@@ -138,7 +138,11 @@ function SlideStage() {
 
   return (
     // Click anywhere to advance, the way a slide remote's single button behaves.
-    // The keyboard path is the window listener above, not this element.
+    // The keyboard path is the window listener above, not this element. A plain
+    // onClick, not RAC's Pressable: Pressable demands tabIndex plus a role, and
+    // with those `usePress` also fires on Space — double-advancing with the
+    // window's Space handler. No role and no tabIndex is what guarantees this
+    // div stays out of the tab order and off Space (docs/adr/0015).
     <div
       className="h-svh bg-black"
       onClick={() => {

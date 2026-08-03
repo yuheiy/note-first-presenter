@@ -6,23 +6,7 @@ import {
   extendRangeSelectionUp,
 } from '../commands/rangeSelect';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-
-function makeDoc(texts: string[]) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemPos(doc: ReturnType<typeof makeDoc>, index: number) {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
+import { docOf, item, itemPos, makeDoc } from './fixtures';
 
 function apply(
   state: EditorState,
@@ -147,38 +131,20 @@ describe('extendRangeSelectionUp', () => {
 });
 
 describe('range promotion on nested boundary', () => {
-  // Build doc: bullet_list [ A { p, bullet_list [ A1, A2 ] }, B ]
+  // - A
+  //   - A1
+  //   - A2
+  // - B
   function makeNestedDoc() {
-    const nested = outlinerSchema.node('bullet_list', null, [
-      outlinerSchema.node('list_item', null, [
-        outlinerSchema.node('paragraph', null, [outlinerSchema.text('A1')]),
-      ]),
-      outlinerSchema.node('list_item', null, [
-        outlinerSchema.node('paragraph', null, [outlinerSchema.text('A2')]),
-      ]),
-    ]);
-    const parent = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('A')]),
-      nested,
-    ]);
-    const b = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('B')]),
-    ]);
-    return outlinerSchema.node('doc', null, [
-      outlinerSchema.node('bullet_list', null, [parent, b]),
-    ]);
+    return docOf([item('A', [item('A1'), item('A2')]), item('B')]);
   }
 
-  // Position helper for an item inside the nested bullet_list of A
+  // Position of an item inside A's nested bullet_list: into the outer
+  // bullet_list (1), into A (1), past A's paragraph, then walk siblings.
   function nestedItemPos(doc: ReturnType<typeof makeNestedDoc>, index: number) {
     const A = doc.firstChild!.firstChild!;
-    // A starts at outer pos 1 (inside outer bullet_list); paragraph "A" is 2+1=3 chars (open/A/close)
-    // Outer bullet_list opens at 0 (doc start), so position 1 = inside outer bullet_list.
-    // A list_item starts at 1; inside A is position 2; paragraph A is at depth, sized 2+1=3.
-    // Then nested bullet_list starts at 2 + 3 = 5 inside A; inside nested bullet_list is pos 6.
-    // Walk to the target index.
     const nested = A.lastChild!;
-    let pos = 1 + 1 + A.firstChild!.nodeSize + 1; // outer-1, into A-2, after paragraph A
+    let pos = 1 + 1 + A.firstChild!.nodeSize + 1;
     for (let i = 0; i < index; i++) pos += nested.child(i).nodeSize;
     return pos;
   }
@@ -214,6 +180,26 @@ describe('range promotion on nested boundary', () => {
     expect(promoted.fromIndex).toBe(1);
   });
 
+  it('pressing the opposite direction peels a promotion back one layer', () => {
+    const doc = makeNestedDoc();
+    const sel = createNodeRangeSelection(doc, nestedItemPos(doc, 0), nestedItemPos(doc, 0))!;
+    const state = EditorState.create({ doc, selection: sel });
+    // Up promotes the nested single-item range out to cover A...
+    const promoted = apply(state, extendRangeSelectionUp);
+    const promotedSel = promoted.next!.selection as NodeRangeSelection;
+    expect(promotedSel.liftedFrom).not.toBeNull();
+    // ...and one Down peels back to the nested range on A1, consuming the
+    // lift-chain layer it restored.
+    const peeled = apply(promoted.next!, extendRangeSelectionDown);
+    expect(peeled.ok).toBe(true);
+    const restored = peeled.next!.selection as NodeRangeSelection;
+    expect(restored).toBeInstanceOf(NodeRangeSelection);
+    const texts: string[] = [];
+    restored.forEachItem((_pos, node) => texts.push(node.firstChild?.textContent ?? ''));
+    expect(texts).toEqual(['A1']);
+    expect(restored.liftedFrom).toBeNull();
+  });
+
   it('Shift+ArrowUp at outermost top is consumed without changing selection', () => {
     const doc = makeDoc(['a', 'b']);
     const sel = createNodeRangeSelection(doc, itemPos(doc, 0), itemPos(doc, 0))!;
@@ -227,27 +213,20 @@ describe('range promotion on nested boundary', () => {
   });
 
   it('Shift+ArrowDown at outermost bottom is consumed without changing selection', () => {
-    const nested = outlinerSchema.node('bullet_list', null, [
-      outlinerSchema.node('list_item', null, [
-        outlinerSchema.node('paragraph', null, [outlinerSchema.text('A1')]),
-      ]),
-    ]);
-    const parent = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('A')]),
-      nested,
-    ]);
-    const doc = outlinerSchema.node('doc', null, [
-      outlinerSchema.node('bullet_list', null, [parent]),
-    ]);
+    // - A
+    //   - A1
+    // A1 has no nested sibling below and A has no next sibling at any level,
+    // so promotion fails and the key must be consumed with nothing dispatched.
+    const doc = docOf([item('A', [item('A1')])]);
     const nestedPos = 1 + 1 + doc.firstChild!.firstChild!.firstChild!.nodeSize + 1;
     const sel = createNodeRangeSelection(doc, nestedPos, nestedPos)!;
     const state = EditorState.create({ doc, selection: sel });
-    // The nested range can promote up to A. Once at A (the outermost top),
-    // further Up no longer changes the selection.
-    const first = apply(state, extendRangeSelectionDown);
-    expect(first.ok).toBe(true);
-    // First Down promoted (no outer next available — A is alone — so the
-    // promotion should fail and the key is consumed at the boundary).
+    let dispatched = false;
+    const ok = extendRangeSelectionDown(state, () => {
+      dispatched = true;
+    });
+    expect(ok).toBe(true);
+    expect(dispatched).toBe(false);
   });
 });
 

@@ -47,10 +47,6 @@ test('emits the slide data next to the shell', async ({ page }) => {
 
 // G4's static half: a shared build must not write, and must not look writable.
 //
-// It replaces the integration suite's old "no /api/ string in the bundle"
-// marker, which went hollow once both modes were given the same URLs — GET and
-// PUT now share `/nfp-data/db.json`, so no string can tell a read from a write.
-//
 // Be precise about what this does and does not establish. It checks the
 // behaviour — nothing writes, nothing is editable — which no amount of
 // minification or refactoring can fake. It does *not* check that the Editor was

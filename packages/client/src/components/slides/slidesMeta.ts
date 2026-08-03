@@ -28,10 +28,9 @@ export type SlidesMeta =
  * black field — and keeping the wording here rather than in two components is
  * what stops them drifting apart, besides keeping it reachable from a Node test.
  *
- * There is no severity to report. A missing deck used to come in three shapes,
- * two of which were drawn as errors; since the deck is whatever the config names
- * and nothing else (`docs/adr/0019`), one shape is left, and writing notes
- * before there are slides is a normal way to start rather than a failure.
+ * There is no severity to report: the deck is whatever the config names and
+ * nothing else (`docs/adr/0019`), and writing notes before there are slides is
+ * a normal way to start rather than a failure.
  *
  * It takes no transport failure either: that is a thrown error now, and the
  * ErrorBoundary around each caller draws it (`docs/adr/0018`). Every *shape* the
@@ -87,7 +86,7 @@ export function onSlidesChanged(
  * - **`startTransition` is required.** Without it the boundary falls back to its
  *   loading state while the new request is in flight, and a PDF change blinks
  *   the slide list. Nothing static catches its absence and the fetch is too fast
- *   to see it locally; `e2e/liveUpdate.e2e.ts` is the only guard (ADR-0018).
+ *   to see it locally; `e2e/dev/liveUpdate.e2e.ts` is the only guard (ADR-0018).
  * - **`refresh` must be called with no arguments.** `atomWithRefresh` throws in
  *   dev otherwise, and Vite hands HMR listeners the event payload, so passing
  *   `refresh` straight to `onSlidesChanged` would do exactly that. The

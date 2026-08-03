@@ -18,6 +18,9 @@ export default defineConfig({
   // routes.test.ts regardless of which one is compiled in here.
   define: { __NFP_ROUTER_MODE__: JSON.stringify('history') },
   test: {
+    // Unlike the repo root — where the bare built-in `vp test` finds no browser
+    // project — running tests from inside packages/client picks up both
+    // projects below, so `*.browser.test.*` really runs in Chromium here.
     expect: { requireAssertions: true },
     projects: [
       {

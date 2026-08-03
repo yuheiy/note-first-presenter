@@ -50,11 +50,7 @@ export default defineConfig({
   projects: [
     {
       name: 'dev',
-      testDir: './e2e',
-      // Must name every directory the other projects own: `dev` takes all of
-      // ./e2e, so a directory left out here has its specs run a second time,
-      // against the dev server they were not written for.
-      testIgnore: ['**/static/**', '**/subpath/**'],
+      testDir: './e2e/dev',
       use: { baseURL: 'http://localhost:5173' },
     },
     // A full production build costs ~60s, so it is a setup project rather than

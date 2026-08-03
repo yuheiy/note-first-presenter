@@ -1,24 +1,8 @@
-import { Node } from 'prosemirror-model';
 import { EditorState } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
-
-function makeDoc(texts: string[]): Node {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemPos(doc: Node, index: number): number {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
+import { item, itemPos, makeDoc } from './fixtures';
 
 describe('NodeRangeSelection', () => {
   it('covers a single item as both anchor and head', () => {
@@ -118,10 +102,7 @@ describe('NodeRangeSelection.map', () => {
     const doc = makeDoc(['a', 'b', 'c']);
     const sel = createNodeRangeSelection(doc, itemPos(doc, 1), itemPos(doc, 2))!;
     const state = EditorState.create({ doc, selection: sel });
-    const newItem = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('x')]),
-    ]);
-    const tr = state.tr.insert(itemPos(doc, 0), newItem);
+    const tr = state.tr.insert(itemPos(doc, 0), item('x'));
     const mapped = state.selection.map(tr.doc, tr.mapping);
     expect(mapped).toBeInstanceOf(NodeRangeSelection);
     expect((mapped as NodeRangeSelection).itemCount).toBe(2);

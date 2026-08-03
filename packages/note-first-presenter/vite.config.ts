@@ -9,11 +9,10 @@ export default defineConfig({
     // `cli` is an entry so the bin has something to import, not an API. Excluding
     // it keeps it out of the generated `exports` while still emitting dist/cli.mjs.
     //
-    // Generated is the word: `package.json`'s `exports` is tsdown's output, not
-    // something to edit. Hand-adding a `types` condition there survives exactly
-    // until the next build, which rewrites the field without one — measured.
-    // Types resolve anyway, because `moduleResolution: nodenext` finds the
-    // `.d.mts` beside the `.mjs`.
+    // `package.json`'s `exports` is generated output — never edit it by hand;
+    // the next build rewrites the field. Types resolve without a `types`
+    // condition because `moduleResolution: nodenext` finds the `.d.mts` beside
+    // the `.mjs`.
     exports: {
       exclude: ['cli'],
     },
@@ -28,10 +27,10 @@ export default defineConfig({
       alwaysBundle: [/^@note-first-presenter\/client(\/|$)/],
       // The whitelist that makes the old hazard loud. `vp pack` bakes an
       // *undeclared* import in as a resolved absolute path, which publishes a
-      // package that only works on this machine; ADR-0010 fled the build step
-      // partly to escape it. Anything bundled from node_modules now fails the
-      // build instead, naming the specifier and its importer, so the rule about
-      // declaring every runtime dependency has a machine enforcing it.
+      // package that only works on this machine. Anything bundled from
+      // node_modules now fails the build instead, naming the specifier and its
+      // importer, so the rule about declaring every runtime dependency has a
+      // machine enforcing it.
       //
       // Empty, not the client: `alwaysBundle`'s target reaches the graph through
       // the workspace symlink, which this does not count as node_modules — so

@@ -16,6 +16,7 @@
   "files": [
     "index.html",
     "src",
+    "!src/**/__mocks__",
     "!src/**/__tests__",
     "tsconfig.json"
   ],

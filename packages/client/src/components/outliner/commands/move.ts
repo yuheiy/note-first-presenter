@@ -1,40 +1,26 @@
-import { Fragment, type Node, type ResolvedPos } from 'prosemirror-model';
+import { Fragment, type Node } from 'prosemirror-model';
 import { type Command, TextSelection } from 'prosemirror-state';
+import { BULLET_LIST, LIST_ITEM } from '../model/nodes';
+import { childItemPos, findListItemDepth } from '../model/position';
 import {
   collectAllSelectedItemPositions,
   createNodeRangeSelection,
   isNodeRangeSelection,
 } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-import { cleanupEmptyBulletLists } from './cleanup';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
-const BULLET_LIST = outlinerSchema.nodes.bullet_list;
-
-function findListItemDepth($pos: ResolvedPos): number | null {
-  let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
-  return depth === 0 ? null : depth;
-}
+import { cleanupAfterBulkDelete } from './cleanup';
+import { rangeAware } from './rangeAware';
 
 // Find an adjacent sibling list_item of the given position in the doc, at the
 // same level (same parent bullet_list). Returns the absolute position of that
 // sibling, or null if no sibling exists in the asked direction.
 function adjacentSiblingPos(doc: Node, itemPos: number, direction: -1 | 1): number | null {
-  try {
-    const $pos = doc.resolve(itemPos);
-    const parent = $pos.parent;
-    if (parent.type !== BULLET_LIST) return null;
-    const index = $pos.index();
-    const target = index + direction;
-    if (target < 0 || target >= parent.childCount) return null;
-    const parentStart = $pos.start();
-    let pos = parentStart;
-    for (let i = 0; i < target; i++) pos += parent.child(i).nodeSize;
-    return pos;
-  } catch {
-    return null;
-  }
+  if (itemPos < 0 || itemPos > doc.content.size) return null;
+  const $pos = doc.resolve(itemPos);
+  const parent = $pos.parent;
+  if (parent.type !== BULLET_LIST) return null;
+  const target = $pos.index() + direction;
+  if (target < 0 || target >= parent.childCount) return null;
+  return childItemPos(parent, $pos.start(), target);
 }
 
 // Move every selected list_item (primary + additionalItems) by one slot at
@@ -79,7 +65,7 @@ function moveNodeRange(direction: -1 | 1): Command {
 
     // Drop any bullet_list nodes that became empty from the deletes, then
     // translate the original insert position through everything.
-    cleanupEmptyBulletLists(tr);
+    cleanupAfterBulkDelete(tr);
     const insertPos = tr.mapping.map(insertPosOrig);
 
     tr = tr.insert(insertPos, Fragment.fromArray(items));
@@ -93,11 +79,7 @@ function moveNodeRange(direction: -1 | 1): Command {
     if (newSel) {
       tr.setSelection(newSel);
     } else {
-      try {
-        tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos)));
-      } catch {
-        /* best effort */
-      }
+      tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos)));
     }
 
     if (dispatch) dispatch(tr.scrollIntoView());
@@ -128,21 +110,14 @@ function moveSingle(direction: -1 | 1): Command {
     const tr = state.tr.replaceWith(rangeStart, rangeEnd, Fragment.fromArray(replacement));
     const caretOffset = $from.pos - itemStart;
     const newItemStart = direction === -1 ? rangeStart : rangeStart + sibling.nodeSize;
-    try {
-      tr.setSelection(TextSelection.near(tr.doc.resolve(newItemStart + caretOffset)));
-    } catch {
-      // caret remap best-effort; ignore if pos invalid
-    }
+    tr.setSelection(TextSelection.near(tr.doc.resolve(newItemStart + caretOffset)));
     if (dispatch) dispatch(tr.scrollIntoView());
     return true;
   };
 }
 
 function move(direction: -1 | 1): Command {
-  return (state, dispatch) => {
-    if (isNodeRangeSelection(state.selection)) return moveNodeRange(direction)(state, dispatch);
-    return moveSingle(direction)(state, dispatch);
-  };
+  return rangeAware(moveNodeRange(direction), moveSingle(direction));
 }
 
 export const moveItemUp = move(-1);

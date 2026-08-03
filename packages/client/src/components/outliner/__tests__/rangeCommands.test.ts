@@ -8,29 +8,7 @@ import { rangeAwareSplitListItem } from '../commands/rangeSplit';
 import { moveItemDown, moveItemUp } from '../commands/move';
 import { NodeRangeSelection, createNodeRangeSelection } from '../selections/nodeRangeSelection';
 import { outlinerSchema } from '../schema';
-
-function makeDoc(texts: string[]) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemPos(doc: ReturnType<typeof makeDoc>, index: number) {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
-
-function topTexts(state: EditorState) {
-  const list = state.doc.firstChild!;
-  const out: string[] = [];
-  list.forEach((it) => out.push(it.firstChild?.textContent ?? ''));
-  return out;
-}
+import { docOf, item, itemPos, itemTexts, makeDoc, topTexts } from './fixtures';
 
 function makeRangeState(texts: string[], fromIdx: number, toIdx: number) {
   const doc = makeDoc(texts);
@@ -43,7 +21,7 @@ describe('moveItemUp on a NodeRangeSelection', () => {
     const state = makeRangeState(['a', 'b', 'c', 'd'], 1, 2);
     let next: EditorState | null = null;
     expect(moveItemUp(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    expect(topTexts(next!)).toEqual(['b', 'c', 'a', 'd']);
+    expect(topTexts(next!.doc)).toEqual(['b', 'c', 'a', 'd']);
     expect(next!.selection).toBeInstanceOf(NodeRangeSelection);
     expect((next!.selection as NodeRangeSelection).itemCount).toBe(2);
   });
@@ -59,7 +37,7 @@ describe('moveItemDown on a NodeRangeSelection', () => {
     const state = makeRangeState(['a', 'b', 'c', 'd'], 1, 2);
     let next: EditorState | null = null;
     expect(moveItemDown(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    expect(topTexts(next!)).toEqual(['a', 'd', 'b', 'c']);
+    expect(topTexts(next!.doc)).toEqual(['a', 'd', 'b', 'c']);
     expect((next!.selection as NodeRangeSelection).itemCount).toBe(2);
   });
 
@@ -74,7 +52,7 @@ describe('duplicateItem on a NodeRangeSelection', () => {
     const state = makeRangeState(['a', 'b', 'c'], 0, 1);
     let next: EditorState | null = null;
     expect(duplicateItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    expect(topTexts(next!)).toEqual(['a', 'b', 'a', 'b', 'c']);
+    expect(topTexts(next!.doc)).toEqual(['a', 'b', 'a', 'b', 'c']);
     expect(next!.selection).toBeInstanceOf(NodeRangeSelection);
     expect((next!.selection as NodeRangeSelection).itemCount).toBe(2);
   });
@@ -86,24 +64,14 @@ function makeNestedDoc() {
   // - b
   //   - b1
   // - c (no children)
-  const make = (text: string, children?: any[]) => {
-    const kids = [outlinerSchema.node('paragraph', null, [outlinerSchema.text(text)])];
-    if (children) kids.push(outlinerSchema.node('bullet_list', null, children));
-    return outlinerSchema.node('list_item', null, kids);
-  };
-  return outlinerSchema.node('doc', null, [
-    outlinerSchema.node('bullet_list', null, [
-      make('a', [make('a1')]),
-      make('b', [make('b1')]),
-      make('c'),
-    ]),
-  ]);
+  return docOf([item('a', [item('a1')]), item('b', [item('b1')]), item('c')]);
 }
 
 describe('collapseItem on a NodeRangeSelection', () => {
   it('sets collapsed=true on every item with children', () => {
     const doc = makeNestedDoc();
-    // Range covers items 0 and 2 (skipping index 1) — adjust to cover [0,2]
+    // Built without attrs, so this also pins the schema's default.
+    expect(doc.firstChild!.child(0).attrs.collapsed).toBe(false);
     const range = createNodeRangeSelection(
       doc,
       1,
@@ -127,16 +95,7 @@ describe('expandItem on a NodeRangeSelection', () => {
       if (children) kids.push(outlinerSchema.node('bullet_list', null, children));
       return outlinerSchema.node('list_item', { collapsed }, kids);
     };
-    const child = (t: string) =>
-      outlinerSchema.node('list_item', null, [
-        outlinerSchema.node('paragraph', null, [outlinerSchema.text(t)]),
-      ]);
-    const doc = outlinerSchema.node('doc', null, [
-      outlinerSchema.node('bullet_list', null, [
-        make('a', true, [child('a1')]),
-        make('b', true, [child('b1')]),
-      ]),
-    ]);
+    const doc = docOf([make('a', true, [item('a1')]), make('b', true, [item('b1')])]);
     const range = createNodeRangeSelection(doc, 1, 1 + doc.firstChild!.child(0).nodeSize)!;
     const state = EditorState.create({ doc, selection: range });
     let next: EditorState | null = null;
@@ -151,7 +110,7 @@ describe('smartBackspace on a NodeRangeSelection', () => {
     const state = makeRangeState(['a', 'b', 'c'], 0, 1);
     let next: EditorState | null = null;
     expect(smartBackspace(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    expect(topTexts(next!)).toEqual(['c']);
+    expect(topTexts(next!.doc)).toEqual(['c']);
   });
 
   it('replaces the only items with an empty list_item if range covers all', () => {
@@ -170,7 +129,7 @@ describe('smartDelete on a NodeRangeSelection', () => {
     const state = makeRangeState(['a', 'b', 'c'], 1, 2);
     let next: EditorState | null = null;
     expect(smartDelete(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    expect(topTexts(next!)).toEqual(['a']);
+    expect(topTexts(next!.doc)).toEqual(['a']);
   });
 });
 
@@ -180,14 +139,11 @@ describe('rangeAwareSinkListItem (Tab)', () => {
     let next: EditorState | null = null;
     expect(rangeAwareSinkListItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
     const list = next!.doc.firstChild!;
-    // expected: - a / - a > [b, c] / - d ... structure shape depends on schema-list
-    // Just assert top-level count reduced by 2 (b and c moved under a)
-    expect(list.childCount).toBe(2);
-    expect(list.child(0).firstChild?.textContent).toBe('a');
-    expect(list.child(1).firstChild?.textContent).toBe('d');
+    expect(topTexts(next!.doc)).toEqual(['a', 'd']);
     const nested = list.child(0).lastChild!;
     expect(nested.type.name).toBe('bullet_list');
-    expect(nested.childCount).toBe(2);
+    // The indented items land under 'a', in order, as its nested children.
+    expect(itemTexts(nested)).toEqual(['b', 'c']);
   });
 
   it('returns false if no previous sibling exists', () => {
@@ -201,7 +157,7 @@ describe('rangeAwareSplitListItem (Enter)', () => {
     const state = makeRangeState(['a', 'b', 'c'], 0, 1);
     let next: EditorState | null = null;
     expect(rangeAwareSplitListItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    expect(topTexts(next!)).toEqual(['', 'c']);
+    expect(topTexts(next!.doc)).toEqual(['', 'c']);
   });
 
   it('falls through to default splitListItem when not a NodeRangeSelection', () => {
@@ -218,21 +174,9 @@ describe('rangeAwareLiftListItem (Shift-Tab)', () => {
     //   - b
     //   - c
     // - d
-    const sub = ['b', 'c'].map((t) =>
-      outlinerSchema.node('list_item', null, [
-        outlinerSchema.node('paragraph', null, [outlinerSchema.text(t)]),
-      ]),
-    );
-    const a = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('a')]),
-      outlinerSchema.node('bullet_list', null, sub),
-    ]);
-    const d = outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, [outlinerSchema.text('d')]),
-    ]);
-    const doc = outlinerSchema.node('doc', null, [
-      outlinerSchema.node('bullet_list', null, [a, d]),
-    ]);
+    const sub = [item('b'), item('c')];
+    const a = item('a', sub);
+    const doc = docOf([a, item('d')]);
     // Compute positions of b and c (inside a's nested list)
     const aStart = 1; // before a
     const innerListStart = aStart + 1 /* into a */ + a.firstChild!.nodeSize; // inside a > after paragraph
@@ -242,12 +186,7 @@ describe('rangeAwareLiftListItem (Shift-Tab)', () => {
     const state = EditorState.create({ doc, selection: range });
     let next: EditorState | null = null;
     expect(rangeAwareLiftListItem(state, (tr) => (next = state.apply(tr)))).toBe(true);
-    const list = next!.doc.firstChild!;
     // After lift, b and c become top-level siblings.
-    expect(list.childCount).toBe(4);
-    expect(list.child(0).firstChild?.textContent).toBe('a');
-    expect(list.child(1).firstChild?.textContent).toBe('b');
-    expect(list.child(2).firstChild?.textContent).toBe('c');
-    expect(list.child(3).firstChild?.textContent).toBe('d');
+    expect(topTexts(next!.doc)).toEqual(['a', 'b', 'c', 'd']);
   });
 });
