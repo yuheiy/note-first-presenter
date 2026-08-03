@@ -14,8 +14,7 @@ export interface SlidePanelProps {
  * A component of its own rather than a method on the shell, because it is where
  * both reads that can fail happen. Its ErrorBoundary sits just outside, so a
  * failed request takes out this panel and leaves the toolbar, the outliner and
- * the theme footer standing — which is what the shell used to achieve by
- * threading a `status` prop down and branching on it.
+ * the theme footer standing.
  */
 export function SlidePanel({ activeSlide, onActiveSlideChange }: SlidePanelProps) {
   const { meta, overflow } = useDeck();

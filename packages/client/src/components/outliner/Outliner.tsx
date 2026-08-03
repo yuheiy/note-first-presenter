@@ -48,8 +48,8 @@ export interface OutlinerProps {
 }
 
 // `splitListItem` builds a command rather than being one, so bind it to the schema
-// here instead of on every Enter press — the same module-scope binding the sibling
-// modules do with their `LIST_ITEM` constants.
+// here instead of on every Enter press — the same module-scope binding
+// `model/nodes.ts` does with the node types.
 const splitOutlinerItem = splitListItem(outlinerSchema.nodes.list_item);
 
 /**
@@ -102,6 +102,10 @@ export function Outliner({
             'Mod-z': undo,
             'Mod-Shift-z': redo,
             'Ctrl-y': redo,
+            // Folding's only trigger. ProseMirror does not call keydown
+            // handlers when the view is not editable, so the Viewer renders
+            // the folded state the Editor saved without being able to change
+            // it — no separate read-only guard needed.
             'Mod-ArrowUp': collapseItem,
             'Mod-ArrowDown': expandItem,
             'Mod-Shift-d': duplicateItem,

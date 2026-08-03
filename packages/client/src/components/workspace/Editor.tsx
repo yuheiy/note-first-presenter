@@ -4,7 +4,8 @@ import { Input, TextField } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
 import { Outliner } from '../outliner/Outliner';
 import { useActiveSlide } from '../../lib/routes';
-import { titleAtom, useDbEditing, useStoredDocument, type DbEditing } from './db';
+import { titleAtom } from './db';
+import { useDbEditing, useStoredDocument, type DbEditing } from './useDb';
 import { Workspace } from './Workspace';
 
 /**

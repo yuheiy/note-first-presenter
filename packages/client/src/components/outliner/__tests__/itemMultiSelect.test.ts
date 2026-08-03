@@ -2,23 +2,7 @@ import { EditorState, NodeSelection, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { resolveItemClickSelection } from '../plugins/itemMultiSelect';
 import { NodeRangeSelection } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-
-function makeDoc(texts: string[]) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemPos(doc: ReturnType<typeof makeDoc>, index: number) {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
+import { itemPos, makeDoc } from './fixtures';
 
 describe('resolveItemClickSelection', () => {
   it('plain click is a no-op (returns null)', () => {
@@ -87,18 +71,14 @@ describe('resolveItemClickSelection with Cmd/Ctrl', () => {
     const afterAdd = resolveItemClickSelection(stateA, itemPos(doc, 2), { meta: true });
     if (!afterAdd) throw new Error('expected selection');
     const stateB = EditorState.create({ doc, selection: afterAdd });
-    // Cmd+Click on item 2 again should remove it.
+    // Cmd+Click on item 2 again removes it: the one remaining item (0) becomes
+    // the main range with nothing additional.
     const afterRemove = resolveItemClickSelection(stateB, itemPos(doc, 2), { meta: true });
-    // Only item 0 should remain selected.
-    if (afterRemove instanceof NodeRangeSelection) {
-      expect(afterRemove.fromIndex).toBe(0);
-      expect(afterRemove.toIndex).toBe(0);
-      expect(afterRemove.additionalItems.length).toBe(0);
-    } else if (afterRemove instanceof NodeSelection) {
-      expect(afterRemove.from).toBe(itemPos(doc, 0));
-    } else {
-      throw new Error('expected list_item selection');
-    }
+    expect(afterRemove).toBeInstanceOf(NodeRangeSelection);
+    const range = afterRemove as NodeRangeSelection;
+    expect(range.fromIndex).toBe(0);
+    expect(range.toIndex).toBe(0);
+    expect(range.additionalItems).toEqual([]);
   });
 
   it('meta+click that removes the last selected item falls back to a TextSelection', () => {

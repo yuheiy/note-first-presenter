@@ -2,7 +2,8 @@ import { useAtomValue } from 'jotai';
 import { m } from '../../lib/paraglide/messages.js';
 import { Outliner } from '../outliner/Outliner';
 import { useActiveSlide } from '../../lib/routes';
-import { titleAtom, useStoredDocument } from './db';
+import { titleAtom } from './db';
+import { useStoredDocument } from './useDb';
 import { Workspace } from './Workspace';
 
 /**

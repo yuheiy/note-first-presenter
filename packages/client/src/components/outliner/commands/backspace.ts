@@ -1,31 +1,24 @@
-import type { Node, ResolvedPos } from 'prosemirror-model';
+import type { Node } from 'prosemirror-model';
 import { liftListItem } from 'prosemirror-schema-list';
-import { type Command, type EditorState, TextSelection } from 'prosemirror-state';
+import { type Command, TextSelection } from 'prosemirror-state';
+import { BULLET_LIST, LIST_ITEM, PARAGRAPH } from '../model/nodes';
+import { findListItemDepth, paragraphEndOf } from '../model/position';
 import {
   collectAllSelectedItemPositions,
   isNodeRangeSelection,
 } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-import { cleanupEmptyBulletLists } from './cleanup';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
-const BULLET_LIST = outlinerSchema.nodes.bullet_list;
-
-function findListItemDepth($pos: ResolvedPos): number | null {
-  let depth = $pos.depth;
-  while (depth > 0 && $pos.node(depth).type !== LIST_ITEM) depth--;
-  return depth === 0 ? null : depth;
-}
+import { cleanupAfterBulkDelete } from './cleanup';
+import { rangeAware } from './rangeAware';
 
 function isItemEmpty(item: Node): boolean {
   return (
     item.childCount === 1 &&
-    item.firstChild!.type === outlinerSchema.nodes.paragraph &&
+    item.firstChild!.type === PARAGRAPH &&
     item.firstChild!.content.size === 0
   );
 }
 
-function deleteRange(state: EditorState, dispatch: Parameters<Command>[1]): boolean {
+const deleteRange: Command = (state, dispatch) => {
   const sel = state.selection;
   if (!isNodeRangeSelection(sel)) return false;
   const positions = collectAllSelectedItemPositions(sel);
@@ -40,35 +33,29 @@ function deleteRange(state: EditorState, dispatch: Parameters<Command>[1]): bool
     tr = tr.delete(pos, pos + node.nodeSize);
   }
 
-  cleanupEmptyBulletLists(tr);
+  cleanupAfterBulkDelete(tr);
 
-  // Place caret near the front-most originally selected position. After the
-  // dust settles a paragraph should be nearby.
+  // Place caret near the front-most originally selected position, clamped into
+  // the shrunken doc. After the dust settles a paragraph should be nearby.
   const caretPos = Math.min(...positions);
-  try {
-    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(tr.doc.content.size, caretPos))));
-  } catch {
-    // best effort
-  }
+  tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(tr.doc.content.size, caretPos))));
   if (dispatch) dispatch(tr.scrollIntoView());
   return true;
-}
+};
 
 // Backspace at the start of a list_item.
 // - empty item with no preceding sibling → fall back to default (no-op for top-level only item)
 // - empty item with a preceding sibling   → delete it, caret to end of previous paragraph
 // - non-empty item, first sibling         → liftListItem (outdent)
 // - non-empty item, has previous sibling  → merge paragraph text into the previous item
-export const smartBackspace: Command = (state, dispatch) => {
-  if (isNodeRangeSelection(state.selection)) return deleteRange(state, dispatch);
-
+const singleBackspace: Command = (state, dispatch) => {
   const { $from, empty } = state.selection;
   if (!empty) return false;
   const itemDepth = findListItemDepth($from);
   if (itemDepth === null) return false;
   const item = $from.node(itemDepth);
 
-  const inParagraph = $from.parent.type === outlinerSchema.nodes.paragraph;
+  const inParagraph = $from.parent.type === PARAGRAPH;
   if (!inParagraph || $from.parentOffset !== 0) return false;
   if (item.firstChild !== $from.parent) return false;
 
@@ -84,9 +71,7 @@ export const smartBackspace: Command = (state, dispatch) => {
     }
     const prevItem = parentList.child(indexInList - 1);
     const prevItemStart = itemStart - prevItem.nodeSize;
-    // caret position = end of previous paragraph (insidelist_item +1 into paragraph +content.size)
-    const prevPara = prevItem.firstChild!;
-    const caret = prevItemStart + 2 + prevPara.content.size;
+    const caret = paragraphEndOf(state.doc, prevItemStart)!;
     const tr = state.tr.delete(itemStart, itemStart + item.nodeSize);
     tr.setSelection(TextSelection.create(tr.doc, caret));
     if (dispatch) dispatch(tr.scrollIntoView());
@@ -97,13 +82,11 @@ export const smartBackspace: Command = (state, dispatch) => {
     return liftListItem(LIST_ITEM)(state, dispatch);
   }
 
-  // Merge current paragraph content into previous item's paragraph.
   // Note: nested children of current item are dropped — a known limitation
   // matching basic Workflowy behaviour for merge across non-empty leaves.
   const prevItem = parentList.child(indexInList - 1);
   const prevItemStart = itemStart - prevItem.nodeSize;
-  const prevPara = prevItem.firstChild!;
-  const insertPos = prevItemStart + 2 + prevPara.content.size;
+  const insertPos = paragraphEndOf(state.doc, prevItemStart)!;
   const currentParaContent = item.firstChild!.content;
 
   const tr = state.tr.delete(itemStart, itemStart + item.nodeSize);
@@ -114,16 +97,14 @@ export const smartBackspace: Command = (state, dispatch) => {
 };
 
 // Delete at the end of a paragraph: pull the next sibling's content into the current item.
-export const smartDelete: Command = (state, dispatch) => {
-  if (isNodeRangeSelection(state.selection)) return deleteRange(state, dispatch);
-
+const singleDelete: Command = (state, dispatch) => {
   const { $from, empty } = state.selection;
   if (!empty) return false;
   const itemDepth = findListItemDepth($from);
   if (itemDepth === null) return false;
   const item = $from.node(itemDepth);
 
-  const inParagraph = $from.parent.type === outlinerSchema.nodes.paragraph;
+  const inParagraph = $from.parent.type === PARAGRAPH;
   if (!inParagraph) return false;
   if (item.lastChild !== $from.parent) return false;
   if ($from.parentOffset !== $from.parent.content.size) return false;
@@ -145,3 +126,6 @@ export const smartDelete: Command = (state, dispatch) => {
   if (dispatch) dispatch(tr.scrollIntoView());
   return true;
 };
+
+export const smartBackspace = rangeAware(deleteRange, singleBackspace);
+export const smartDelete = rangeAware(deleteRange, singleDelete);

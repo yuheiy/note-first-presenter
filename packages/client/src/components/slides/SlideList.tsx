@@ -71,20 +71,11 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
       selectedKeys={new Set([activeSlide])}
       onSelectionChange={handleSelectionChange}
       // ArrowLeft/ArrowRight as extra aliases for previous/next, matching the
-      // slideshow page, which sends every arrow key to prev/next.
-      //
-      // Not a layout claim about this one-column list — `layout` reaches no
-      // markup. RAC's grid model is "Left/Right walk the collection's linear
-      // order, Up/Down move by row" (their own test asserts Left wrapping from
-      // a row's first item back to the previous row's last), and with one
-      // column the two coincide: Up/Down are unchanged, Left/Right become
-      // prev/next. `useListBox` still emits role="listbox" +
-      // aria-orientation="vertical", so what a screen reader is told is
-      // identical either way, and APG's listbox pattern regulates only
-      // Up/Down/Home/End/typeahead — a vertical list's Left/Right are its own
-      // business. Under RTL, RAC would swap the two; the slideshow's window
-      // keydown would not, so an RTL catalogue means revisiting both (today
-      // both catalogues are LTR, so `direction` is always `ltr`).
+      // slideshow page. Not a layout claim: with one column, RAC's grid model
+      // makes Left/Right walk the collection's linear order while what a
+      // screen reader is told is identical either way. Under RTL, RAC would
+      // swap the two and the slideshow's window keydown would not — see
+      // `docs/adr/0015` for the full reasoning.
       layout="grid"
       // The list is the scroll container. It expects a parent with a definite
       // height that is also a `container-type: size` container: --scroll-tail is

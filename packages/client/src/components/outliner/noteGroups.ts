@@ -1,14 +1,13 @@
 import type { Node } from 'prosemirror-model';
 import type { Selection } from 'prosemirror-state';
 import { docToItems, isSeparatorItem } from './jsonDoc';
-import { isTopLevelSeparator } from './separator';
+import { isTopLevelSeparator } from './model/separator';
 
 export interface NoteGroup {
   slideIndex: number;
   itemPositions: number[];
   rangeStart: number;
   rangeEnd: number;
-  precedingSeparatorPos: number | null;
 }
 
 /**
@@ -36,7 +35,6 @@ export function deriveNoteGroups(doc: Node): NoteGroup[] {
         itemPositions: [],
         rangeStart: 0,
         rangeEnd: doc.content.size,
-        precedingSeparatorPos: null,
       },
     ];
     noteGroupsCache.set(doc, fallback);
@@ -49,7 +47,6 @@ export function deriveNoteGroups(doc: Node): NoteGroup[] {
     itemPositions: [],
     rangeStart: 0,
     rangeEnd: 0,
-    precedingSeparatorPos: null,
   };
   let offset = 1;
   list.forEach((item) => {
@@ -63,7 +60,6 @@ export function deriveNoteGroups(doc: Node): NoteGroup[] {
         itemPositions: [],
         rangeStart: itemStart,
         rangeEnd: itemEnd,
-        precedingSeparatorPos: itemStart,
       };
     } else {
       current.itemPositions.push(itemStart);

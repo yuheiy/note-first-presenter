@@ -1,12 +1,13 @@
+// HTML parsing only: it needs a real `DOMParser`, which is why this file is a
+// browser test. The plain-text half of the paste pipeline is pure and lives in
+// `textOutline.test.ts`, in the node project.
 import { describe, expect, it } from 'vite-plus/test';
-import { parseHtmlList, parsePlainTextOutline } from '../plugins/paste';
+import { parseHtmlList } from '../plugins/paste';
+import { itemTexts } from './fixtures';
 
 function topLevelTexts(slice: ReturnType<typeof parseHtmlList>) {
   if (!slice) return [];
-  const list = slice.content.firstChild!;
-  const out: string[] = [];
-  list.forEach((it) => out.push(it.firstChild?.textContent ?? ''));
-  return out;
+  return itemTexts(slice.content.firstChild!);
 }
 
 describe('parseHtmlList', () => {
@@ -32,37 +33,5 @@ describe('parseHtmlList', () => {
   it('handles ordered lists the same as unordered', () => {
     const slice = parseHtmlList('<ol><li>a</li><li>b</li></ol>');
     expect(topLevelTexts(slice)).toEqual(['a', 'b']);
-  });
-});
-
-describe('parsePlainTextOutline', () => {
-  it('returns null for single line input', () => {
-    expect(parsePlainTextOutline('single')).toBeNull();
-  });
-
-  it('parses flat bullets', () => {
-    const slice = parsePlainTextOutline('- a\n- b');
-    expect(topLevelTexts(slice)).toEqual(['a', 'b']);
-  });
-
-  it('parses indented bullets into a tree', () => {
-    const slice = parsePlainTextOutline('- a\n  - a1\n  - a2\n- b');
-    const list = slice!.content.firstChild!;
-    expect(list.childCount).toBe(2);
-    const first = list.firstChild!;
-    expect(first.lastChild!.type.name).toBe('bullet_list');
-    expect(first.lastChild!.childCount).toBe(2);
-  });
-
-  it('strips numbered prefixes like 1.', () => {
-    const slice = parsePlainTextOutline('1. first\n2. second');
-    expect(topLevelTexts(slice)).toEqual(['first', 'second']);
-  });
-
-  it('handles plain indented text without bullet markers', () => {
-    const slice = parsePlainTextOutline('a\n    a1\nb');
-    const list = slice!.content.firstChild!;
-    expect(list.childCount).toBe(2);
-    expect(list.firstChild!.lastChild!.type.name).toBe('bullet_list');
   });
 });

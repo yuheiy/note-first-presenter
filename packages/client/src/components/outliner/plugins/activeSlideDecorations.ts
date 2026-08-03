@@ -5,7 +5,11 @@ import { findActiveGroup } from '../noteGroups';
 
 const key = new PluginKey('nfp-active-slide-decorations');
 
-function buildDecorations(state: EditorState): DecorationSet {
+/**
+ * The active slide's top-level items, as node decorations. Exported so tests
+ * can assert on the set without reaching into plugin props.
+ */
+export function buildActiveSlideDecorations(state: EditorState): DecorationSet {
   const group = findActiveGroup(state.doc, state.selection);
   const decorations: Decoration[] = [];
   for (const pos of group.itemPositions) {
@@ -26,11 +30,11 @@ export const activeSlideDecorations = new Plugin({
   key,
   state: {
     init(_, state) {
-      return buildDecorations(state);
+      return buildActiveSlideDecorations(state);
     },
     apply(tr, old, _, newState) {
       if (!tr.docChanged && !tr.selectionSet) return old;
-      return buildDecorations(newState);
+      return buildActiveSlideDecorations(newState);
     },
   },
   props: {

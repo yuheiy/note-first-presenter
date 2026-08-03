@@ -1,7 +1,9 @@
 import type { Node } from 'prosemirror-model';
-import { Plugin } from 'prosemirror-state';
+import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
-import { isTopLevelSeparator } from '../separator';
+import { isTopLevelSeparator } from '../model/separator';
+
+const key = new PluginKey<DecorationSet>('nfp-separator-decorations');
 
 function compute(doc: Node): DecorationSet {
   const list = doc.firstChild;
@@ -22,13 +24,14 @@ function compute(doc: Node): DecorationSet {
 }
 
 export const separatorDecorations = new Plugin({
+  key,
   state: {
     init: (_, s) => compute(s.doc),
     apply: (tr, old) => (tr.docChanged ? compute(tr.doc) : old),
   },
   props: {
     decorations(state) {
-      return this.getState(state);
+      return key.getState(state);
     },
   },
 });

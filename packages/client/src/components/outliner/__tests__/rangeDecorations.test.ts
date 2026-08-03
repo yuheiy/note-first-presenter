@@ -1,59 +1,83 @@
 import { EditorState } from 'prosemirror-state';
-import type { DecorationSet } from 'prosemirror-view';
 import { describe, expect, it } from 'vite-plus/test';
-import { rangeSelectionDecorations } from '../plugins/rangeSelectionDecorations';
-import { createNodeRangeSelection } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
+import { buildRangeSelectionDecorations } from '../plugins/rangeSelectionDecorations';
+import { createNodeRangeSelection, type LiftedFrom } from '../selections/nodeRangeSelection';
+import { docOf, item, itemPos, makeDoc } from './fixtures';
 
-function makeDoc(texts: string[]) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemPos(doc: ReturnType<typeof makeDoc>, index: number) {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
-
-function decorationsFor(state: EditorState): DecorationSet | null {
-  const fn = rangeSelectionDecorations.props.decorations;
-  if (!fn) return null;
-  return fn.call(rangeSelectionDecorations, state) as DecorationSet | null;
+function decorationStarts(state: EditorState): number[] {
+  return buildRangeSelectionDecorations(state)
+    .find()
+    .map((d) => d.from)
+    .sort((a, b) => a - b);
 }
 
 describe('rangeSelectionDecorations', () => {
   it('produces no decorations when no NodeRangeSelection is active', () => {
     const doc = makeDoc(['a', 'b']);
-    const state = EditorState.create({ doc, plugins: [rangeSelectionDecorations] });
-    expect(decorationsFor(state)?.find().length ?? 0).toBe(0);
+    const state = EditorState.create({ doc });
+    expect(decorationStarts(state)).toEqual([]);
   });
 
   it('adds a data-range-selected decoration to each item in the range', () => {
     const doc = makeDoc(['a', 'b', 'c']);
     const sel = createNodeRangeSelection(doc, itemPos(doc, 0), itemPos(doc, 1))!;
-    const state = EditorState.create({
-      doc,
-      selection: sel,
-      plugins: [rangeSelectionDecorations],
-    });
-    const decos = decorationsFor(state)!.find();
-    expect(decos.length).toBe(2);
+    const state = EditorState.create({ doc, selection: sel });
+    expect(decorationStarts(state)).toEqual([itemPos(doc, 0), itemPos(doc, 1)]);
   });
 
   it('covers all items when the range spans the whole list', () => {
     const doc = makeDoc(['a', 'b', 'c']);
     const sel = createNodeRangeSelection(doc, itemPos(doc, 0), itemPos(doc, 2))!;
-    const state = EditorState.create({
-      doc,
-      selection: sel,
-      plugins: [rangeSelectionDecorations],
-    });
-    expect(decorationsFor(state)!.find().length).toBe(3);
+    const state = EditorState.create({ doc, selection: sel });
+    expect(decorationStarts(state)).toEqual([itemPos(doc, 0), itemPos(doc, 1), itemPos(doc, 2)]);
+  });
+
+  it('paints additionalItems outside the primary range', () => {
+    const doc = makeDoc(['a', 'b', 'c', 'd']);
+    const sel = createNodeRangeSelection(doc, itemPos(doc, 0), itemPos(doc, 0), null, [
+      itemPos(doc, 2),
+    ])!;
+    const state = EditorState.create({ doc, selection: sel });
+    expect(decorationStarts(state)).toEqual([itemPos(doc, 0), itemPos(doc, 2)]);
+  });
+
+  it('does not paint an additional item twice when it coincides with a primary item', () => {
+    const doc = makeDoc(['a', 'b']);
+    const sel = createNodeRangeSelection(doc, itemPos(doc, 0), itemPos(doc, 0), null, [
+      itemPos(doc, 0),
+    ])!;
+    const state = EditorState.create({ doc, selection: sel });
+    expect(decorationStarts(state)).toEqual([itemPos(doc, 0)]);
+  });
+
+  // - A
+  //   - A1
+  //   - A2
+  // - B
+  function nestedDoc() {
+    const doc = docOf([item('A', [item('A1'), item('A2')]), item('B')]);
+    const A = doc.firstChild!.firstChild!;
+    const a1Pos = 1 + 1 + A.firstChild!.nodeSize + 1;
+    const a2Pos = a1Pos + A.lastChild!.firstChild!.nodeSize;
+    return { doc, a1Pos, a2Pos };
+  }
+
+  it('paints lifted-from items that fall outside the primary range', () => {
+    const { doc, a2Pos } = nestedDoc();
+    // Promoted down out of A2 onto B: the lifted origin (A2) is not inside B,
+    // so both stay highlighted.
+    const lifted: LiftedFrom = { anchor: a2Pos, head: a2Pos, fromDirection: 1, previous: null };
+    const sel = createNodeRangeSelection(doc, itemPos(doc, 1), itemPos(doc, 1), lifted)!;
+    const state = EditorState.create({ doc, selection: sel });
+    expect(decorationStarts(state)).toEqual([a2Pos, itemPos(doc, 1)].sort((a, b) => a - b));
+  });
+
+  it('skips lifted-from items that sit inside the primary range', () => {
+    const { doc, a1Pos } = nestedDoc();
+    // Promoted up out of A1 onto A: A contains A1, so only A is painted.
+    const lifted: LiftedFrom = { anchor: a1Pos, head: a1Pos, fromDirection: -1, previous: null };
+    const sel = createNodeRangeSelection(doc, itemPos(doc, 0), itemPos(doc, 0), lifted)!;
+    const state = EditorState.create({ doc, selection: sel });
+    expect(decorationStarts(state)).toEqual([itemPos(doc, 0)]);
   });
 });

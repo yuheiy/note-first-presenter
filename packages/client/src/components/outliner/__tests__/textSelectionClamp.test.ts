@@ -1,26 +1,10 @@
 import { EditorState, TextSelection } from 'prosemirror-state';
 import { describe, expect, it } from 'vite-plus/test';
 import { textSelectionClamp } from '../plugins/textSelectionClamp';
-import { outlinerSchema } from '../schema';
-
-function makeDoc(texts: string[]) {
-  const items = texts.map((t) =>
-    outlinerSchema.node('list_item', null, [
-      outlinerSchema.node('paragraph', null, t ? [outlinerSchema.text(t)] : []),
-    ]),
-  );
-  return outlinerSchema.node('doc', null, [outlinerSchema.node('bullet_list', null, items)]);
-}
-
-function itemStart(doc: ReturnType<typeof makeDoc>, index: number) {
-  let pos = 1;
-  const list = doc.firstChild!;
-  for (let i = 0; i < index; i++) pos += list.child(i).nodeSize;
-  return pos;
-}
+import { itemPos, makeDoc } from './fixtures';
 
 function caretInside(doc: ReturnType<typeof makeDoc>, index: number, offset: number) {
-  return itemStart(doc, index) + 2 + offset;
+  return itemPos(doc, index) + 2 + offset;
 }
 
 describe('textSelectionClamp (clamp)', () => {

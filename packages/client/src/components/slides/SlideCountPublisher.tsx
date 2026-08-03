@@ -6,9 +6,8 @@ import { useSyncPublisher } from './sync';
  *
  * A component rather than a call in the shell because it needs the deck's
  * length, so it is a place that can suspend, and the shell must not be.
- * Publishing simply does not happen until there is something true to say —
- * better than the shell's old behaviour of broadcasting a count of 0 while the
- * requests were still in flight.
+ * The invariant: a count of 0 is never broadcast while the requests are still
+ * in flight — publishing waits until there is something true to say.
  */
 export function SlideCountPublisher({ activeSlide }: { activeSlide: number }) {
   const { overflow } = useDeck();

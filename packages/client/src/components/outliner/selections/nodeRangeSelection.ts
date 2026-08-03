@@ -4,13 +4,10 @@ import {
   type SelectionBookmark,
   SelectionRange,
   TextSelection,
-  type Transaction,
 } from 'prosemirror-state';
 import type { Mappable } from 'prosemirror-transform';
-import { outlinerSchema } from '../schema';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
-const BULLET_LIST = outlinerSchema.nodes.bullet_list;
+import { BULLET_LIST, LIST_ITEM } from '../model/nodes';
+import { childItemPos } from '../model/position';
 
 /**
  * Snapshot of a selection the current NodeRangeSelection was promoted from,
@@ -34,6 +31,39 @@ export interface NodeRangeSelectionJSON {
   additionalItems?: number[];
 }
 
+/**
+ * Resolve two positions that must sit in the same parent bullet_list — the
+ * shape every NodeRangeSelection is built over. Answers null, rather than
+ * throwing, for positions that fall outside the doc or no longer share a
+ * bullet_list parent: every caller is handling positions that may have gone
+ * stale (mapped, stored, or lifted), and stale means "not this shape any
+ * more", not an error.
+ */
+export function resolveSharedBulletList(
+  doc: Node,
+  anchor: number,
+  head: number,
+): { $anchor: ResolvedPos; $head: ResolvedPos } | null {
+  const size = doc.content.size;
+  if (anchor < 0 || anchor > size || head < 0 || head > size) return null;
+  const $anchor = doc.resolve(anchor);
+  const $head = doc.resolve(head);
+  if ($anchor.depth !== $head.depth) return null;
+  const parent = $anchor.node($anchor.depth);
+  if (parent !== $head.node($head.depth)) return null;
+  if (parent.type !== BULLET_LIST) return null;
+  return { $anchor, $head };
+}
+
+/**
+ * A whole-item selection over contiguous sibling list_items, restricted to one
+ * parent bullet_list at one depth (docs/adr/0004). Subclassing ProseMirror's
+ * `Selection` and registering with `Selection.jsonID('nodeRange')` is the
+ * point: history, collab and clipboard all round-trip selections through that
+ * registry, so range operations ride the existing pipelines for free. The
+ * flip side is that this leans on ProseMirror's Selection contract deeply
+ * enough that replacing the approach later would be expensive.
+ */
 export class NodeRangeSelection extends Selection {
   readonly liftedFrom: LiftedFrom | null;
   /**
@@ -56,10 +86,8 @@ export class NodeRangeSelection extends Selection {
     const parent = $anchor.node($anchor.depth);
     const parentStart = $anchor.start($anchor.depth);
 
-    let fromPos = parentStart;
-    for (let i = 0; i < fromIndex; i++) fromPos += parent.child(i).nodeSize;
-    let toPos = parentStart;
-    for (let i = 0; i <= toIndex; i++) toPos += parent.child(i).nodeSize;
+    const fromPos = childItemPos(parent, parentStart, fromIndex);
+    const toPos = childItemPos(parent, parentStart, toIndex) + parent.child(toIndex).nodeSize;
 
     const $from = $anchor.doc.resolve(fromPos);
     const $to = $anchor.doc.resolve(toPos);
@@ -104,8 +132,7 @@ export class NodeRangeSelection extends Selection {
 
   forEachItem(fn: (pos: number, node: Node, index: number) => void): void {
     const list = this.parentList;
-    let pos = this.parentListPos;
-    for (let i = 0; i < this.fromIndex; i++) pos += list.child(i).nodeSize;
+    let pos = childItemPos(list, this.parentListPos, this.fromIndex);
     for (let i = this.fromIndex; i <= this.toIndex; i++) {
       const node = list.child(i);
       fn(pos, node, i);
@@ -116,9 +143,9 @@ export class NodeRangeSelection extends Selection {
   // Yield every list_item that should appear highlighted. This combines the
   // primary range with any items from a previous nested range we were
   // promoted out of (liftedFrom) and any non-contiguous items added via
-  // Cmd+Click (additionalItems). Items that already fall inside one of the
-  // primary range's items are skipped so a parent and its nested origin
-  // don't get painted twice.
+  // Cmd+Click (additionalItems). Items that fall inside one of the primary
+  // range's items — or coincide with one exactly — are skipped so no item is
+  // painted twice.
   forEachHighlightItem(fn: (pos: number, node: Node) => void): void {
     const mainRanges: Array<[number, number]> = [];
     this.forEachItem((pos, node) => {
@@ -126,49 +153,37 @@ export class NodeRangeSelection extends Selection {
       fn(pos, node);
     });
     const isInsideMain = (pos: number, end: number) =>
-      mainRanges.some(([from, to]) => from < pos && end <= to);
+      mainRanges.some(([from, to]) => from <= pos && end <= to);
 
     const doc = this.$anchor.doc;
 
     const lifted = this.liftedFrom;
     if (lifted) {
-      try {
-        const $a = doc.resolve(lifted.anchor);
-        const $h = doc.resolve(lifted.head);
-        if (
-          $a.depth === $h.depth &&
-          $a.node($a.depth) === $h.node($h.depth) &&
-          $a.node($a.depth).type === BULLET_LIST
-        ) {
-          const parent = $a.node($a.depth);
-          const aIdx = $a.index($a.depth);
-          const hIdx = $h.index($h.depth);
-          const lo = Math.min(aIdx, hIdx);
-          const hi = Math.max(aIdx, hIdx);
-          let pos = $a.start($a.depth);
-          for (let i = 0; i < lo; i++) pos += parent.child(i).nodeSize;
-          for (let i = lo; i <= hi; i++) {
-            const node = parent.child(i);
-            const end = pos + node.nodeSize;
-            if (!isInsideMain(pos, end)) fn(pos, node);
-            pos = end;
-          }
+      const shared = resolveSharedBulletList(doc, lifted.anchor, lifted.head);
+      if (shared) {
+        const { $anchor: $a, $head: $h } = shared;
+        const parent = $a.node($a.depth);
+        const aIdx = $a.index($a.depth);
+        const hIdx = $h.index($h.depth);
+        const lo = Math.min(aIdx, hIdx);
+        const hi = Math.max(aIdx, hIdx);
+        let pos = childItemPos(parent, $a.start($a.depth), lo);
+        for (let i = lo; i <= hi; i++) {
+          const node = parent.child(i);
+          const end = pos + node.nodeSize;
+          if (!isInsideMain(pos, end)) fn(pos, node);
+          pos = end;
         }
-      } catch {
-        /* lifted positions no longer resolve cleanly — skip */
       }
     }
 
     for (const pos of this.additionalItems) {
-      try {
-        const node = doc.nodeAt(pos);
-        if (!node || node.type !== LIST_ITEM) continue;
-        const end = pos + node.nodeSize;
-        if (isInsideMain(pos, end)) continue;
-        fn(pos, node);
-      } catch {
-        /* skip unresolvable */
-      }
+      if (pos < 0 || pos > doc.content.size) continue;
+      const node = doc.nodeAt(pos);
+      if (!node || node.type !== LIST_ITEM) continue;
+      const end = pos + node.nodeSize;
+      if (isInsideMain(pos, end)) continue;
+      fn(pos, node);
     }
   }
 
@@ -187,37 +202,20 @@ export class NodeRangeSelection extends Selection {
     const anchor = mapping.mapResult(this.$anchor.pos);
     const head = mapping.mapResult(this.$head.pos);
     if (anchor.deleted || head.deleted) return TextSelection.near(doc.resolve(anchor.pos));
-    try {
-      const $a = doc.resolve(anchor.pos);
-      const $h = doc.resolve(head.pos);
-      const valid =
-        $a.depth === $h.depth &&
-        $a.node($a.depth) === $h.node($h.depth) &&
-        $a.node($a.depth).type === BULLET_LIST;
-      if (!valid) return TextSelection.near(doc.resolve(anchor.pos));
-      return new NodeRangeSelection(
-        $a,
-        $h,
-        mapLiftedFrom(this.liftedFrom, mapping),
-        mapAdditionalItems(this.additionalItems, mapping, doc),
-      );
-    } catch {
-      return TextSelection.near(doc.resolve(anchor.pos));
-    }
+    const shared = resolveSharedBulletList(doc, anchor.pos, head.pos);
+    if (!shared) return TextSelection.near(doc.resolve(anchor.pos));
+    return new NodeRangeSelection(
+      shared.$anchor,
+      shared.$head,
+      mapLiftedFrom(this.liftedFrom, mapping),
+      mapAdditionalItems(this.additionalItems, mapping, doc),
+    );
   }
 
   content(): Slice {
     const items: Node[] = [];
     this.forEachItem((_pos, node) => items.push(node));
     return new Slice(Fragment.from(items), 1, 1);
-  }
-
-  replace(tr: Transaction, content: Slice = Slice.empty): void {
-    super.replace(tr, content);
-  }
-
-  replaceWith(tr: Transaction, node: Node): void {
-    super.replaceWith(tr, node);
   }
 
   toJSON(): NodeRangeSelectionJSON {
@@ -288,13 +286,17 @@ class NodeRangeBookmark implements SelectionBookmark {
   }
 
   resolve(doc: Node): Selection {
-    try {
-      const $a = doc.resolve(this.anchor);
-      const $h = doc.resolve(this.head);
-      return new NodeRangeSelection($a, $h, this.lifted, this.additional);
-    } catch {
-      return TextSelection.near(doc.resolve(this.anchor));
+    const size = doc.content.size;
+    const inRange = (pos: number) => pos >= 0 && pos <= size;
+    if (!inRange(this.anchor) || !inRange(this.head)) {
+      return TextSelection.near(doc.resolve(Math.max(0, Math.min(this.anchor, size))));
     }
+    return new NodeRangeSelection(
+      doc.resolve(this.anchor),
+      doc.resolve(this.head),
+      this.lifted,
+      this.additional,
+    );
   }
 }
 
@@ -392,20 +394,13 @@ export function createNodeRangeSelection(
   liftedFrom: LiftedFrom | null = null,
   additionalItems: readonly number[] = [],
 ): NodeRangeSelection | null {
-  try {
-    const $a = doc.resolve(anchorItemPos);
-    const $h = doc.resolve(headItemPos);
-    if ($a.depth !== $h.depth) return null;
-    const parentA = $a.node($a.depth);
-    const parentH = $h.node($h.depth);
-    if (parentA !== parentH) return null;
-    if (parentA.type !== BULLET_LIST) return null;
-    const aChild = parentA.maybeChild($a.index($a.depth));
-    const hChild = parentH.maybeChild($h.index($h.depth));
-    if (!aChild || !hChild) return null;
-    if (aChild.type !== LIST_ITEM || hChild.type !== LIST_ITEM) return null;
-    return new NodeRangeSelection($a, $h, liftedFrom, additionalItems);
-  } catch {
-    return null;
-  }
+  const shared = resolveSharedBulletList(doc, anchorItemPos, headItemPos);
+  if (!shared) return null;
+  const { $anchor, $head } = shared;
+  const parent = $anchor.node($anchor.depth);
+  const aChild = parent.maybeChild($anchor.index($anchor.depth));
+  const hChild = parent.maybeChild($head.index($head.depth));
+  if (!aChild || !hChild) return null;
+  if (aChild.type !== LIST_ITEM || hChild.type !== LIST_ITEM) return null;
+  return new NodeRangeSelection($anchor, $head, liftedFrom, additionalItems);
 }

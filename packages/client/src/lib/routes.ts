@@ -90,7 +90,7 @@ function applySlideParam(params: URLSearchParams, slide: number): void {
 }
 
 /** The query string addressing `slide`, including the leading `?`. Empty for the first slide. */
-export function slideSearch(slide: number): string {
+function slideSearch(slide: number): string {
   const params = new URLSearchParams();
   applySlideParam(params, slide);
   return params.size === 0 ? '' : `?${params.toString()}`;
@@ -108,7 +108,7 @@ export function slideSearch(slide: number): string {
  * the wrong slide.
  *
  * Takes mode and base rather than reading them, so the mode this build did not
- * pick is still reachable from a test. Same for `resolveRoutePath` above.
+ * pick is still reachable from a test.
  */
 export function composeSlideshowHref(mode: RouterMode, base: string, slide: number): string {
   const search = slideSearch(slide);

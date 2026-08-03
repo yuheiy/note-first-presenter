@@ -11,6 +11,7 @@
  *     line the caret is on is a no-op.
  *   - Plain click on the bullet area is a no-op (no NodeSelection is created).
  */
+import type { ResolvedPos } from 'prosemirror-model';
 import {
   type EditorState,
   NodeSelection,
@@ -19,11 +20,11 @@ import {
   type Selection,
   TextSelection,
 } from 'prosemirror-state';
+import type { EditorView } from 'prosemirror-view';
+import { LIST_ITEM } from '../model/nodes';
+import { findListItemDepth, paragraphEndOf } from '../model/position';
 import { isMac } from '../platform';
 import { createNodeRangeSelection, isNodeRangeSelection } from '../selections/nodeRangeSelection';
-import { outlinerSchema } from '../schema';
-
-const LIST_ITEM = outlinerSchema.nodes.list_item;
 
 export interface ItemClickModifiers {
   shift?: boolean;
@@ -60,11 +61,9 @@ function collectPreviouslySelectedExcept(sel: Selection, excludePos: number): nu
   return positions;
 }
 
-function listItemAncestorPos($pos: import('prosemirror-model').ResolvedPos): number | null {
-  for (let d = $pos.depth; d > 0; d--) {
-    if ($pos.node(d).type === LIST_ITEM) return $pos.before(d);
-  }
-  return null;
+function listItemAncestorPos($pos: ResolvedPos): number | null {
+  const depth = findListItemDepth($pos);
+  return depth === null ? null : $pos.before(depth);
 }
 
 function shiftAnchorPos(state: EditorState): number | null {
@@ -96,11 +95,8 @@ export function resolveItemClickSelection(
       if (remaining.length === 0) {
         // Last selected item removed — drop back to a TextSelection at the end of
         // the clicked item's paragraph so the editor remains usable.
-        const node = state.doc.nodeAt(itemPos);
-        const paragraph = node?.firstChild;
-        if (paragraph && paragraph.type === outlinerSchema.nodes.paragraph) {
-          return TextSelection.create(state.doc, itemPos + 2 + paragraph.content.size);
-        }
+        const caret = paragraphEndOf(state.doc, itemPos);
+        if (caret !== null) return TextSelection.create(state.doc, caret);
         return state.selection;
       }
       const newMain = remaining[0];
@@ -126,19 +122,12 @@ export function resolveItemClickSelection(
   return null;
 }
 
-function resolveItemPosFromTarget(
-  view: import('prosemirror-view').EditorView,
-  target: Element | null,
-): number {
+function resolveItemPosFromTarget(view: EditorView, target: Element | null): number {
   if (!target) return -1;
   const li = target.closest('li');
   if (!li) return -1;
   const posAt = view.posAtDOM(li, 0);
-  const $pos = view.state.doc.resolve(posAt);
-  for (let d = $pos.depth; d > 0; d--) {
-    if ($pos.node(d).type === LIST_ITEM) return $pos.before(d);
-  }
-  return -1;
+  return listItemAncestorPos(view.state.doc.resolve(posAt)) ?? -1;
 }
 
 export const itemMultiSelectPlugin = new Plugin({
