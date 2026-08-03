@@ -55,10 +55,10 @@ test('Shift+Click on a bullet extends a NodeRangeSelection from the anchor item'
 
   // Cmd+Click anchors a single-item NodeRangeSelection on the first li so
   // the subsequent Shift+Click has a defined anchor.
-  await clickBullet(page.locator('.outliner-root li').nth(0), { meta: true });
-  await clickBullet(page.locator('.outliner-root li').nth(2), { shift: true });
+  await clickBullet(page.locator('.nfp-outliner li').nth(0), { meta: true });
+  await clickBullet(page.locator('.nfp-outliner li').nth(2), { shift: true });
 
-  await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(3);
+  await expect(page.locator('.nfp-outliner li[data-range-selected="true"]')).toHaveCount(3);
 });
 
 test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', async ({ page }) => {
@@ -71,10 +71,10 @@ test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', asy
   await page.keyboard.press('Enter');
   await editor.pressSequentially('d');
 
-  await clickBullet(page.locator('.outliner-root li').nth(0), { meta: true });
+  await clickBullet(page.locator('.nfp-outliner li').nth(0), { meta: true });
   await page.keyboard.press('Shift+ArrowDown');
   // Sanity: the range now covers two items.
-  await expect(page.locator('.outliner-root li[data-range-selected="true"]')).toHaveCount(2);
+  await expect(page.locator('.nfp-outliner li[data-range-selected="true"]')).toHaveCount(2);
 
   // Outliner.tsx registers the move keymap as Mod-Shift-ArrowDown on macOS
   // and Alt-Shift-ArrowDown elsewhere, following ProseMirror's own platform
@@ -84,6 +84,6 @@ test('Mod+Shift+ArrowDown moves a NodeRangeSelection past the next sibling', asy
   const isMac = await page.evaluate(() => /Mac|iP(hone|[oa]d)/.test(navigator.platform));
   await page.keyboard.press(isMac ? 'Meta+Shift+ArrowDown' : 'Alt+Shift+ArrowDown');
 
-  const texts = await page.locator('.outliner-root li > p').allTextContents();
+  const texts = await page.locator('.nfp-outliner li > p').allTextContents();
   expect(texts).toEqual(['c', 'a', 'b', 'd']);
 });
