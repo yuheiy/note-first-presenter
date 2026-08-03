@@ -179,5 +179,5 @@ export function Outliner({
 
   // `display: contents` is doing real work, not papering over anything: it is what
   // lets `.ProseMirror`'s `min-height: 100%` resolve against the scroll container.
-  return <div ref={mountRef} className="outliner-root contents" />;
+  return <div ref={mountRef} className="nfp-outliner contents" />;
 }

@@ -13,7 +13,3 @@
    imported from JS, which keeps Oxfmt's single-stylesheet Tailwind sorting
    (root vite.config.ts `fmt.sortTailwindcss`) pointed at one file. */
 @import './components/outliner/outliner.css';
-
-@theme {
-  --font-sans: sans-serif;
-}

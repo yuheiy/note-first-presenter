@@ -3,13 +3,14 @@
    by ProseMirror, so JSX cannot put classes on them. Reached through the
    @import graph of src/style.css, never from JS. See docs/adr/0009. */
 
-.outliner-root .ProseMirror {
+.nfp-outliner .ProseMirror {
   padding: 1rem;
   /* Trailing space so the last note group can scroll to the top — the same
      --scroll-tail the slide list uses, so the two panels' bottom spacing matches
      (set on the Workspace wrapper). */
   padding-bottom: var(--scroll-tail);
   min-height: 100%;
+  font-family: sans-serif;
   font-size: 1.25rem;
   line-break: strict;
   text-autospace: normal;
