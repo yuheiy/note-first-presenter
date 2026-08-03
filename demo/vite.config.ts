@@ -13,8 +13,15 @@ export default defineConfig({
       dev: {
         // Watching only the CLI's dist is the point: the client half of a dev
         // session reaches the browser through Vite's HMR and must not restart
-        // the server. See docs/adr/0020 for why this is `node --watch-path` and
-        // not a watcher dependency, and for the platform it costs.
+        // the server. `--watch-path` only works on macOS and Windows (Node
+        // calls recursive fs.watch unconditionally on this path and Linux
+        // throws ERR_FEATURE_UNAVAILABLE_ON_PLATFORM); bare `--watch` would
+        // work everywhere but watches every loaded module — Vite and pdfjs
+        // included — which is far too broad. A nodemon dependency could buy
+        // portability, but this one dev-only line is the sole thing it would
+        // pay for (docs/adr/0020). The bin is named by real path because
+        // `node --watch-path` needs a script path and pnpm's .bin entries are
+        // shell shims node cannot execute.
         command:
           'node --watch-path=../packages/note-first-presenter/dist --watch-preserve-output ../packages/note-first-presenter/bin/note-first-presenter.mjs',
         dependsOn: ['note-first-presenter#build'],

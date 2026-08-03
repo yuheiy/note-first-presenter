@@ -19,6 +19,11 @@
       "project": ["src/**/*.{ts,css}"],
     },
     "packages/client": {
+      // No `entry` on purpose: knip's default (`src/main.*`), its Vite plugin
+      // (index.html's script src) and its Vitest plugin (test config) all
+      // already point at the same files, and a hand-written entry would draw
+      // knip's own "redundant entry pattern" warning.
+      //
       // `css` here is load-bearing, not cosmetic, and it is why this workspace
       // carries no `ignoreDependencies`. It lets knip follow
       // main.tsx -> style.css -> outliner.css, and `@import 'tailwindcss'` on
