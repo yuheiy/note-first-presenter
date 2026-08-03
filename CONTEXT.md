@@ -35,14 +35,14 @@ What the CLI knows about the deck: that it resolved, along with its page count a
 _Avoid_: slide info, deck info, PDF info
 
 **Active Slide**:
-The slide the app is currently on — the one the slide list selects, the outliner keeps the caret inside, and the slideshow window shows. It is 1-based, and it is not routing: the app has two pages, the workspace and the slideshow, and the active slide is not one of the things that picks between them. It appears in the URL as the `?slide=` search param, where the first slide is written by leaving the param out. Owned by `useActiveSlide` in `packages/client/src/lib/routes.ts`.
+The slide the app is currently on — the one the slide list selects, the outliner keeps the caret inside, and the slideshow window shows. It is 1-based, and it is not routing: the app has two pages, the workspace and the slideshow, and the active slide is not one of the things that picks between them. It appears in the URL as the `?slide=` search param, where the first slide is written by leaving the param out. Owned by `activeSlideAtom` in `packages/client/src/components/slides/activeSlide.ts`.
 
 **Router Mode**:
 Where the route lives in the URL: `history` (`/slideshow`, the default) or `hash` (`/#/slideshow`). Chosen per project via `routerMode` in the config file or `--router-mode`. `hash` is what a static host that cannot rewrite unknown paths needs; `history` needs the emitted `404.html` or a server-side rewrite. See `docs/adr/0017`.
 _Avoid_: routing mode, history mode/hash mode as the name of the _option_ (they are its values)
 
 **Base**:
-The URL prefix the built site is served under (`/` by default, `/repo/` on a GitHub Pages project site). Set via `base` in the config file or `--base`. It is spelled differently per use, and every wrong spelling still works at the origin root — which is why every URL the client reads or writes goes through `packages/client/src/lib/routes.ts`. See `docs/adr/0017`.
+The URL prefix the built site is served under (`/` by default, `/repo/` on a GitHub Pages project site). Set via `base` in the config file or `--base`. It is spelled differently per use, and every wrong spelling still works at the origin root — which is why every URL the client composes goes through `packages/client/src/lib/urls.ts`. See `docs/adr/0017`.
 
 **Editor**:
 The read-write mode of the app, where the author writes the outline and pairs it with slides. Exists only while the tool runs locally.

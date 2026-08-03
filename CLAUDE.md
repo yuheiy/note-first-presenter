@@ -28,7 +28,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 
 Only rules that cannot live next to the code they govern. Everything else belongs in a comment at the site it applies to, or in `docs/adr/`.
 
-- Build every URL the client app reads or writes through `packages/client/src/lib/routes.ts` — never assemble one inline. That file's own comments carry the rules (`docs/adr/0017`).
+- Compose every URL the client app emits through `packages/client/src/lib/urls.ts` — never assemble one inline. Matching URLs to pages is wouter's job, configured only in `packages/client/src/App.tsx`, and only within the boundaries its comments spell out (no `<Link>`, no `useSearchParams`, no pathless fallback Route). Both files' own comments carry the rules (`docs/adr/0017`).
 - Call messages as `m.some_key()`, never `m[key]()`, which defeats tree-shaking.
 - Run `vp run test`, never `vp test` — the checklist line above is upstream boilerplate that `vp` rewrites on sync, so it cannot be corrected in place. `vp test` runs Vitest from the root, where no browser project is configured, so every `*.browser.test.{ts,tsx}` dies in Node on `DOMParser is not defined`, and nothing about the output says the command was the problem. Root `dev` collides with a built-in the same way.
 - A test file's name picks its layer: `e2e/**/*.e2e.ts` is Playwright, `*.browser.test.{ts,tsx}` is real Chromium, any other `*.test.ts` is Node (`docs/adr/0005`).

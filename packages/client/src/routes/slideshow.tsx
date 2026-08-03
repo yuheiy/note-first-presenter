@@ -6,10 +6,10 @@
  * and there is no way back, which is why the two pages share no state and no
  * cache.
  */
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { Suspense, useEffect, useEffectEvent, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useActiveSlide } from '../lib/routes';
+import { activeSlideAtom } from '../components/slides/activeSlide';
 import { computeSlideOverflow, stepSlide } from '../components/slides/overflow';
 import { SlideImage } from '../components/slides/SlideImage';
 import { describeSlidesMeta, slidesMetaAtom } from '../components/slides/slidesMeta';
@@ -58,7 +58,7 @@ function SlideshowMessage({ message }: { message: string }) {
 
 function SlideStage() {
   const meta = useAtomValue(slidesMetaAtom);
-  const [activeSlide, setActiveSlide] = useActiveSlide();
+  const [activeSlide, setActiveSlide] = useAtom(activeSlideAtom);
   const [syncedSlideCount, setSyncedSlideCount] = useState(0);
 
   // Receive-only. The workspace never listens, so nothing done here travels back.

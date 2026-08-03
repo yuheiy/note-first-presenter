@@ -3,7 +3,7 @@ import { atomWithRefresh, unwrap } from 'jotai/utils';
 import { startTransition } from 'react';
 import { api } from '../../lib/serverClient';
 import { m } from '../../lib/paraglide/messages.js';
-import { dataUrl } from '../../lib/routes';
+import { dataUrl } from '../../lib/urls';
 
 /**
  * What the CLI knows about the slide deck.

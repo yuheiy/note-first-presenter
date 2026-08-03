@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import { selectAtom, unwrap } from 'jotai/utils';
 import { type DbV1 } from '../../lib/dbSchema';
-import { dataUrl } from '../../lib/routes';
+import { dataUrl } from '../../lib/urls';
 import { api } from '../../lib/serverClient';
 
 // One URL for both modes: in dev the CLI middleware answers it, in the static

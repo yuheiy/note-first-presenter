@@ -1,6 +1,6 @@
 /**
  * Workspace page — the outliner, the slide list, and the toolbar. It has no path
- * of its own: it is every route that is not the slideshow (`lib/routes.ts`).
+ * of its own: it is every route that is not the slideshow (`App.tsx`).
  *
  * The whole page is one branch. Everything below it is shared: Editor and Viewer
  * render the same `components/workspace/Workspace` shell and differ only in

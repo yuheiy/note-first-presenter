@@ -46,7 +46,7 @@ function settle() {
 
 describe('active slide', () => {
   beforeEach(() => {
-    // `useActiveSlide` reads and writes `?slide=`, so without this each test
+    // `activeSlideAtom`'s storage reads and writes `?slide=`, so without this each test
     // would start wherever the last one left off.
     history.replaceState(null, '', location.pathname);
   });

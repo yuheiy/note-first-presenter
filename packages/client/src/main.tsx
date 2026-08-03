@@ -1,26 +1,16 @@
 import { getDefaultStore } from 'jotai';
-import { lazy, StrictMode, Suspense } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nProvider } from 'react-aria-components';
+import { App } from './App';
 import { slidesMetaAtom } from './components/slides/slidesMeta';
 import { storedDbAtom } from './components/workspace/db';
 import { getLocale } from './lib/paraglide/runtime.js';
-import { currentRoutePath, SLIDESHOW_PATH } from './lib/routes';
 import './style.css';
 
-// Two pages off one index.html, in whichever router mode the CLI was told to
-// build for (docs/adr/0017). Still no router library and no listener: the pages
-// are never navigated between inside one document — the slideshow is always
-// opened into a separate window (target="nfp-slideshow") and has no way back —
-// so choosing the page is one read of the URL at startup. The slide index is not
-// part of that choice; it is a `?slide=` search param.
-//
-// React.lazy keeps the split: the slideshow window never downloads the
-// workspace chunk (ProseMirror and friends).
-const WorkspacePage = lazy(() => import('./pages/Workspace'));
-const SlideshowPage = lazy(() => import('./pages/Slideshow'));
-
-const Page = currentRoutePath() === SLIDESHOW_PATH ? SlideshowPage : WorkspacePage;
+// Bootstrap only: everything here is a side effect a test never wants — binding
+// the build's define constants, warming the default store, mounting. Which page
+// the URL means is `App.tsx`'s business.
 
 // Both pages read both documents, so ask for them here rather than from a page:
 // the requests then overlap the chunk download instead of queueing behind it.
@@ -56,9 +46,7 @@ createRoot(container).render(
         RAC, so this changes nothing on screen; it is here so that the day a Select
         or a Table arrives, its strings cannot disagree with ours. */}
     <I18nProvider locale={locale}>
-      <Suspense fallback={null}>
-        <Page />
-      </Suspense>
+      <App mode={__NFP_ROUTER_MODE__} base={import.meta.env.BASE_URL} />
     </I18nProvider>
   </StrictMode>,
 );

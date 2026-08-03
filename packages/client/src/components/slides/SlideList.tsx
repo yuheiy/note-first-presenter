@@ -1,7 +1,9 @@
 import clsx from 'clsx';
+import { useAtom } from 'jotai';
 import { useEffect, useMemo, useRef } from 'react';
 import { ListBox, ListBoxItem, type Selection } from 'react-aria-components';
 import { m } from '../../lib/paraglide/messages.js';
+import { activeSlideAtom } from './activeSlide';
 import { type SlideOverflow } from './overflow';
 import { SlideImage } from './SlideImage';
 
@@ -10,8 +12,6 @@ export interface SlideListProps {
   hash: string;
   /** How many slides to list, and which of them have no PDF page behind them. */
   overflow: SlideOverflow;
-  activeSlide: number;
-  onActiveSlideChange: (slide: number) => void;
 }
 
 /** The one place the `data-slide` contract below is spelled out. Used by the scroll effect. */
@@ -19,7 +19,8 @@ function slideElement(list: HTMLElement | null, slide: number) {
   return list?.querySelector<HTMLElement>(`[data-slide="${slide}"]`) ?? null;
 }
 
-export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: SlideListProps) {
+export function SlideList({ hash, overflow }: SlideListProps) {
+  const [activeSlide, setActiveSlide] = useAtom(activeSlideAtom);
   const listRef = useRef<HTMLDivElement>(null);
   const hasScrolled = useRef(false);
 
@@ -50,7 +51,7 @@ export function SlideList({ hash, overflow, activeSlide, onActiveSlideChange }: 
     // Single selection, so `'all'` is unreachable and the set holds one key.
     if (keys === 'all') return;
     const [selected] = keys;
-    if (selected !== undefined) onActiveSlideChange(Number(selected));
+    if (selected !== undefined) setActiveSlide(Number(selected));
   }
 
   return (
