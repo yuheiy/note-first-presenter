@@ -17,78 +17,64 @@ export const SLIDES_EXTENSIONS = ['pdf'] as const;
 export const DEFAULT_SLIDES_PATH = 'slides.pdf';
 
 /**
- * The one place a deck path comes from: the configured value, or the default
- * filename when there is none.
- *
- * Nothing is searched for. An earlier version globbed `*.pdf` in the cwd and
- * adopted the file when there was exactly one, which meant the deck a project
- * used depended on what else happened to be lying next to it — see
- * `docs/adr/0019`. Applying the default here rather than at the three call
- * sites keeps "unset means slides.pdf" a fact of this function, so one test
- * covers it for dev, build and export alike.
+ * The per-project cache root, shared by the rendered-slide cache
+ * (`slides/pdf.ts`) and dev's Vite cacheDir (`vite/index.ts`): inside the
+ * project's own node_modules, never inside an installed dependency (ADR-0016).
  */
-export function resolveSlides(configuredSlides: string | undefined): SlidesStatus {
-  const abs = path.resolve(process.cwd(), configuredSlides ?? DEFAULT_SLIDES_PATH);
+export function nfpCacheRoot(cwd: string): string {
+  return path.join(cwd, 'node_modules', '.note-first-presenter');
+}
+
+/**
+ * The one place a deck path comes from: the configured value, or the default
+ * filename when there is none, resolved against the project directory.
+ *
+ * Nothing is searched for — a PDF sitting next to the project is not a deck
+ * unless it is the one the config names (`docs/adr/0019`). Applying the default
+ * here rather than at the three call sites keeps "unset means slides.pdf" a
+ * fact of this function, so one test covers it for dev, build and export alike.
+ */
+export function resolveSlides(cwd: string, configuredSlides: string | undefined): SlidesStatus {
+  const abs = path.resolve(cwd, configuredSlides ?? DEFAULT_SLIDES_PATH);
   return { kind: existsSync(abs) ? 'resolved' : 'missing', path: abs };
 }
 
 type MissingSlides = Extract<SlidesStatus, { kind: 'missing' }>;
 
 /**
- * The deck path as a person should read it: relative to the cwd, so it matches
- * the value the author typed into the config rather than naming their home
- * directory — which a shared static build would otherwise print to its readers.
+ * The deck path as a person should read it: relative to the project directory,
+ * so it matches the value the author typed into the config rather than naming
+ * their home directory — which a shared static build would otherwise print to
+ * its readers.
  *
  * The single place the absolute paths in `SlidesStatus` become display strings,
  * so the browser hint, the `build` artifact and the `export` error cannot end up
  * describing the same file three different ways.
  */
-function forDisplay(status: MissingSlides): string {
-  return path.relative(process.cwd(), status.path);
+function forDisplay(cwd: string, status: MissingSlides): string {
+  return path.relative(cwd, status.path);
 }
 
 /** The wire form of a deck that did not resolve, for `/nfp-data/meta.json`. */
-export function missingSlidesMeta(status: MissingSlides): { kind: 'missing'; path: string } {
-  return { kind: 'missing', path: forDisplay(status) };
+export function missingSlidesMeta(
+  cwd: string,
+  status: MissingSlides,
+): { kind: 'missing'; path: string } {
+  return { kind: 'missing', path: forDisplay(cwd, status) };
 }
 
 /**
- * What `build`/`export` say when they cannot go on without a deck.
- *
- * Names the path rather than the kind: with one `missing` arm, "slides not
- * available: missing" told the reader nothing they did not already know, and
- * the path is the only thing they can act on.
+ * What `build`/`export` say when they cannot go on without a deck. Names the
+ * path, because the path is the one thing the reader can act on.
  */
-export function slidesNotFoundMessage(status: MissingSlides): string {
-  return `slide deck not found: ${forDisplay(status)}. Add the file, or set \`slides\` in your config.`;
+export function slidesNotFoundMessage(cwd: string, status: MissingSlides): string {
+  return `slide deck not found: ${forDisplay(cwd, status)}. Add the file, or set \`slides\` in your config.`;
 }
 
-export interface RenderedSlide {
-  number: number;
-  width: number;
-  height: number;
-  file: string;
-}
-
-// Names a rendered slide on disk and, identically, in the `/nfp-data/slides/`
-// URL space. Source-agnostic on purpose: `renderAll` writes these names, the
-// dev middleware answers exactly these names, and the client builds the same
-// ones — so dev and the static build expose one path shape, not two.
-export function slideFilename(pageNumber: number): string {
-  return `${String(pageNumber).padStart(4, '0')}.webp`;
-}
-
-export interface RenderAllResult {
-  hash: string;
-  slides: RenderedSlide[];
-}
-
-export interface Slides {
-  meta(): Promise<{ hash: string; pageCount: number; width: number; height: number }>;
-  image(pageNumber: number): Promise<{ data: Buffer; hash: string; pageCount: number }>;
-  size(pageNumber: number): Promise<{ width: number; height: number }>;
-  renderAll(outDir: string): Promise<RenderAllResult>;
-  invalidate(): void;
-}
-
-export { openPdfSlides as openSlides, PageOutOfRangeError } from './slides/pdf.ts';
+export {
+  PageOutOfRangeError,
+  type RenderAllResult,
+  slideFilename,
+  type Slides,
+} from './slides/model.ts';
+export { openPdfSlides as openSlides } from './slides/pdf.ts';

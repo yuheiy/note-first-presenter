@@ -4,21 +4,18 @@ import path from 'node:path';
 import { afterEach, beforeEach } from 'vite-plus/test';
 
 /**
- * Sets up an isolated temp directory and chdirs to it for each test.
- * Cleans up on afterEach. Wraps `mkdtemp` in `realpath` to resolve the
- * macOS `/tmp` → `/private/tmp` symlink so chdir'd `process.cwd()`
- * matches the returned path.
+ * A fresh temp directory per test, handed to the code under test as an explicit
+ * cwd argument — the process cwd is never touched, so tests cannot serialize on
+ * it. `realpath` resolves the macOS `/tmp` → `/private/tmp` symlink so paths
+ * derived from the returned value compare equal to what the code resolves.
  */
-export function withTempCwd(prefix: string): void {
-  let originalCwd = '';
+export function freshTempDir(prefix: string): () => string {
   let tmp = '';
   beforeEach(async () => {
     tmp = await fs.realpath(await fs.mkdtemp(path.join(tmpdir(), prefix)));
-    originalCwd = process.cwd();
-    process.chdir(tmp);
   });
   afterEach(async () => {
-    process.chdir(originalCwd);
     await fs.rm(tmp, { recursive: true, force: true });
   });
+  return () => tmp;
 }

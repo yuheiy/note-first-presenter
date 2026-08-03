@@ -25,6 +25,12 @@ test('serves the workspace from under the base path', async ({ page }) => {
   // from `/sub/nfp-data/`, so a base-less dataUrl would leave this empty.
   await expect(page.getByRole('listbox', { name: 'Slides' })).toBeVisible();
   await expect(page.getByRole('option').first()).toBeVisible();
+  // Layer 4, off the same page load: the workspace's one real link — a fresh
+  // document load into a named window, so its href has to be right on its own.
+  await expect(page.getByRole('link', { name: 'Play slideshow' })).toHaveAttribute(
+    'href',
+    '/sub/slideshow',
+  );
 });
 
 test('routes the slideshow under the base path', async ({ page }) => {
@@ -39,14 +45,4 @@ test('addresses slide images under the base path', async ({ page }) => {
   const image = page.getByRole('img', { name: 'Slide 2' });
   await expect(image).toBeVisible();
   await expect(image).toHaveAttribute('src', /^\/sub\/nfp-data\/slides\//);
-});
-
-test('points the slideshow link at the base path', async ({ page }) => {
-  // Layer 4. The workspace's one real link — a fresh document load into a named
-  // window, so its href has to be right on its own.
-  await page.goto('');
-  await expect(page.getByRole('link', { name: 'Play slideshow' })).toHaveAttribute(
-    'href',
-    '/sub/slideshow',
-  );
 });

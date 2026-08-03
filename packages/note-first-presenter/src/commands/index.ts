@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineCommand } from 'citty';
-import { findClosestPkgJsonPath } from 'vitefu';
 import pkg from '../../package.json' with { type: 'json' };
 import {
   DEFAULT_ROUTER_MODE,
@@ -10,7 +9,7 @@ import {
   type NoteFirstPresenterConfig,
   type RouterMode,
 } from '../config.ts';
-import { resolveSlides, slidesNotFoundMessage } from '../slides.ts';
+import { resolveSlides } from '../slides.ts';
 
 // The command tree, separated from the `runMain` call in cli.ts so that
 // importing it does not start a CLI. Nothing here is public API — the split
@@ -18,14 +17,17 @@ import { resolveSlides, slidesNotFoundMessage } from '../slides.ts';
 // way: that a config which cannot be understood stops `dev` *before* the server
 // comes up. That is a fact about the order of two statements, so no pure
 // function extracted from underneath them could carry it (docs/adr/0021).
+//
+// `process.cwd()` is read here, once per command, and handed down as an
+// explicit argument. Nothing below this layer reads the cwd on its own, and
+// nothing anywhere calls `process.chdir`.
 
-async function resolveClientRoot(): Promise<string> {
-  const clientPkgJsonStart = path.dirname(
+function resolveClientRoot(): string {
+  // The client package exports `./package.json`, so this resolves in one step;
+  // the package root is that file's directory.
+  return path.dirname(
     fileURLToPath(import.meta.resolve('@note-first-presenter/client/package.json')),
   );
-  const clientPkgJson = await findClosestPkgJsonPath(clientPkgJsonStart);
-  if (!clientPkgJson) throw new Error('Cannot resolve @note-first-presenter/client');
-  return path.dirname(clientPkgJson);
 }
 
 const sharedServerArgs = {
@@ -67,18 +69,17 @@ export const dev = defineCommand({
   meta: { name: 'dev', description: 'Start the presenter dev server' },
   args: { ...sharedServerArgs, ...sharedRouteArgs },
   async run({ args }) {
-    // dev did not read the config file before: the plugin resolves slides on its
-    // own. routerMode/base are the first settings the server itself needs.
-    //
+    const cwd = process.cwd();
     // This line has to stay ahead of the import below. A config that throws here
     // is how `dev` refuses to start, and the symptom of losing that is not an
     // error — it is a server that comes up and serves the deck with a silently
     // defaulted routerMode. cliCommands.test.ts holds the order in place.
-    const { config } = await loadNfpConfig('dev');
-    const clientRoot = await resolveClientRoot();
+    const { config } = await loadNfpConfig(cwd, 'dev');
+    const clientRoot = resolveClientRoot();
 
     const { dev } = await import('./dev.ts');
     await dev({
+      cwd,
       clientRoot,
       port: Number(args.port),
       host: args.host,
@@ -92,13 +93,15 @@ const build = defineCommand({
   meta: { name: 'build', description: 'Generate a static read-only site' },
   args: { 'out-dir': { type: 'string' }, ...sharedRouteArgs },
   async run({ args }) {
-    const { config } = await loadNfpConfig('build');
-    const slidesStatus = resolveSlides(config?.slides);
-    const outDir = path.resolve(args['out-dir'] ?? config?.build?.outDir ?? 'dist');
-    const clientRoot = await resolveClientRoot();
+    const cwd = process.cwd();
+    const { config } = await loadNfpConfig(cwd, 'build');
+    const slidesStatus = resolveSlides(cwd, config?.slides);
+    const outDir = path.resolve(cwd, args['out-dir'] ?? config?.build?.outDir ?? 'dist');
+    const clientRoot = resolveClientRoot();
 
     const { build } = await import('./build.ts');
     await build({
+      cwd,
       slidesStatus,
       outDir,
       clientRoot,
@@ -107,27 +110,28 @@ const build = defineCommand({
   },
 });
 
-const export_ = defineCommand({
+const exportCommand = defineCommand({
   meta: { name: 'export', description: 'Export the deck via an eta template' },
   args: {
     'out-dir': { type: 'string' },
     'assets-dir': { type: 'string' },
   },
   async run({ args }) {
-    const { config } = await loadNfpConfig('build');
-    const slidesStatus = resolveSlides(config?.slides);
-    if (slidesStatus.kind !== 'resolved') {
-      throw new Error(slidesNotFoundMessage(slidesStatus));
-    }
+    const cwd = process.cwd();
+    const { config } = await loadNfpConfig(cwd, 'build');
+    const slidesStatus = resolveSlides(cwd, config?.slides);
     const exportCfg = config?.export;
     const filename = exportCfg?.filename ?? 'index.html';
     const template = exportCfg?.template ?? null;
-    const outDir = path.resolve(args['out-dir'] ?? exportCfg?.outDir ?? 'export');
+    const outDir = path.resolve(cwd, args['out-dir'] ?? exportCfg?.outDir ?? 'export');
     const assetsDir = path.resolve(outDir, args['assets-dir'] ?? exportCfg?.assetsDir ?? 'assets');
+    // How the page will address its images: the assets directory as a URL-style
+    // path relative to the page's own directory ('.' when they coincide).
     const assetsRelDir = path.relative(outDir, assetsDir).split(path.sep).join('/') || '.';
 
     const { exportAsPage } = await import('./export.ts');
     await exportAsPage({
+      cwd,
       slidesStatus,
       outDir,
       assetsDir,
@@ -150,7 +154,7 @@ export const main = defineCommand({
   subCommands: {
     dev,
     build,
-    export: export_,
+    export: exportCommand,
   },
   default: 'dev',
 });

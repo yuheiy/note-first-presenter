@@ -42,8 +42,7 @@
     "eta": "catalog:",
     "pdfjs-dist": "catalog:",
     "valibot": "catalog:",
-    "vite": "^8.1.5",
-    "vitefu": "catalog:"
+    "vite": "^8.1.5"
   },
   "devDependencies": {
     "@types/node": "catalog:"

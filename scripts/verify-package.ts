@@ -1,12 +1,8 @@
 /**
  * Runs the CLI the way a published user gets it: both packages packed, both
  * tarballs installed into an empty project, then `build`, `export` and `dev`.
- *
- * This is the layer issue #38 said every option would need. Inside the
- * workspace, `node_modules/note-first-presenter` is a symlink and Node resolves
- * it to `packages/note-first-presenter`, so no test layer ever touches the
- * published shape — which is how a CLI that could not start for anyone who
- * installed it stayed green for months.
+ * Inside the workspace the CLI is a symlink Node resolves to the source
+ * package, so nothing this asserts can be seen by any layer that runs there.
  *
  * It claims three things and no more. Whether a build emits its 404 copy, or an
  * export renders the configured template, is the same question inside the
@@ -14,12 +10,15 @@
  * change (docs/adr/0021). What only this can see is that an installed package
  * resolves, starts, and produces something.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import assert from 'node:assert/strict';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { once } from 'node:events';
 import { promises as fs } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(fileURLToPath(import.meta.url), '../..');
@@ -51,6 +50,27 @@ function step(message: string): void {
 }
 
 /**
+ * Polls `probe` until it yields a value, at `interval`, failing at `deadline`
+ * with the last reason the probe gave for not having one yet.
+ */
+async function waitFor<T>(
+  probe: () => Promise<{ value: T } | { reason: string }>,
+  opts: { timeoutMs: number; intervalMs: number; what: string },
+): Promise<T> {
+  const deadline = Date.now() + opts.timeoutMs;
+  for (;;) {
+    const result = await probe();
+    if ('value' in result) return result.value;
+    if (Date.now() > deadline) {
+      throw new Error(
+        `${opts.what} did not happen within ${opts.timeoutMs}ms (last: ${result.reason})`,
+      );
+    }
+    await delay(opts.intervalMs);
+  }
+}
+
+/**
  * Packs both packages and returns the tarball paths.
  *
  * `pnpm pack` fires `prepack` and `prepare` but not `prepublishOnly` (measured
@@ -67,13 +87,13 @@ function step(message: string): void {
  */
 function packAll(destination: string): string[] {
   return PACKAGES.map((pkg) => {
-    const output = run('pnpm', ['pack', '--pack-destination', destination], pkg);
-    const tarball = output
-      .split('\n')
-      .map((line) => line.trim())
-      .findLast((line) => line.endsWith('.tgz'));
-    if (!tarball) throw new Error(`pnpm pack printed no tarball path for ${pkg}:\n${output}`);
-    return tarball;
+    const output = run('pnpm', ['pack', '--json', '--pack-destination', destination], pkg);
+    // The lifecycle scripts' output lands on stdout ahead of the report, so the
+    // JSON starts at the last unindented `{`.
+    const report: unknown = JSON.parse(output.slice(output.lastIndexOf('\n{\n') + 1));
+    const { filename } = report as { filename?: string };
+    assert.ok(filename, `pnpm pack reported no tarball filename for ${pkg}:\n${output}`);
+    return filename;
   });
 }
 
@@ -98,6 +118,45 @@ function freePort(): Promise<number> {
       server.close(() => resolve(port));
     });
   });
+}
+
+async function createProject(work: string, tarballs: string[]): Promise<string> {
+  const project = path.join(work, 'project');
+  await fs.mkdir(project);
+  await fs.writeFile(
+    path.join(project, 'package.json'),
+    `${JSON.stringify({ name: 'nfp-verify-fixture', private: true, type: 'module' }, null, 2)}\n`,
+  );
+  run('pnpm', ['add', ...tarballs], project);
+
+  await fs.copyFile(FIXTURE_PDF, path.join(project, 'slides.pdf'));
+  await fs.writeFile(
+    path.join(project, '.note-first-presenter.json'),
+    JSON.stringify({ version: 1, title: 'Deck', outline: { type: 'doc', content: [] } }),
+  );
+  return project;
+}
+
+async function verifyBuild(bin: string, project: string): Promise<void> {
+  run(bin, ['build'], project);
+  const shell = await fs.readFile(path.join(project, 'dist/index.html'), 'utf8');
+  assert.ok(shell.length > 0, 'build emitted an empty dist/index.html');
+  const meta: unknown = JSON.parse(
+    await fs.readFile(path.join(project, 'dist/nfp-data/meta.json'), 'utf8'),
+  );
+  assert.equal(
+    (meta as { kind?: string }).kind,
+    'resolved',
+    `build did not resolve the deck: ${JSON.stringify(meta)}`,
+  );
+  console.log('  dist/index.html and dist/nfp-data/meta.json look right');
+}
+
+async function verifyExport(bin: string, project: string): Promise<void> {
+  run(bin, ['export'], project);
+  const exported = await fs.readFile(path.join(project, 'export/index.html'), 'utf8');
+  assert.ok(exported.length > 0, 'export emitted an empty export/index.html');
+  console.log('  export/index.html looks right');
 }
 
 /**
@@ -125,45 +184,63 @@ async function verifyDev(bin: string, project: string): Promise<void> {
   server.stderr.on('data', (chunk: Buffer) => (output += chunk.toString()));
 
   try {
-    const deadline = Date.now() + 60_000;
-    for (;;) {
-      if (server.exitCode !== null) {
-        throw new Error(`dev exited with ${server.exitCode} before it served anything:\n${output}`);
-      }
-      const { body, error } = await fetchMeta(port);
-      if (body !== null) {
-        if ((body as { kind?: string }).kind !== 'resolved') {
-          throw new Error(`dev served a deck it could not resolve: ${JSON.stringify(body)}`);
-        }
-        console.log(`  dev served /nfp-data/meta.json on :${port}`);
-        return;
-      }
-      if (Date.now() > deadline) {
-        throw new Error(
-          `dev never served /nfp-data/meta.json within 60s (last: ${error})\n${output}`,
-        );
-      }
-      await new Promise((resolve) => setTimeout(resolve, 250));
+    let body: unknown;
+    try {
+      body = await waitFor(
+        async () => {
+          assert.equal(
+            server.exitCode,
+            null,
+            `dev exited with ${server.exitCode} before it served anything:\n${output}`,
+          );
+          const meta = await fetchMeta(port);
+          return meta.ok ? { value: meta.body } : { reason: meta.reason };
+        },
+        { timeoutMs: 60_000, intervalMs: 250, what: 'dev serving /nfp-data/meta.json' },
+      );
+    } catch (error) {
+      // The assertion above already carries the server output; a timeout does
+      // not, and the output is the only clue why the server never came up.
+      if (error instanceof assert.AssertionError) throw error;
+      throw new Error(`${error instanceof Error ? error.message : String(error)}\n${output}`);
     }
+    assert.equal(
+      (body as { kind?: string }).kind,
+      'resolved',
+      `dev served a deck it could not resolve: ${JSON.stringify(body)}`,
+    );
+    console.log(`  dev served /nfp-data/meta.json on :${port}`);
   } finally {
-    server.kill('SIGTERM');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await shutdown(server);
+  }
+}
+
+/** SIGTERM with a grace period, then SIGKILL — no fixed sleep on the happy path. */
+async function shutdown(server: ChildProcess): Promise<void> {
+  if (server.exitCode !== null) return;
+  const exited = once(server, 'exit');
+  server.kill('SIGTERM');
+  const graceful = await Promise.race([exited.then(() => true), delay(2000).then(() => false)]);
+  if (!graceful) {
     server.kill('SIGKILL');
+    await exited;
   }
 }
 
 /**
- * The response body, or a null body and the reason while the server is still
+ * The response body, or the reason there is none yet while the server is still
  * coming up. The reason is carried out rather than swallowed so a timeout can
  * say whether it was connection-refused all along or something else.
  */
-async function fetchMeta(port: number): Promise<{ body: unknown; error: string }> {
+async function fetchMeta(
+  port: number,
+): Promise<{ ok: true; body: unknown } | { ok: false; reason: string }> {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/nfp-data/meta.json`);
-    if (!response.ok) return { body: null, error: `HTTP ${response.status}` };
-    return { body: await response.json(), error: '' };
+    if (!response.ok) return { ok: false, reason: `HTTP ${response.status}` };
+    return { ok: true, body: await response.json() };
   } catch (error) {
-    return { body: null, error: error instanceof Error ? error.message : String(error) };
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -174,9 +251,7 @@ async function main(): Promise<void> {
   // would be gone, silently, with everything still passing.
   const work = await fs.mkdtemp(path.join(tmpdir(), 'nfp-verify-'));
   const tarballDir = path.join(work, 'tarballs');
-  const project = path.join(work, 'project');
   await fs.mkdir(tarballDir);
-  await fs.mkdir(project);
 
   try {
     step('pack');
@@ -184,37 +259,14 @@ async function main(): Promise<void> {
     for (const tarball of tarballs) console.log(`  ${path.basename(tarball)}`);
 
     step('install into an empty project');
-    await fs.writeFile(
-      path.join(project, 'package.json'),
-      `${JSON.stringify({ name: 'nfp-verify-fixture', private: true, type: 'module' }, null, 2)}\n`,
-    );
-    run('pnpm', ['add', ...tarballs], project);
-
-    await fs.copyFile(FIXTURE_PDF, path.join(project, 'slides.pdf'));
-    await fs.writeFile(
-      path.join(project, '.note-first-presenter.json'),
-      JSON.stringify({ version: 1, title: 'Deck', outline: { type: 'doc', content: [] } }),
-    );
-
+    const project = await createProject(work, tarballs);
     const bin = path.join(project, 'node_modules/.bin/note-first-presenter');
 
     step('build');
-    run(bin, ['build'], project);
-    const shell = await fs.readFile(path.join(project, 'dist/index.html'), 'utf8');
-    if (shell.length === 0) throw new Error('build emitted an empty dist/index.html');
-    const meta: unknown = JSON.parse(
-      await fs.readFile(path.join(project, 'dist/nfp-data/meta.json'), 'utf8'),
-    );
-    if ((meta as { kind?: string }).kind !== 'resolved') {
-      throw new Error(`build did not resolve the deck: ${JSON.stringify(meta)}`);
-    }
-    console.log('  dist/index.html and dist/nfp-data/meta.json look right');
+    await verifyBuild(bin, project);
 
     step('export');
-    run(bin, ['export'], project);
-    const exported = await fs.readFile(path.join(project, 'export/index.html'), 'utf8');
-    if (exported.length === 0) throw new Error('export emitted an empty export/index.html');
-    console.log('  export/index.html looks right');
+    await verifyExport(bin, project);
 
     step('dev');
     await verifyDev(bin, project);

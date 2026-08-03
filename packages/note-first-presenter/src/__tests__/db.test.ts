@@ -1,60 +1,54 @@
 import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { defaultDb } from '@note-first-presenter/client/dbSchema';
 import { describe, expect, it } from 'vite-plus/test';
 import { readDb, writeDb } from '../db.ts';
-import { withTempCwd } from './helpers.ts';
+import { freshTempDir } from './helpers.ts';
 
-withTempCwd('nfp-db-');
+const cwd = freshTempDir('nfp-db-');
 
 describe('readDb / writeDb', () => {
   it('returns the client default when file missing', async () => {
-    expect(await readDb()).toEqual(defaultDb());
+    expect(await readDb(cwd())).toEqual(defaultDb());
   });
 
-  it('writes pretty-printed JSON with trailing newline', async () => {
-    await writeDb({
+  // The file is meant to be committed, so the written form has to stay stable
+  // and readable in a git diff: pretty-printed, trailing newline.
+  it('writes a git-diffable form', async () => {
+    await writeDb(cwd(), {
       version: 1,
       title: 'hello',
       outline: { type: 'doc', content: [] },
     });
-    const text = await fs.readFile('.note-first-presenter.json', 'utf8');
+    const text = await fs.readFile(path.join(cwd(), '.note-first-presenter.json'), 'utf8');
     expect(text.endsWith('\n')).toBe(true);
     expect(text).toContain('  "title": "hello"');
   });
 
-  it('round-trips through write/read', async () => {
+  it('round-trips through write/read, leaving no temp file behind', async () => {
     const original = {
       version: 1 as const,
       title: 'round',
       outline: { type: 'doc', content: [{ type: 'bullet_list', content: [] }] },
     };
-    await writeDb(original);
-    const loaded = await readDb();
-    expect(loaded).toEqual(original);
+    await writeDb(cwd(), original);
+    expect(await readDb(cwd())).toEqual(original);
+    // The write goes through a `.tmp` sibling and renames it into place.
+    expect(await fs.readdir(cwd())).toEqual(['.note-first-presenter.json']);
   });
 
   it('rejects when the file contains schema-invalid JSON', async () => {
     await fs.writeFile(
-      '.note-first-presenter.json',
+      path.join(cwd(), '.note-first-presenter.json'),
       JSON.stringify({ version: 2, name: 'x' }),
       'utf8',
     );
-    await expect(readDb()).rejects.toThrow('.note-first-presenter.json');
+    await expect(readDb(cwd())).rejects.toThrow('.note-first-presenter.json');
   });
 
   it('rejects when the file contains malformed JSON', async () => {
-    await fs.writeFile('.note-first-presenter.json', '{ not json', 'utf8');
-    await expect(readDb()).rejects.toThrow('.note-first-presenter.json');
-  });
-
-  it('does not leave a temp file behind after writing', async () => {
-    await writeDb({
-      version: 1,
-      title: 'tmp-cleanup',
-      outline: { type: 'doc', content: [] },
-    });
-    const files = await fs.readdir('.');
-    expect(files).not.toContain('.note-first-presenter.json.tmp');
+    await fs.writeFile(path.join(cwd(), '.note-first-presenter.json'), '{ not json', 'utf8');
+    await expect(readDb(cwd())).rejects.toThrow('.note-first-presenter.json');
   });
 
   it('serializes concurrent writes and ends with the last value', async () => {
@@ -68,8 +62,8 @@ describe('readDb / writeDb', () => {
       title: 'b',
       outline: { type: 'doc', content: [] },
     };
-    await Promise.all([writeDb(dbA), writeDb(dbB)]);
-    const loaded = await readDb();
+    await Promise.all([writeDb(cwd(), dbA), writeDb(cwd(), dbB)]);
+    const loaded = await readDb(cwd());
     expect(loaded).toEqual(dbB);
   });
 });

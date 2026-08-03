@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import type { InlineConfig } from 'vite';
 import { DEFAULT_ROUTER_MODE, type RouterMode } from '../config.ts';
+import { nfpCacheRoot } from '../slides.ts';
 import { ViteNfpPlugin } from './plugin.ts';
 
 export interface CreateViteConfigInput {
@@ -58,9 +59,14 @@ export function createViteConfig({
     //
     // Only dev supplies `projectCwd`, and only dev needs this: a build never
     // creates the directory (measured against an installed package).
-    ...(projectCwd === undefined
-      ? {}
-      : { cacheDir: path.join(projectCwd, 'node_modules', '.note-first-presenter', 'vite') }),
-    plugins: [tailwindcss(), react(), ViteNfpPlugin({ cwd: projectCwd })],
+    ...(projectCwd === undefined ? {} : { cacheDir: path.join(nfpCacheRoot(projectCwd), 'vite') }),
+    plugins: [
+      tailwindcss(),
+      react(),
+      // The plugin exists to serve the project directory, so it is only
+      // constructed when dev names one; in a build it would be inert anyway
+      // (`apply: 'serve'`).
+      ...(projectCwd === undefined ? [] : [ViteNfpPlugin({ cwd: projectCwd })]),
+    ],
   };
 }

@@ -3,22 +3,23 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createCanvas } from '@napi-rs/canvas';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { type RenderAllResult, type RenderedSlide, slideFilename, type Slides } from '../slides.ts';
+import {
+  PageOutOfRangeError,
+  type RenderAllResult,
+  type RenderedSlide,
+  slideFilename,
+  type Slides,
+} from './model.ts';
 
+// Pages are rasterised at twice their nominal PDF size; `meta()` reports the
+// scaled dimensions, so the client lays slides out at exactly the size the
+// images carry.
 const TARGET_SCALE = 2.0;
+// Lossy webp quality handed to canvas.encode.
 const WEBP_QUALITY = 85;
+// Each in-flight page holds a full canvas bitmap, so this bounds peak render
+// memory by a constant rather than by the deck's page count.
 const RENDER_CONCURRENCY = 4;
-
-export class PageOutOfRangeError extends Error {
-  readonly page: number;
-  readonly pageCount: number;
-
-  constructor(page: number, pageCount: number) {
-    super(`page ${page} out of range (1..${pageCount})`);
-    this.page = page;
-    this.pageCount = pageCount;
-  }
-}
 
 type PdfDocument = Awaited<ReturnType<typeof pdfjs.getDocument>['promise']>;
 type PdfPage = Awaited<ReturnType<PdfDocument['getPage']>>;
@@ -58,6 +59,15 @@ async function loadAndHash(slidesPath: string, cacheRoot: string): Promise<Loade
   return { hash, pdf, pageCount: pdf.numPages };
 }
 
+function scaledViewport(page: PdfPage): {
+  viewport: ReturnType<PdfPage['getViewport']>;
+  width: number;
+  height: number;
+} {
+  const viewport = page.getViewport({ scale: TARGET_SCALE });
+  return { viewport, width: Math.ceil(viewport.width), height: Math.ceil(viewport.height) };
+}
+
 async function encodePage(
   page: PdfPage,
   viewport: ReturnType<PdfPage['getViewport']>,
@@ -74,8 +84,8 @@ async function encodePage(
   return canvas.encode('webp', WEBP_QUALITY);
 }
 
-export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string }): Slides {
-  const cacheRoot = opts?.cacheRoot ?? path.resolve('node_modules', '.note-first-presenter');
+export function openPdfSlides(slidesPath: string, opts: { cacheRoot: string }): Slides {
+  const { cacheRoot } = opts;
   let pdfP: Promise<LoadedPdf> | null = null;
   const getPdf = () => {
     if (!pdfP) {
@@ -91,8 +101,8 @@ export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string })
 
   return {
     async meta() {
-      const { hash, pageCount } = await getPdf();
-      const { width, height } = await this.size(1);
+      const { hash, pdf, pageCount } = await getPdf();
+      const { width, height } = scaledViewport(await pdf.getPage(1));
       return { hash, pageCount, width, height };
     },
     async image(pageNumber) {
@@ -100,50 +110,42 @@ export function openPdfSlides(slidesPath: string, opts?: { cacheRoot?: string })
       if (pageNumber < 1 || pageNumber > pageCount) {
         throw new PageOutOfRangeError(pageNumber, pageCount);
       }
+      // pdfjs memoises getPage per document, so asking again for a cached
+      // image costs a lookup, not a re-parse.
+      const page = await pdf.getPage(pageNumber);
+      const { viewport, width, height } = scaledViewport(page);
       const cachePath = slideCachePath(cacheRoot, hash, pageNumber);
       try {
         const data = await fs.readFile(cachePath);
-        return { data, hash, pageCount };
+        return { data, hash, pageCount, width, height };
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
       }
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: TARGET_SCALE });
-      const width = Math.ceil(viewport.width);
-      const height = Math.ceil(viewport.height);
       const data = await encodePage(page, viewport, width, height);
       await fs.mkdir(path.dirname(cachePath), { recursive: true });
       await fs.writeFile(cachePath, data);
-      return { data, hash, pageCount };
-    },
-    async size(pageNumber) {
-      const { pdf, pageCount } = await getPdf();
-      if (pageNumber < 1 || pageNumber > pageCount) {
-        throw new PageOutOfRangeError(pageNumber, pageCount);
-      }
-      const page = await pdf.getPage(pageNumber);
-      const vp = page.getViewport({ scale: TARGET_SCALE });
-      return { width: Math.ceil(vp.width), height: Math.ceil(vp.height) };
+      return { data, hash, pageCount, width, height };
     },
     async renderAll(outDir) {
       const { hash, pageCount } = await getPdf();
       await fs.mkdir(outDir, { recursive: true });
-      const slides: RenderedSlide[] = Array.from<RenderedSlide>({ length: pageCount });
-      let nextPage = 1;
-      const worker = async (): Promise<void> => {
-        while (true) {
-          const n = nextPage++;
-          if (n > pageCount) return;
-          const { data } = await this.image(n);
-          const { width, height } = await this.size(n);
-          const name = slideFilename(n);
-          await fs.writeFile(path.join(outDir, name), data);
-          slides[n - 1] = { number: n, width, height, file: name };
-        }
-      };
-      await Promise.all(
-        Array.from({ length: Math.min(RENDER_CONCURRENCY, pageCount) }, () => worker()),
-      );
+      const slides: RenderedSlide[] = [];
+      for (let start = 1; start <= pageCount; start += RENDER_CONCURRENCY) {
+        const batch = Array.from(
+          { length: Math.min(RENDER_CONCURRENCY, pageCount - start + 1) },
+          (_, i) => start + i,
+        );
+        slides.push(
+          ...(await Promise.all(
+            batch.map(async (n): Promise<RenderedSlide> => {
+              const { data, width, height } = await this.image(n);
+              const file = slideFilename(n);
+              await fs.writeFile(path.join(outDir, file), data);
+              return { number: n, width, height, file };
+            }),
+          )),
+        );
+      }
       return { hash, slides } satisfies RenderAllResult;
     },
     invalidate() {

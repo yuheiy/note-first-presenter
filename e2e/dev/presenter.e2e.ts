@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { focusEditor, resetDb } from './helpers.ts';
+import { focusEditor, resetDb } from '../helpers.ts';
 
 function waitForDbSave(page: import('@playwright/test').Page) {
   return page.waitForResponse(
@@ -21,12 +21,6 @@ test.beforeEach(async ({ page }) => {
   await dbSaved;
 });
 
-test('renders presenter shell with slide list', async ({ page }) => {
-  await expect(page.getByRole('textbox', { name: 'Outliner' })).toBeVisible();
-  await expect(page.getByRole('listbox', { name: 'Slides' })).toBeVisible();
-  await expect(page.getByRole('option').nth(0)).toBeVisible();
-});
-
 test('typing into the editor persists across reload', async ({ page }) => {
   await focusEditor(page);
   const saved = waitForDbSave(page);
@@ -36,19 +30,24 @@ test('typing into the editor persists across reload', async ({ page }) => {
   await expect(page.getByText('hello world')).toBeVisible();
 });
 
-test('--- separator splits notes into two slide groups', async ({ page }) => {
+test('--- separators split notes into slide groups', async ({ page }) => {
+  // Four groups against a 3-page PDF: the listbox shows
+  // max(pdfPageCount, groupCount) rows (the client's computeSlideOverflow), so
+  // anything fewer than 4 groups here would be masked by the page count and the
+  // assertion could pass with splitting broken entirely.
   const editor = await focusEditor(page);
   await editor.pressSequentially('first');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('---');
-  await page.keyboard.press('Enter');
-  await editor.pressSequentially('second');
+  for (const text of ['second', 'third', 'fourth']) {
+    await page.keyboard.press('Enter');
+    await editor.pressSequentially('---');
+    await page.keyboard.press('Enter');
+    await editor.pressSequentially(text);
+  }
 
   await expect(editor).toContainText('first');
-  await expect(editor).toContainText('second');
+  await expect(editor).toContainText('fourth');
 
-  // PDF has 3 pages and groups = 2, so listbox stays at max(3, 2) = 3
-  await expect(page.getByRole('option')).toHaveCount(3);
+  await expect(page.getByRole('option')).toHaveCount(4);
 });
 
 test('title input saves and reloads', async ({ page }) => {
